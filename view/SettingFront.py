@@ -10,6 +10,7 @@ window = tk.Tk()
 window.title("Settings")
 window.geometry("300x150")
 
+
 # input screen
 input_screen = tk.Frame(window)
 
@@ -19,14 +20,23 @@ label.pack(pady=5)
 entry = tk.Entry(input_screen)
 entry.pack(pady=5)
 
+
+def console_print():
+    print(entry.get())
+
 #transitions are functions
 def go_to_output_screen():
     word = entry.get()          
     output_label.config(text=word)  
     input_screen.pack_forget()       
-    output_screen.pack()              
+    output_screen.pack()
 
-button = tk.Button(input_screen, text="Submit", command=go_to_output_screen)
+def outputting():
+    console_print()
+    go_to_output_screen()
+
+
+button = tk.Button(input_screen, text="Submit", command=outputting)
 button.pack(pady=10)
 
 # output screen
