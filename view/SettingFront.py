@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 
 #some tkinter notes
 #pady or padx: adding vertical or horizontal spacing
@@ -10,12 +11,15 @@ import tkinter as tk
 
 MICROSCOPES = ['Keyence', 'Olympus']
 IMAGE_TYPES = ['2D', '3D']
+EXPERIMENTS = ['DAPI','GFP-mylein','CY5-myelin','GFP-debris','CY5-debris']
 
 def go_to_output_screen():
-    data_type = image_data_type.get()
-    microscope = microscope_type.get()
+    data_type = image_var.get()
+    microscope = scope_var.get()
+    experiment = experiment_menu.get()
 
-    settings = f"Data Type: {data_type}\nMicroscope: {microscope}"  
+    settings = f"Data Type: {data_type}\nMicroscope: {microscope}\nexperiment: {experiment}\n"
+    
 
     output_label.config(text=settings)  
     input_screen.pack_forget() 
@@ -23,10 +27,15 @@ def go_to_output_screen():
     output_screen.pack(fill="both", expand=True)
 
 def show_radio_button_choice(choice):
-    print(f"Selected value: {choice}")
+    print(f"image type and microscope choice: {choice}")
+    
+def show_experiment_dropdown(r, c):
+    label = Label(tk, text=" ")
+    label.grid(row = r, column = c, pady = 10)
+
 
 def outputting():
-    print(image_data_type.get(), microscope_type.get())
+    print(image_var.get(), scope_var.get(), experiment_menu.get())
     go_to_output_screen()
 
 def go_back():
@@ -47,6 +56,7 @@ input_screen = tk.Frame(window)
 
 image_var = tk.StringVar()
 scope_var = tk.StringVar()
+experiment_var = tk.StringVar()
 """
 image_data_label = tk.Label(input_screen, text="image data type: 2D or 3D?")
 image_data_label.grid(row=0, column=0, padx=10, pady=10, sticky='E')
@@ -80,7 +90,13 @@ for i, scope in enumerate(MICROSCOPES):
         value=scope
     ).grid(row=2, column=i, padx=10)
 
-tk.Label(input_screen, text="Select Microscope").grid(row=2, column=0, pady=10)
+tk.Label(input_screen, text="Select experiment").grid(row=3, column=0, pady=10)
+experiment_menu = ttk.Combobox(input_screen, values=EXPERIMENTS, textvariable = experiment_var)
+experiment_menu.set("Select the experiment that was used.")
+experiment_menu.grid(row=3, column=1, pady=10)
+
+
+
 
 submit_button = tk.Button(input_screen, text="Submit", command=outputting)
 submit_button.grid(row=6, column=0, columnspan=2, pady=10)
