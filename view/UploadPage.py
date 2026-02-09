@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from datetime import datetime
+import subprocess
 import json
 
 selected_folders = []
@@ -30,12 +31,24 @@ def save_folders():
             tracks1.add(str(root))
 
     data = {
-        "TRACKS": sorted(tracks),
-        "TRACKS1": sorted(tracks1)
+        "Tracks": sorted(tracks),
+        "Tracks1": sorted(tracks1)
     }
 
     with open("folder_paths.json", "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4) 
+    
+    save_txt(data)
+
+def save_txt(data):
+    with open("folder_paths.txt", "w", encoding="utf-8") as f:
+        f.write("TRACKS\n")
+        for p in data["Tracks"]:
+            f.write(p + "\n")
+
+        f.write("\nTRACKS1\n")
+        for p in data["Tracks1"]:
+            f.write(p + "\n")
 
 
 def start_time():
@@ -51,12 +64,19 @@ def start_time():
         json.dump(data, f, indent=4)
 
 
+def run_test():
+    subprocess.run(["bash", "../model/test.sh"], check=True)
+
+def button_run():
+    start_time()
+    run_test()
+
 window = tk.Tk()
 window.title("File Uploader")
 window.geometry("600x300")
 
 tk.Button(window, text="Add Folder", command=add_folder).pack(pady=10)
-tk.Button(window, text="Run", command=start_time).pack(pady=10)
+tk.Button(window, text="Run", command=button_run).pack(pady=10)
 
 status_label = tk.Label(window, text="")
 status_label.pack(pady=5)
