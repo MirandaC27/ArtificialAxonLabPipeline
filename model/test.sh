@@ -1,12 +1,5 @@
-#!/bin/bash
+JQ="../controller/jq-windows-amd64.exe"
+JSON="../view/folder_paths.json"
 
-FILE="../view/folder_paths.txt"
-
-if [ ! -f "$FILE" ]; then
-    echo "Error: $FILE not found!"
-    exit 1
-fi
-
-cat "$FILE"
-
-exit 0
+"$JQ" -r '.Tracks[]' "$JSON"
+"$JQ" -r '.Tracks1[]' "$JSON"
