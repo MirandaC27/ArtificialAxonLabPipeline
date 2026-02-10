@@ -68,13 +68,13 @@ def start_time():
         json.dump(data, f, indent=4)
 
 
-def run_test():
+def run_step1():
     bash_path = r"C:\Program Files\Git\bin\bash.exe"
-    subprocess.run([bash_path, "../model/step2_organize-keyence-singlechan-lowe.sh"], check=True)
+    subprocess.run([bash_path, "../model/step1_rename-keyence-files-2D-singlechan-lowe.sh"], check=True)
 
 def button_run():
     start_time()
-    run_test()
+    run_step1()
 
 window = tk.Tk()
 window.title("File Uploader")
