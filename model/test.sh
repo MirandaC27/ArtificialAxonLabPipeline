@@ -1,5 +1,12 @@
 JQ="../controller/jq-windows-amd64.exe"
 JSON="../view/folder_paths.json"
 
-"$JQ" -r '.Tracks[]' "$JSON"
-"$JQ" -r '.Tracks1[]' "$JSON"
+DATA=$("$JQ" -r '.Data[]' "$JSON")
+TRACKS=$("$JQ" -r '.Tracks[]' "$JSON")
+TRACKS1=$("$JQ" -r '.Tracks1[]' "$JSON")
+
+echo "Data: $DATA"
+echo "Tracks: $TRACKS"
+echo "Tracks1: $TRACKS1"
+
+exit

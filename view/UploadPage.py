@@ -17,9 +17,10 @@ def add_folder():
         save_folders()
 
 def save_folders():
-    global tracks, tracks1
+    global tracks, tracks1, data
     tracks = set()
     tracks1 = set()
+    data = set()
 
     for folder in selected_folders:
         root = Path(folder)
@@ -29,10 +30,13 @@ def save_folders():
             tracks.add(str(root))
         elif folder_name.endswith("CLEANED"):
             tracks1.add(str(root))
+        else:
+            data.add(str(root))
 
     data = {
         "Tracks": sorted(tracks),
-        "Tracks1": sorted(tracks1)
+        "Tracks1": sorted(tracks1),
+        "Data": sorted(data)
     }
 
     with open("folder_paths.json", "w", encoding="utf-8") as f:
@@ -65,7 +69,8 @@ def start_time():
 
 
 def run_test():
-    subprocess.run(["bash", "../model/test.sh"], check=True)
+    bash_path = r"C:\Program Files\Git\bin\bash.exe"
+    subprocess.run([bash_path, "../model/step2_organize-keyence-singlechan-lowe.sh"], check=True)
 
 def button_run():
     start_time()
