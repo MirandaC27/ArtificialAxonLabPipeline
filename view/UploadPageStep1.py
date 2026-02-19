@@ -8,6 +8,70 @@ import platform
 
 selected_folders = []
 
+# global storage for channels
+channels = []   # list of dicts: {"num": int, "label": str}
+
+def update_channel_listbox():
+    channel_listbox.delete(0, tk.END)
+    for ch in channels:
+        channel_listbox.insert(tk.END, f"Channel {ch['num']} — {ch['label']}")
+
+def add_channel():
+    num = channel_num_entry.get().strip()
+    label = channel_label_entry.get().strip()
+
+    if not num.isdigit():
+        status_label.config(text="Channel number must be an integer.")
+        return
+
+    num = int(num)
+
+    global channels
+
+    if label == "":
+        status_label.config(text="Enter a channel label.")
+        return
+
+    for ch in channels:
+        if ch["num"] == num:
+            status_label.config(text=f"Channel {num} already exists.")
+            return
+
+    channels.append({"num": num, "label": label})
+    channels.sort(key=lambda x: x["num"])
+
+    update_channel_listbox()
+
+    channel_num_entry.delete(0, tk.END)
+    channel_label_entry.delete(0, tk.END)
+    status_label.config(text="Channel added.")
+
+
+def remove_channel():
+    num = channel_num_entry.get().strip()
+
+    if not num.isdigit():
+        status_label.config(text="Channel number must be an integer.")
+        return
+
+    num = int(num)
+
+    global channels
+
+    new_list = [ch for ch in channels if ch["num"] != num]
+
+    if len(new_list) == len(channels):
+        status_label.config(text=f"Channel {num} not found.")
+        return
+
+    channels = new_list
+
+    update_channel_listbox()
+
+    channel_num_entry.delete(0, tk.END)
+    channel_label_entry.delete(0, tk.END)
+    status_label.config(text="Channel removed.")
+
 def add_folder():
     folder = filedialog.askdirectory(title="Select a folder")
     if folder:
@@ -83,14 +147,58 @@ def button_run():
     start_time()
     run_step1()
 
+
+# window
 window = tk.Tk()
 window.title("File Uploader")
-window.geometry("600x300")
+window.geometry("600x350")
 
-tk.Button(window, text="Add Folder", command=add_folder).pack(pady=10)
-tk.Button(window, text="Run", command=button_run).pack(pady=10)
+window.grid_rowconfigure(0, weight=0)
+window.grid_rowconfigure(7, weight=1)
+window.grid_columnconfigure(0, weight=1)
 
-status_label = tk.Label(window, text="")
-status_label.pack(pady=5)
+# buttons
+tk.Button(window, text="Add Folder", command=add_folder).grid(
+    row=0, column=0, pady=8, sticky="ew", padx=20
+)
+
+tk.Button(window, text="Run", command=button_run).grid(
+    row=1, column=0, pady=5, sticky="ew", padx=20
+)
+
+# status
+status_label = tk.Label(window, text="", justify="left")
+status_label.grid(row=2, column=0, pady=5, padx=20, sticky="w")
+
+# channel entry
+channel_frame = tk.Frame(window)
+channel_frame.grid(row=3, column=0, pady=5, padx=20, sticky="w")
+
+tk.Label(channel_frame, text="Channel #:").grid(row=0, column=0, padx=5)
+channel_num_entry = tk.Entry(channel_frame, width=8)
+channel_num_entry.grid(row=0, column=1, padx=5)
+
+tk.Label(channel_frame, text="Label:").grid(row=0, column=2, padx=5)
+channel_label_entry = tk.Entry(channel_frame, width=20)
+channel_label_entry.grid(row=0, column=3, padx=5)
+
+# NEW: add/remove buttons instead of radio buttons
+button_frame = tk.Frame(window)
+button_frame.grid(row=4, column=0, pady=8, padx=20, sticky="ew")
+
+tk.Button(button_frame, text="Add Channel", command=add_channel).grid(
+    row=0, column=0, padx=5, sticky="ew"
+)
+
+tk.Button(button_frame, text="Remove Channel", command=remove_channel).grid(
+    row=0, column=1, padx=5, sticky="ew"
+)
+
+button_frame.grid_columnconfigure(0, weight=1)
+button_frame.grid_columnconfigure(1, weight=1)
+
+# channel list
+channel_listbox = tk.Listbox(window, width=50, height=10)
+channel_listbox.grid(row=7, column=0, pady=10, padx=20, sticky="nsew")
 
 window.mainloop()
