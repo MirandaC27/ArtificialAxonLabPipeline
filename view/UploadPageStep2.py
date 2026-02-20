@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
-from datetime import datetime
 import subprocess
+import platform
 import json
 
 selected_folders = []
@@ -48,7 +48,7 @@ def run_step2():
     else:
         bash_path = "/bin/bash"
 
-    script_path = Path(__file__).resolve().parent.parent / "model" / "step2_organize-keyence-singlechan-lowe.sh"
+    script_path = Path(__file__).resolve().parent.parent / "model" / "step2_organize-keyence-multichan-lowe.sh"
 
     subprocess.run([bash_path, str(script_path)], check=True)
 

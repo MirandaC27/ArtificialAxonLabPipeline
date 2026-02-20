@@ -91,7 +91,7 @@ def save_folders():
         root = Path(folder)
 
         folder_name = root.name.upper()
-        if folder_name.endswith("RAW"):
+        if folder_name.endswith("PLATE01"):
             tracks.add(str(root))
         elif folder_name.endswith("CLEANED"):
             tracks1.add(str(root))
@@ -139,7 +139,7 @@ def run_step1():
     else:
         bash_path = "/bin/bash"
 
-    script_path = Path(__file__).resolve().parent.parent / "model" / "step2_organize-keyence-singlechan-lowe.sh"
+    script_path = Path(__file__).resolve().parent.parent / "model" / "step1_rename-keyence-files-3D-multichan-lowe.sh"
 
     subprocess.run([bash_path, str(script_path)], check=True)
 
