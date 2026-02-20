@@ -43,8 +43,14 @@ def save_folders():
         json.dump(data, f, indent=4) 
     
 def run_step2():
-    bash_path = r"C:\Program Files\Git\bin\bash.exe"
-    subprocess.run([bash_path, "../model/step2_organize-keyence-singlechan-lowe.sh"], check=True)
+    if platform.system() == "Windows":
+        bash_path = r"C:\Program Files\Git\bin\bash.exe"
+    else:
+        bash_path = "/bin/bash"
+
+    script_path = Path(__file__).resolve().parent.parent / "model" / "step2_organize-keyence-singlechan-lowe.sh"
+
+    subprocess.run([bash_path, str(script_path)], check=True)
 
 def button_run():
     run_step2()

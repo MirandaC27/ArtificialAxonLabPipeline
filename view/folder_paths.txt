@@ -1,0 +1,5 @@
+TRACKS
+/Users/chloemiranda/capstone/EXP009_Olympus_Plate1_RAW
+
+TRACKS1
+/Users/chloemiranda/capstone/folder_CLEANED
