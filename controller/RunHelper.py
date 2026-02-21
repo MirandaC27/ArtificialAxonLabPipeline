@@ -7,3 +7,7 @@ if __name__ == "__main__":
     if func_name == "CleanedFileName":
         result = HelperFunctions.CleanedFileName(sys.argv[2])
         print(result)
+
+    elif func_name == "OrderedFileName":
+        result = HelperFunctions.OrderedFileName(sys.argv[2])
+        print(result)

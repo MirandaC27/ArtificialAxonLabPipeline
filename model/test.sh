@@ -11,9 +11,13 @@ echo "Data: $DATA"
 echo "Tracks: $TRACKS"
 echo "Tracks1: $TRACKS1"
 
-echo "---------Running CleanedFileName function from HelperFunctions.py---------"
+echo "---------Running Cleaned/OrderedFileName function from HelperFunctions.py---------"
 name=$(python3 ../controller/runHelper.py CleanedFileName "$DATA")
 
 echo "Cleaned File Name: $name"
+    
+name=$(python3 ../controller/runHelper.py OrderedFileName "$DATA")
+
+echo "Ordered File Name: $name"
 
 exit
