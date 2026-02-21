@@ -1,9 +1,28 @@
 {
     "Tracks": [
-        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\EX_RAW"
+        "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
     ],
     "Tracks1": [
-        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\EX_CLEANED"
+        "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_CLEANED"
     ],
-    "START_TIME": "2026-02-10 00:11:39"
+    "Data": [],
+    "Channels": [
+        {
+            "code": "CH1",
+            "label": "asdfsd"
+        },
+        {
+            "code": "CH2",
+            "label": "adsfddas"
+        },
+        {
+            "code": "CH3",
+            "label": "adafsfd"
+        },
+        {
+            "code": "CH4",
+            "label": "adfasdf"
+        }
+    ],
+    "START_TIME": "2026-02-20 23:42:33"
 }
