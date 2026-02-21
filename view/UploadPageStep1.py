@@ -41,7 +41,6 @@ def add_channel():
     channels.sort(key=lambda x: x["num"])
 
     update_channel_listbox()
-    save_folders()  
 
     channel_num_entry.delete(0, tk.END)
     channel_label_entry.delete(0, tk.END)
@@ -68,7 +67,6 @@ def remove_channel():
     channels = new_list
 
     update_channel_listbox()
-    save_folders()  
 
     channel_num_entry.delete(0, tk.END)
     channel_label_entry.delete(0, tk.END)
@@ -84,43 +82,32 @@ def add_folder():
         save_folders()
 
 def save_folders():
+    global tracks, tracks1, data
     tracks = set()
     tracks1 = set()
-    data_dirs = set()
+    data = set()
 
     for folder in selected_folders:
         root = Path(folder)
-        folder_name = root.name.upper()
 
+        folder_name = root.name.upper()
         if folder_name.endswith("RAW"):
             tracks.add(str(root))
-
-            # Automatically create CLEANED path
-            cleaned_path = str(root).replace("RAW", "CLEANED")
-            tracks1.add(cleaned_path)
-
+        elif folder_name.endswith("CLEANED"):
+            tracks1.add(str(root))
         else:
-            data_dirs.add(str(root))
+            data.add(str(root))
 
-    channel_json = [
-        {
-            "code": f"CH{ch['num']}",
-            "label": ch["label"]
-        }
-        for ch in channels
-    ]
-
-    json_data = {
+    data = {
         "Tracks": sorted(tracks),
         "Tracks1": sorted(tracks1),
-        "Data": sorted(data_dirs),
-        "Channels": channel_json
+        "Data": sorted(data)
     }
 
     with open("folder_paths.json", "w", encoding="utf-8") as f:
-        json.dump(json_data, f, indent=4)
-
-    save_txt(json_data)
+        json.dump(data, f, indent=4) 
+    
+    save_txt(data)
 
 def save_txt(data):
     with open("folder_paths.txt", "w", encoding="utf-8") as f:
@@ -152,7 +139,7 @@ def run_step1():
     else:
         bash_path = "/bin/bash"
 
-    script_path = Path(__file__).resolve().parent.parent / "model" / "3D_keyence.sh"
+    script_path = Path(__file__).resolve().parent.parent / "model" / "step2_organize-keyence-singlechan-lowe.sh"
 
     subprocess.run([bash_path, str(script_path)], check=True)
 
@@ -195,11 +182,10 @@ tk.Label(channel_frame, text="Label:").grid(row=0, column=2, padx=5)
 channel_label_entry = tk.Entry(channel_frame, width=20)
 channel_label_entry.grid(row=0, column=3, padx=5)
 
-
+# NEW: add/remove buttons instead of radio buttons
 button_frame = tk.Frame(window)
 button_frame.grid(row=4, column=0, pady=8, padx=20, sticky="ew")
 
-#add/remove channel buttons
 tk.Button(button_frame, text="Add Channel", command=add_channel).grid(
     row=0, column=0, padx=5, sticky="ew"
 )
