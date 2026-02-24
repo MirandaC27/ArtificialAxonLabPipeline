@@ -11,6 +11,9 @@ selected_folders = []
 # global storage for channels
 channels = []   # list of dicts: {"num": int, "label": str}
 
+#global image var
+
+
 def update_channel_listbox():
     channel_listbox.delete(0, tk.END)
     for ch in channels:
@@ -101,7 +104,15 @@ def save_folders():
     data = {
         "Tracks": sorted(tracks),
         "Tracks1": sorted(tracks1),
-        "Data": sorted(data)
+        "Data": sorted(data),
+        "ImageType": image_type_var.get(),
+        "Channels": [
+            {
+                "code": f"CH{ch['num']}",
+                "label": ch["label"]
+            }
+            for ch in channels
+        ]
     }
 
     with open("folder_paths.json", "w", encoding="utf-8") as f:
@@ -139,7 +150,7 @@ def run_step1():
     else:
         bash_path = "/bin/bash"
 
-    script_path = Path(__file__).resolve().parent.parent / "model" / "step1_rename-keyence-files-3D-multichan-lowe.sh"
+    script_path = Path(__file__).resolve().parent.parent / "model" / "step1_rename-keyence.sh"
 
     subprocess.run([bash_path, str(script_path)], check=True)
 
@@ -157,22 +168,31 @@ window.grid_rowconfigure(0, weight=0)
 window.grid_rowconfigure(7, weight=1)
 window.grid_columnconfigure(0, weight=1)
 
+image_type_var = tk.StringVar(master=window, value="3D")
+
 # buttons
 tk.Button(window, text="Add Folder", command=add_folder).grid(
     row=0, column=0, pady=8, sticky="ew", padx=20
 )
 
 tk.Button(window, text="Run", command=button_run).grid(
-    row=1, column=0, pady=5, sticky="ew", padx=20
+    row=7, column=0, pady=5, sticky="ew", padx=20
 )
+
+# Image Type Selector
+image_frame = tk.LabelFrame(window, text="Image Type")
+image_frame.grid(row=1, column=0, padx=20, pady=5, sticky="ew")
+
+tk.Radiobutton(image_frame, text="2D", variable=image_type_var, value="2D").grid(row=2, column=0, padx=10)
+tk.Radiobutton(image_frame, text="3D", variable=image_type_var, value="3D").grid(row=2, column=1, padx=10)
 
 # status
 status_label = tk.Label(window, text="", justify="left")
-status_label.grid(row=2, column=0, pady=5, padx=20, sticky="w")
+status_label.grid(row=3, column=0, pady=5, padx=20, sticky="w")
 
 # channel entry
 channel_frame = tk.Frame(window)
-channel_frame.grid(row=3, column=0, pady=5, padx=20, sticky="w")
+channel_frame.grid(row=4, column=0, pady=5, padx=20, sticky="w")
 
 tk.Label(channel_frame, text="Channel #:").grid(row=0, column=0, padx=5)
 channel_num_entry = tk.Entry(channel_frame, width=8)
@@ -184,7 +204,7 @@ channel_label_entry.grid(row=0, column=3, padx=5)
 
 # NEW: add/remove buttons instead of radio buttons
 button_frame = tk.Frame(window)
-button_frame.grid(row=4, column=0, pady=8, padx=20, sticky="ew")
+button_frame.grid(row=5, column=0, pady=8, padx=20, sticky="ew")
 
 tk.Button(button_frame, text="Add Channel", command=add_channel).grid(
     row=0, column=0, padx=5, sticky="ew"
