@@ -2,13 +2,17 @@
 #         Assumes that Columns 2-11 are being used in each plate row (edit if untrue)
 JQ="../controller/jq-windows-amd64.exe"
 JSON="../view/folder_paths.json"
+source ../controller/filename_util.sh
 
 DIR0="$PWD"
 DIR1=$("$JQ" -r '.Data[]' "$JSON")  # Path to data
 numFOVs=9
 
 DIR2=$("$JQ" -r '.Cleaned[]' "$JSON")
-DIR3=$("$JQ" -r '.Ordered[]' "$JSON")
+
+ordered_dir=$(ordered_file_name "$DIR1")
+mkdir -p "$DIR1/$ordered_dir"
+DIR3="$DIR1/$ordered_dir"
 
 cd "$DIR0" || { echo "Failed to cd to DIR0"; exit 1; }
 

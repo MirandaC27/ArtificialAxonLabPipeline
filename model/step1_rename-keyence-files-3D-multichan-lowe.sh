@@ -1,6 +1,7 @@
 # Step 1: Rename Keyence files for 3D assay data (on Artificial Axons), multi-channel, with or without debris channel
 JQ="../controller/jq-windows-amd64.exe"
 JSON="../view/folder_paths.json"
+source ../controller/filename_util.sh
 
 DIR0="$PWD"
 DIR1=$("$JQ" -r '.Data[]' "$JSON")  # Path to data
@@ -8,7 +9,10 @@ DIR1=$("$JQ" -r '.Data[]' "$JSON")  # Path to data
 cd "$DIR0" || { echo "Failed to cd to DIR0: $DIR0"; exit 1; }
 
 TRACKS=$("$JQ" -r '.Tracks[]' "$JSON")
-TRACKS1=$("$JQ" -r '.Tracks1[]' "$JSON")
+
+cleaned_dir=$(cleaned_file_name "$DIR1")
+mkdir -p "$DIR1/$cleaned_dir"
+TRACKS1="$DIR1/$cleaned_dir"
 
 cd "$TRACKS" || { echo "Failed to cd to TRACKS: $TRACKS"; exit 1; }
 

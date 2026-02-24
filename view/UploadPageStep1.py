@@ -84,7 +84,6 @@ def add_folder():
 def save_folders():
     global tracks, tracks1, data
     tracks = set()
-    tracks1 = set()
     data = set()
 
     for folder in selected_folders:
@@ -93,32 +92,17 @@ def save_folders():
         folder_name = root.name.upper()
         if folder_name.endswith("PLATE01"):
             tracks.add(str(root))
-        elif folder_name.endswith("CLEANED"):
-            tracks1.add(str(root))
         else:
             data.add(str(root))
 
     data = {
         "Tracks": sorted(tracks),
-        "Tracks1": sorted(tracks1),
         "Data": sorted(data)
     }
 
     with open("folder_paths.json", "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4) 
     
-    save_txt(data)
-
-def save_txt(data):
-    with open("folder_paths.txt", "w", encoding="utf-8") as f:
-        f.write("TRACKS\n")
-        for p in data["Tracks"]:
-            f.write(p + "\n")
-
-        f.write("\nTRACKS1\n")
-        for p in data["Tracks1"]:
-            f.write(p + "\n")
-
 
 def start_time():
     start = datetime.now()
