@@ -1,13 +1,16 @@
 import imagej
-import os
+from pathlib import Path
 
-# Get the absolute path to the local Fiji folder
-fiji_path = os.path.abspath("fiji-latest-win64-jdk/Fiji")
+ij = imagej.init('sc.fiji:fiji', headless=False)  
 
-# Initialize PyImageJ with the local Fiji
-ij = imagej.init(fiji_path, mode='gui')
+data_folder = Path(r"C:\Users\jonat\OneDrive - Loyola University Maryland\Desktop\VS Code\AxonLabs\Sample Data\EXP009\2026-02-23_EXP009_ORDERED\B2\B02_0001\OIR")
 
-print("Fiji initialized:", ij.getVersion())
+tif_files = list(data_folder.glob("*.tif"))
 
-# Optional: show the GUI
-ij.ui().showUI()
+for image in tif_files:
+    print("Opening:", image.name)
+    Imagedata = ij.io().open(str(image))  
+    ij.ui().show(Imagedata)             
+
+input("Press Enter to exit")
+ij.dispose()  
