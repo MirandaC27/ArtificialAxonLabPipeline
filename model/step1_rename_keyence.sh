@@ -1,4 +1,4 @@
-# Step 1: Rename Keyence files for 2D or 3D data (multi-channel, dynamic via JSON)
+# Step 1: Rename Keyence files for 2D or 3D data (multi-channel or single-channel, dynamic via JSON)
 
 # Get directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -108,4 +108,83 @@ do
 done
 
 echo "Done"
+
+#Step 2: organizing. Did not finish in time for doc. it will be fixed by presentation.
+
+DIR2="$TRACKS1"  # CLEANED directory from rename stage
+DIR3=$("$JQ" -r '.Ordered[]' "$JSON")
+
+mkdir -p "$DIR3"
+
+numFOVs=$("$JQ" -r '.NumFOVs' "$JSON")
+if [ -z "$numFOVs" ] || [ "$numFOVs" = "null" ]; then
+    numFOVs=9
+fi
+
+# Optional row list from JSON (recommended)
+row_count=$("$JQ" '.Rows | length' "$JSON" 2>/dev/null)
+
+if [ "$row_count" != "null" ] && [ "$row_count" -gt 0 ]; then
+    echo "Using Rows from JSON"
+else
+    echo "No Rows in JSON — auto-detecting"
+    ls "$DIR2" | awk -F '_' '{print substr($1,1,1)}' | sort -u > "$DIR0/rowlist"
+fi
+
+#loop through rows
+
+if [ "$row_count" != "null" ] && [ "$row_count" -gt 0 ]; then
+    for ((r=0; r<row_count; r++)); do
+        row=$("$JQ" -r ".Rows[$r]" "$JSON")
+        rows_to_process+=("$row")
+    done
+else
+    mapfile -t rows_to_process < "$DIR0/rowlist"
+fi
+
+for row in "${rows_to_process[@]}"
+do
+    echo "Row: $row"
+
+    # Loop columns dynamically (2–11 default)
+    for col in {2..11}
+    do
+        well="${row}${col}"
+        mkdir -p "$DIR3/$well"
+
+        for ((fov=1; fov<=numFOVs; fov++))
+        do
+            printf -v fov_fmt "%04d" "$fov"
+
+            # Handle 2-digit vs 1-digit column formatting
+            if [ "$col" -lt 10 ]; then
+                file="${row}0${col}_${fov_fmt}"
+            else
+                file="${row}${col}_${fov_fmt}"
+            fi
+
+            destdir="$DIR3/$well/$file"
+            mkdir -p "$destdir"/{DATA,OIR,MASKS,TEMP,OBJECTS}
+
+            #dynamically copy channels
+
+            for ((c=0; c<channel_count; c++))
+            do
+                label=$("$JQ" -r ".Channels[$c].label" "$JSON")
+                src="$DIR2/${file}_${label}.tif"
+
+                if [ -f "$src" ]; then
+                    cp "$src" "$destdir/OIR/${label}.tif"
+                else
+                    echo "Missing: $src"
+                fi
+            done
+        done
+    done
+
+    echo "Finished row $row"
+done
+
+echo ""
+echo "Pipeline Complete"
 exit

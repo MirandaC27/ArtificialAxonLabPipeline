@@ -1,9 +1,20 @@
 {
     "Tracks": [
-        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\EX_RAW"
+        "/data/exp_PLATE01"
     ],
     "Tracks1": [
-        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\EX_CLEANED"
+        "/data/CLEANED"
     ],
-    "START_TIME": "2026-02-10 00:11:39"
+    "Data": [],
+    "ImageType": "2D",
+    "Channels": [
+        {
+            "code": "CH2",
+            "label": "Debris"
+        },
+        {
+            "code": "CH1",
+            "label": "Axons"
+        }
+    ]
 }
