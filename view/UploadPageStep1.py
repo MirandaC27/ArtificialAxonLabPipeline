@@ -45,6 +45,7 @@ def add_channel():
     channel_num_entry.delete(0, tk.END)
     channel_label_entry.delete(0, tk.END)
     status_label.config(text="Channel added.")
+    #save_folders()
 
 
 def remove_channel():
@@ -79,7 +80,6 @@ def add_folder():
         status_label.config(
             text="Selected folders:\n" + "\n".join(selected_folders)
         )
-        save_folders()
 
 def save_folders():
     global tracks, tracks1, data
@@ -92,7 +92,7 @@ def save_folders():
         root = Path(folder)
         folder_name = root.name.upper()
 
-        if folder_name.endswith("PLATE01"):
+        if "_RAW" in folder_name:
             tracks.add(str(root))
         else:
             data.add(str(root))
@@ -144,12 +144,14 @@ def start_time():
     start = datetime.now()
     start = start.strftime("%Y-%m-%d %H:%M:%S")
 
-    with open("folder_paths.json", "r", encoding="utf-8") as f:
+    json_path = Path(__file__).resolve().parent / "folder_paths.json"
+
+    with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     
     data["START_TIME"] = start
     
-    with open("folder_paths.json", "w", encoding="utf-8") as f:
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
 
@@ -164,6 +166,8 @@ def run_step1():
     subprocess.run([bash_path, str(script_path)], check=True)
 
 def button_run():
+    print("Channels at run:", channels)
+    print("Selected folders at run:", selected_folders)
     save_folders()
     start_time()
     run_step1()

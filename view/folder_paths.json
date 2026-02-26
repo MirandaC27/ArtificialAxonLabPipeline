@@ -1,20 +1,29 @@
 {
     "Tracks": [
-        "/data/exp_PLATE01"
+        "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
     ],
     "Tracks1": [
-        "/data/CLEANED"
+        "/Users/chloemiranda/capstone/CLEANED"
     ],
     "Data": [],
-    "ImageType": "2D",
+    "ImageType": "3D",
     "Channels": [
         {
-            "code": "CH2",
-            "label": "Debris"
+            "code": "CH1",
+            "label": "axons"
         },
         {
-            "code": "CH1",
-            "label": "Axons"
+            "code": "CH2",
+            "label": "debris"
+        },
+        {
+            "code": "CH3",
+            "label": "MBP"
+        },
+        {
+            "code": "CH4",
+            "label": "nuclei"
         }
-    ]
+    ],
+    "START_TIME": "2026-02-26 18:29:51"
 }

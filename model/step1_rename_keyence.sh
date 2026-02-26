@@ -36,7 +36,7 @@ cd "$TRACKS" || { echo "Failed to cd to TRACKS: $TRACKS"; exit 1; }
 if [ "$IMAGE_TYPE" = "3D" ]; then
 
     # 3D has Plate level
-    PLATE_DIR=$(find "$TRACKS" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+    PLATE_DIR=$(find "$TRACKS" -mindepth 1 -maxdepth 1 -type d -name "Plate*" | head -n 1)
 
     if [ -z "$PLATE_DIR" ]; then
         echo "No Plate directory found inside $TRACKS"
@@ -54,7 +54,7 @@ fi
 cd "$BASE_DIR" || { echo "Failed to cd into base directory"; exit 1; }
 
 # well loop
-ls -d W* > "$DIR0/dirlist"
+find . -maxdepth 1 -type d -name "W*" -exec basename {} \; > "$DIR0/dirlist"
 dirnum=$(wc -l < "$DIR0/dirlist")
 echo "Number of wells: $dirnum"
 
@@ -111,62 +111,56 @@ echo "Done"
 
 #Step 2: organizing. Did not finish in time for doc. it will be fixed by presentation.
 
-DIR2="$TRACKS1"  # CLEANED directory from rename stage
-DIR3=$("$JQ" -r '.Ordered[]' "$JSON")
+echo ""
+echo "Starting organization stage..."
+
+echo "RAW: $RAW"
+echo "CLEAN: $CLEAN"
+echo "Plate directory: $PLATE_DIR"
+echo "Channels detected:"
+echo "$CHANNELS"
+echo "Files found in plate:"
+ls -1 "$PLATE_DIR"
+
+DIR2="$TRACKS1"
+DIR3="${TRACKS1%/}/ORDERED"
 
 mkdir -p "$DIR3"
 
-numFOVs=$("$JQ" -r '.NumFOVs' "$JSON")
-if [ -z "$numFOVs" ] || [ "$numFOVs" = "null" ]; then
-    numFOVs=9
+echo "Ordered directory: $DIR3"
+
+# Auto-detect rows from renamed files
+rows_to_process=($(ls "$DIR2" | awk -F '_' '{print substr($1,1,1)}' | sort -u))
+
+# Auto-detect max FOV number
+max_fov=$(ls "$DIR2" | awk -F '_' '{print $2}' | sort -n | tail -1)
+
+if [ -z "$max_fov" ]; then
+    echo "No FOVs detected."
+    exit 1
 fi
 
-# Optional row list from JSON (recommended)
-row_count=$("$JQ" '.Rows | length' "$JSON" 2>/dev/null)
-
-if [ "$row_count" != "null" ] && [ "$row_count" -gt 0 ]; then
-    echo "Using Rows from JSON"
-else
-    echo "No Rows in JSON — auto-detecting"
-    ls "$DIR2" | awk -F '_' '{print substr($1,1,1)}' | sort -u > "$DIR0/rowlist"
-fi
-
-#loop through rows
-
-if [ "$row_count" != "null" ] && [ "$row_count" -gt 0 ]; then
-    for ((r=0; r<row_count; r++)); do
-        row=$("$JQ" -r ".Rows[$r]" "$JSON")
-        rows_to_process+=("$row")
-    done
-else
-    mapfile -t rows_to_process < "$DIR0/rowlist"
-fi
+echo "Detected max FOV: $max_fov"
 
 for row in "${rows_to_process[@]}"
 do
     echo "Row: $row"
 
-    # Loop columns dynamically (2–11 default)
-    for col in {2..11}
+    # Detect columns dynamically from files
+    cols=$(ls "$DIR2" | grep "^${row}" | awk -F '_' '{print substr($1,2)}' | sort -u)
+
+    for col in $cols
     do
         well="${row}${col}"
         mkdir -p "$DIR3/$well"
 
-        for ((fov=1; fov<=numFOVs; fov++))
+        fovs=$(ls "$DIR2" | grep "^${well}_" | awk -F '_' '{print $2}' | sort -u)
+
+        for fov in $fovs
         do
-            printf -v fov_fmt "%04d" "$fov"
-
-            # Handle 2-digit vs 1-digit column formatting
-            if [ "$col" -lt 10 ]; then
-                file="${row}0${col}_${fov_fmt}"
-            else
-                file="${row}${col}_${fov_fmt}"
-            fi
-
+            file="${well}_${fov}"
             destdir="$DIR3/$well/$file"
             mkdir -p "$destdir"/{DATA,OIR,MASKS,TEMP,OBJECTS}
-
-            #dynamically copy channels
 
             for ((c=0; c<channel_count; c++))
             do
@@ -174,9 +168,7 @@ do
                 src="$DIR2/${file}_${label}.tif"
 
                 if [ -f "$src" ]; then
-                    cp "$src" "$destdir/OIR/${label}.tif"
-                else
-                    echo "Missing: $src"
+                    cp "$src" "$destdir/OIR/"
                 fi
             done
         done
@@ -187,4 +179,4 @@ done
 
 echo ""
 echo "Pipeline Complete"
-exit
+exit 0
