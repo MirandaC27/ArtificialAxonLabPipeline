@@ -61,4 +61,5 @@ tk.Button(window, text="Run", command=button_run).pack(pady=10)
 status_label = tk.Label(window, text="")
 status_label.pack(pady=5)
 
-window.mainloop()
+if __name__ == "__main__":
+    window.mainloop()
