@@ -1,7 +1,7 @@
 import imagej
 from pathlib import Path
 
-ij = imagej.init('sc.fiji:fiji', headless=False)  
+ij = imagej.init('sc.fiji:fiji', mode=False)  
 
 data_folder = Path(r"C:\Users\jonat\OneDrive - Loyola University Maryland\Desktop\VS Code\AxonLabs\Sample Data\EXP009\2026-02-23_EXP009_ORDERED\B2\B02_0001\OIR")
 
