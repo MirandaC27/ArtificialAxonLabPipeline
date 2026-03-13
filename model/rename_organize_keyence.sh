@@ -36,7 +36,7 @@ cd "$TRACKS" || { echo "Failed to cd to TRACKS: $TRACKS"; exit 1; }
 if [ "$IMAGE_TYPE" = "3D" ]; then
 
     # 3D has Plate level
-    PLATE_DIR=$(find "$TRACKS" -mindepth 1 -maxdepth 1 -type d -name "Plate*" | head -n 1)
+    PLATE_DIR=$(find "$TRACKS" -mindepth 1 -maxdepth 1 -type d | head -n 1)
 
     if [ -z "$PLATE_DIR" ]; then
         echo "No Plate directory found inside $TRACKS"
@@ -54,7 +54,7 @@ fi
 cd "$BASE_DIR" || { echo "Failed to cd into base directory"; exit 1; }
 
 # well loop
-find . -maxdepth 1 -type d -name "W*" -exec basename {} \; > "$DIR0/dirlist"
+ls -d W* > "$DIR0/dirlist"
 dirnum=$(wc -l < "$DIR0/dirlist")
 echo "Number of wells: $dirnum"
 
@@ -111,72 +111,59 @@ echo "Done"
 
 #Step 2: organizing. Did not finish in time for doc. it will be fixed by presentation.
 
-echo ""
-echo "Starting organization stage..."
-
-echo "RAW: $RAW"
-echo "CLEAN: $CLEAN"
-echo "Plate directory: $PLATE_DIR"
-echo "Channels detected:"
-echo "$CHANNELS"
-echo "Files found in plate:"
-ls -1 "$PLATE_DIR"
-
-DIR2="$TRACKS1"
+DIR2="$TRACKS1"  # CLEANED directory from rename stage
 DIR3="${TRACKS1%/}/ORDERED"
 
 mkdir -p "$DIR3"
 
-echo "Ordered directory: $DIR3"
-
-# Auto-detect rows from renamed files
-rows_to_process=($(ls "$DIR2" | awk -F '_' '{print substr($1,1,1)}' | sort -u))
-
-# Auto-detect max FOV number
-max_fov=$(ls "$DIR2" | awk -F '_' '{print $2}' | sort -n | tail -1)
-
-if [ -z "$max_fov" ]; then
-    echo "No FOVs detected."
-    exit 1
+numFOVs=$("$JQ" -r '.NumFOVs' "$JSON")
+if [ -z "$numFOVs" ] || [ "$numFOVs" = "null" ]; then
+    numFOVs=9
 fi
 
-echo "Detected max FOV: $max_fov"
+echo "Detecting wells from filenames..."
 
-for row in "${rows_to_process[@]}"
+#list tiff files | Suppress errors | get rid of path | get well name 
+ls "$DIR2"/*.tif 2>/dev/null | xargs -n1 basename | awk -F '_' '{print $1}' | sort -u > "$DIR0/welllist"
+
+wells=()
+while read -r line
 do
-    echo "Row: $row"
+    wells+=("$line")
+done < "$DIR0/welllist"
 
-    # Detect columns dynamically from files
-    cols=$(ls "$DIR2" | grep "^${row}" | awk -F '_' '{print substr($1,2)}' | sort -u)
 
-    for col in $cols
+for well in "${wells[@]}"
+do
+    echo "Well: $well"
+
+    mkdir -p "$DIR3/$well"
+
+    for ((fov=1; fov<=numFOVs; fov++))
     do
-        well="${row}${col}"
-        mkdir -p "$DIR3/$well"
+        printf -v fov_fmt "%04d" "$fov"
 
-        fovs=$(ls "$DIR2" | grep "^${well}_" | awk -F '_' '{print $2}' | sort -u)
+        file="${well}_${fov_fmt}"
 
-        for fov in $fovs
+        destdir="$DIR3/$well/$file"
+        mkdir -p "$destdir"/{DATA,OIR,MASKS,TEMP,OBJECTS}
+
+        for ((c=0; c<channel_count; c++))
         do
-            file="${well}_${fov}"
-            destdir="$DIR3/$well/$file"
-            mkdir -p "$destdir"/{DATA,OIR,MASKS,TEMP,OBJECTS}
+            label=$("$JQ" -r ".Channels[$c].label" "$JSON")
+            src="$DIR2/${file}_${label}.tif"
 
-            for ((c=0; c<channel_count; c++))
-            do
-                label=$("$JQ" -r ".Channels[$c].label" "$JSON")
-                src="$DIR2/${file}_${label}.tif"
-
-                if [ -f "$src" ]; then
-                    cp "$src" "$destdir/OIR/"
-                fi
-            done
+            if [ -f "$src" ]; then
+                cp "$src" "$destdir/OIR/"
+            else
+                echo "Missing: $src"
+            fi
         done
     done
 
-    echo "Finished row $row"
+    echo "Finished well $well"
 done
 
 echo ""
 echo "Pipeline Complete"
-exit 0
+exit
