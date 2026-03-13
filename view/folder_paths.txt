@@ -1,5 +1,5 @@
 TRACKS
-/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW/Plate01
+/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW
 
 TRACKS1
-/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW/CLEANED
+/Users/chloemiranda/capstone/CLEANED

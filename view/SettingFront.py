@@ -2,189 +2,148 @@ import tkinter as tk
 from tkinter import ttk
 
 
-#some tkinter notes
-#pady or padx: adding vertical or horizontal spacing
-#.pack: boxes
-#.pack_forget: makes things disappear without deleting them.
-#screens must be labeled. Maybe consider labeling screens
-
-#transitions are functions
-
-MICROSCOPES = ['Keyence', 'Olympus']
-IMAGE_TYPES = ['2D', '3D']
 EXPERIMENTS = ['DAPI','GFP-mylein','CY5-myelin','GFP-debris','CY5-debris']
 
-def create_state():
-    state = {}
 
-    # tkinter variables
-    state["image_var"] = tk.StringVar()
-    state["scope_var"] = tk.StringVar()
-    state["experiment_var"] = tk.StringVar()
-    state["fov_var"] = tk.StringVar()
-    state["frame_var"] = tk.StringVar()
-    state["ezra_var"] = tk.BooleanVar()
+class SettingsPage(tk.Frame):
 
-    # widget storage
-    state["widgets_3d"] = {}
+    def __init__(self, parent, controller):
+        super().__init__(parent)
 
-    return state
+        self.controller = controller
+        self.state = self.create_state()
+
+        self.build_input_screen()
+        self.build_output_screen()
+
+        self.show_screen("input")
 
 
-ui = {}
+    def create_state(self):
 
-def collect_settings():
-    return{
-        "image": state["image"].get(),
-        "scope": state["scope"].get(),
-        "experiment": state["experiment"].get(),
-        "fovs": state["fovs"].get(),
+        state = {}
 
-    }
-    
-def show_screen(state, name):
-    for screen in("input", "output"):
-        state[f"{screen}_frame"].grid_remove()
+        state["experiment_var"] = tk.StringVar()
+        state["fov_var"] = tk.StringVar()
+        state["frame_var"] = tk.StringVar()
+        state["ezra_var"] = tk.BooleanVar()
 
-    state[f"{name}_frame"].grid(row=0, column=0, sticky="nsew")
+        state["widgets_3d"] = {}
 
-def submit(state):
-    data = state["image_var"].get()
-    scope = state["scope_var"].get()
-    exp = state["experiment_var"].get()
-    fovs = state["fov_var"].get()
-    frames = state["frame_var"].get()
-    ezra = state["ezra_var"].get()
+        return state
 
-    print(data, scope, exp, fovs, frames, ezra)
 
-    settings = (
-        f"Data Type: {data}\n"
-        f"Microscope: {scope}\n"
-        f"Experiment: {exp}\n"
-        f"FOVs: {fovs}\n"
-        f"Frames: {frames}\n"
-        f"Run Ezra: {ezra}"
-    )
+    def show_screen(self, name):
 
-    state["output_label"].config(text=settings)
-    show_screen(state, "output")
+        for screen in ("input", "output"):
+            self.state[f"{screen}_frame"].grid_remove()
 
-def show_3D_inputs(state):
-    if state["image_var"].get() == "3D":
-        for w in state["widgets_3d"].values():
+        self.state[f"{name}_frame"].grid(row=0, column=0, sticky="nsew")
+
+
+    def submit(self):
+
+        exp = self.state["experiment_var"].get()
+        fovs = self.state["fov_var"].get()
+        frames = self.state["frame_var"].get()
+        ezra = self.state["ezra_var"].get()
+
+        print(exp, fovs, frames, ezra)
+
+        settings = (
+            f"Experiment: {exp}\n"
+            f"FOVs: {fovs}\n"
+            f"Frames: {frames}\n"
+            f"Run Ezra: {ezra}"
+        )
+
+        self.state["output_label"].config(text=settings)
+        self.show_screen("output")
+
+
+    def create_3d_widgets(self, parent):
+
+        w = {}
+
+        w["frame_label"] = tk.Label(parent, text="Number of frames")
+        w["frame_entry"] = tk.Entry(parent, textvariable=self.state["frame_var"])
+
+        w["dist_label"] = tk.Label(parent, text="Distance between frames")
+        w["dist_entry"] = tk.Entry(parent)
+
+        w["ezra_check"] = tk.Checkbutton(
+            parent,
+            text="Run Ezra's algorithm?",
+            variable=self.state["ezra_var"]
+        )
+
+        w["frame_label"].grid(row=3, column=0, padx=10, pady=5, sticky="e")
+        w["frame_entry"].grid(row=3, column=1, padx=10, pady=5, sticky="w")
+
+        w["dist_label"].grid(row=4, column=0, padx=10, pady=5, sticky="e")
+        w["dist_entry"].grid(row=4, column=1, padx=10, pady=5, sticky="w")
+
+        w["ezra_check"].grid(row=5, column=1, padx=10, pady=5, sticky="w")
+
+        for widget in w.values():
+            widget.grid_remove()
+
+        self.state["widgets_3d"] = w
+
+
+    def show_3D_inputs(self):
+
+        for w in self.state["widgets_3d"].values():
             w.grid()
-    else:
-        for w in state["widgets_3d"].values():
-            w.grid_remove()
 
-def create_3d_widgets(state, parent):
-    w = {}
 
-    w["frame_label"] = tk.Label(parent, text="Number of frames")
-    w["frame_entry"] = tk.Entry(parent, textvariable=state["frame_var"])
+    def build_input_screen(self):
 
-    w["dist_label"] = tk.Label(parent, text="Distance between frames")
-    w["dist_entry"] = tk.Entry(parent)
+        frame = tk.Frame(self)
+        self.state["input_frame"] = frame
 
-    w["ezra_check"] = tk.Checkbutton(
-        parent,
-        text="Run Ezra's algorithm?",
-        variable=state["ezra_var"]
-    )
+        tk.Label(frame, text="Experiment").grid(row=0, column=0, pady=10)
 
-    # place
-    w["frame_label"].grid(row=5, column=0, padx=10, pady=5, sticky="e")
-    w["frame_entry"].grid(row=5, column=1, padx=10, pady=5, sticky="w")
-
-    w["dist_label"].grid(row=6, column=0, padx=10, pady=5, sticky="e")
-    w["dist_entry"].grid(row=6, column=1, padx=10, pady=5, sticky="w")
-
-    w["ezra_check"].grid(row=7, column=1, padx=10, pady=5, sticky="w")
-
-    # hide initially
-    for widget in w.values():
-        widget.grid_remove()
-
-    state["widgets_3d"] = w
-
-def build_input_screen(root, state):
-    frame = tk.Frame(root)
-    state["input_frame"] = frame
-
-    tk.Label(frame, text="Select Image Type").grid(row=1, column=0, pady=10)
-
-    for i, img in enumerate(IMAGE_TYPES):
-        tk.Radiobutton(
+        exp_menu = ttk.Combobox(
             frame,
-            text=img,
-            variable=state["image_var"],
-            value=img,
-            command=lambda: show_3D_inputs(state)
-        ).grid(row=1, column=i+1, padx=10)
+            values=EXPERIMENTS,
+            textvariable=self.state["experiment_var"],
+            state="readonly"
+        )
+        exp_menu.grid(row=0, column=1, pady=10)
+        exp_menu.set("Select experiment")
 
-    tk.Label(frame, text="Select Microscope").grid(row=2, column=0, pady=10)
+        tk.Label(frame, text="Fields of view").grid(row=1, column=0, padx=10, pady=10, sticky="e")
 
-    for i, scope in enumerate(MICROSCOPES):
-        tk.Radiobutton(
+        tk.Entry(
             frame,
-            text=scope,
-            variable=state["scope_var"],
-            value=scope
-        ).grid(row=2, column=i+1, padx=10)
+            textvariable=self.state["fov_var"]
+        ).grid(row=1, column=1, padx=10, pady=10, sticky="w")
 
-    tk.Label(frame, text="Experiment").grid(row=3, column=0, pady=10)
+        self.create_3d_widgets(frame)
 
-    exp_menu = ttk.Combobox(
-        frame,
-        values=EXPERIMENTS,
-        textvariable=state["experiment_var"],
-        state="readonly"
-    )
-    exp_menu.grid(row=3, column=1, pady=10)
-    exp_menu.set("Select experiment")
+        # show 3D widgets by default
+        self.show_3D_inputs()
 
-    tk.Label(frame, text="Fields of view").grid(row=4, column=0, padx=10, pady=10, sticky="e")
-    tk.Entry(frame, textvariable=state["fov_var"]).grid(row=4, column=1, padx=10, pady=10, sticky="w")
+        tk.Button(
+            frame,
+            text="Submit",
+            command=self.submit
+        ).grid(row=10, column=0, columnspan=2, pady=20)
 
-    create_3d_widgets(state, frame)
 
-    tk.Button(
-        frame,
-        text="Submit",
-        command=lambda: submit(state)
-    ).grid(row=10, column=0, columnspan=2, pady=20)
+    def build_output_screen(self):
 
-def build_output_screen(root, state):
-    frame = tk.Frame(root)
-    state["output_frame"] = frame
+        frame = tk.Frame(self)
+        self.state["output_frame"] = frame
 
-    label = tk.Label(frame, text="", font=("Arial", 16))
-    label.grid(row=0, column=0, padx=20, pady=20)
-    state["output_label"] = label
+        label = tk.Label(frame, text="", font=("Arial", 16))
+        label.grid(row=0, column=0, padx=20, pady=20)
 
-    tk.Button(
-        frame,
-        text="Back",
-        command=lambda: show_screen(state, "input")
-    ).grid(row=1, column=0, pady=10)
+        self.state["output_label"] = label
 
-def main():
-    root = tk.Tk()
-    root.title("Research Pipeline Settings")
-    root.geometry("520x420")
-
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_columnconfigure(0, weight=1)
-
-    state = create_state()
-
-    build_input_screen(root, state)
-    build_output_screen(root, state)
-
-    show_screen(state, "input")
-
-    root.mainloop()
-
-main()
-
+        tk.Button(
+            frame,
+            text="Back",
+            command=lambda: self.show_screen("input")
+        ).grid(row=1, column=0, pady=10)
