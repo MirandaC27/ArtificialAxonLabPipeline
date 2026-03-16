@@ -24,7 +24,7 @@ DEBRIS_THRESH  = 15000
 #NUCLEI_THRESH
 
 
-BASE_PATH = Path(r"E:\EXP009\2025-08-13_2xSecAb\2025-08-13_rOPCs_Plate2_ORDERED")
+BASE_PATH = Path(r"*/CLEANED/ORDERED")
 WELL_RANGE = range(2, 12)   
 
 
@@ -128,7 +128,7 @@ def debris_mask(imp, dir_temp, dir_data, dir_masks):
     IJ.run("Set Measurements:",
            "area mean min shape integrated limit redirect=None decimal=2")
     rt_debris = analyze_particles(
-        imp_debris,
+        imp,
         size_min=2, size_max=2000,
         circ_min=0.20, circ_max=1.00,
         extra_flags=ParticleAnalyzer.SUMMARIZE,
