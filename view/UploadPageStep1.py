@@ -202,7 +202,8 @@ class UploadPageStep1(tk.Frame):
             ],
         }
 
-        json_path = Path(__file__).resolve().parent / "folder_paths.json"
+        json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+        json_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=4)
@@ -212,7 +213,9 @@ class UploadPageStep1(tk.Frame):
 
     def save_txt(self, data):
 
-        with open("folder_paths.txt", "w", encoding="utf-8") as f:
+        txt_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.txt"
+
+        with open(txt_path, "w", encoding="utf-8") as f:
 
             f.write("TRACKS\n")
 
@@ -229,7 +232,7 @@ class UploadPageStep1(tk.Frame):
 
         start = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        json_path = Path(__file__).resolve().parent / "folder_paths.json"
+        json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
 
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)

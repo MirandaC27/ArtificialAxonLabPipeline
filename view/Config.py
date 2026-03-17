@@ -3,7 +3,6 @@ from tkinter import messagebox
 from pathlib import Path
 
 CONFIG_DIR = Path("../configs")
-CONFIG_DIR.mkdir(exist_ok=True)
 
 selected_config = None
 
@@ -47,7 +46,7 @@ def save_config():
         messagebox.showwarning("Warning", "No config loaded")
         return
 
-    content = text_editor.get("1.0", tk.END)
+    content = "test config data"
 
     with open(selected_config, "w") as f:
         f.write(content)
