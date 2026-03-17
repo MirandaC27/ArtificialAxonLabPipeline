@@ -5,6 +5,7 @@ from pathlib import Path
 CONFIG_DIR = Path("../data/configs")
 
 selected_config = None
+currentConfig = "../data/folder_paths.json"
 
 
 def get_all_configs():
@@ -15,8 +16,7 @@ def get_all_configs():
 
 
 def create_config():
-    name = filename_entry.get().strip()
-    currentConfig = "../data/folder_paths.json"
+    name = filename_entry.get().strip()    
 
     if not name:
         messagebox.showerror("Error", "Enter a file name")
@@ -54,6 +54,14 @@ def create_config():
     filename_entry.delete(0, tk.END)
 
 
+def update_config():
+    global selected_config
+
+    if not selected_config:
+        messagebox.showwarning("Warning", "No config loaded")
+        return
+
+
 def load_config():
     global selected_config
 
@@ -66,22 +74,20 @@ def load_config():
     filename = config_listbox.get(selection[0])
     selected_config = CONFIG_DIR / filename
 
-    messagebox.showinfo("Loaded", f"Loaded {filename}")
+    try:
+        with open(selected_config, "r") as src:
+            content = src.read()
 
+        with open(currentConfig, "w") as dst:
+            dst.write(content)
 
-def save_config():
-    global selected_config
+        get_all_configs()
+        filename_entry.delete(0, tk.END)
 
-    if not selected_config:
-        messagebox.showwarning("Warning", "No config loaded")
-        return
+        messagebox.showinfo("Success", f"Loaded {filename}")
 
-    content = "test config data"
-
-    with open(selected_config, "w") as f:
-        f.write(content)
-
-    messagebox.showinfo("Saved", "Config updated")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to Load config:\n{e}")
 
 
 def delete_config():
