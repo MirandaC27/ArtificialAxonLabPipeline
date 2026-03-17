@@ -72,25 +72,25 @@ def load_channel(filepath, channel):
 
 def show_run_hide(imp, command, args=""):
     imp.show()
-    ij.py.run_macro(f'run("{command}", "{args}");')
-    imp.hide()
+    if args:
+        ij.py.run_macro(f'run("{command}", "{args}");')
+    else:
+        ij.py.run_macro(f'run("{command}");')
+    return IJ.getImage()    # return the current image after processing
+
 
 def threshold_and_mask(imp, low, high=65535):
     imp.show()
     imp.getProcessor().setThreshold(low, high, imp.getProcessor().NO_LUT_UPDATE)
     ij.py.run_macro('run("Convert to Mask");')
-    imp.hide()
-    return imp
+    return IJ.getImage()    # return current image, not the original imp
 
 
 def auto_threshold_mask(imp):
     imp.show()
     ij.py.run_macro('run("Auto Threshold", "method=Default white");')
     ij.py.run_macro('run("Convert to Mask");')
-    imp.hide()
-    return imp
-
-
+    return IJ.getImage()    # return current image
 def save_results(rt, out_path):
     rt.save(str(out_path))
 
@@ -119,70 +119,42 @@ def analyze_particles(imp, size_min, size_max, circ_min, circ_max):
 
 
 def pillar_mask(imp, dir_temp, dir_masks):
-    print(f"    [pillar_mask] starting, title={imp.getTitle()}")
     save_imp(imp, dir_temp / "pillars.tif")
+    imp = show_run_hide(imp, "Bandpass Filter...",
+                        "filter_large=40 filter_small=3 suppress=None tolerance=5 process")
+    imp = auto_threshold_mask(imp)
+    save_imp(imp, dir_temp / "mask-pillars.tif", dir_masks / "mask-pillars.tif")
+    return imp
 
-    show_run_hide(imp, "Bandpass Filter...",
-                  "filter_large=40 filter_small=3 suppress=None tolerance=5 process")
-    auto_threshold_mask(imp)
-
-    save_imp(imp,
-             dir_temp  / "mask-pillars.tif",
-             dir_masks / "mask-pillars.tif")
-    # do NOT close
 
 def nuclei_mask(imp, dir_temp, dir_masks, dir_data):
     save_imp(imp, dir_temp / "nuclei.tif")
-
-    auto_threshold_mask(imp)
-    show_run_hide(imp, "Watershed", "stack")
-
+    imp = auto_threshold_mask(imp)
+    imp = show_run_hide(imp, "Watershed", "stack")
     save_imp(imp, dir_masks / "mask-nuclei.tif")
-
-    IJ.run("Set Scale...", "distance=0 known=0 unit=pixel")
-    IJ.run("Set Measurements...", "redirect=None decimal=2")
-    rt_nuclei = analyze_particles(
-        imp,
-        size_min=4, size_max=float("inf"),
-        circ_min=0.20, circ_max=1.00,
-    )
-    save_results(rt_nuclei, dir_data / "nuclei.out")
     imp.close()
 
 
 def myelin_raw_mask(imp, dir_temp, dir_masks):
     print(f"    [myelin_raw_mask] starting")
     save_imp(imp, dir_temp / "MBP.tif")
-
-    threshold_and_mask(imp, MYELIN_THRESH)
-
-    myelin_raw_name = f"mask-myelin-raw-{MYELIN_THRESH}.tif"
+    imp = threshold_and_mask(imp, MYELIN_THRESH)
+    myelin_raw_name = f"mask-myelin-raw-{MYELIN_THRESH}.tif"   # this line was missing
     save_imp(imp,
              dir_temp  / myelin_raw_name,
              dir_masks / myelin_raw_name)
-    # do NOT close
+    return imp
 
 
 def debris_mask(imp, dir_temp, dir_data, dir_masks):
     save_imp(imp, dir_temp / "debris.tif")
-
-    threshold_and_mask(imp, DEBRIS_THRESH)
-
-    debris_name = f"mask-debris-{DEBRIS_THRESH}.tif"
+    imp = threshold_and_mask(imp, DEBRIS_THRESH)
+    debris_name = f"mask-debris-{DEBRIS_THRESH}.tif"   # make sure this is still here
     save_imp(imp,
              dir_temp  / debris_name,
              dir_masks / debris_name)
-
-    IJ.run("Set Scale...", "distance=0 known=0 unit=pixel")
-    IJ.run("Set Measurements...",
-           "area mean min shape integrated limit redirect=None decimal=2")
-    rt_debris = analyze_particles(
-        imp,
-        size_min=2, size_max=2000,
-        circ_min=0.20, circ_max=1.00,
-    )
-    save_results(rt_debris, dir_data / f"Total-debris-{DEBRIS_THRESH}.out")
-    # do NOT close
+    
+    return imp
 
 
 def process_field(field_dir):
@@ -200,19 +172,16 @@ def process_field(field_dir):
 
 
     imp_pillars = load_channel(path_pillars, channel=1)
-    pillar_mask(imp_pillars, dir_temp, dir_masks)
-
+    imp_pillars = pillar_mask(imp_pillars, dir_temp, dir_masks)
 
     imp_nuclei = load_channel(path_nuclei, channel=3)
     nuclei_mask(imp_nuclei, dir_temp, dir_masks, dir_data)
 
-
     imp_myelin = load_channel(path_myelin, channel=3)
-    myelin_raw_mask(imp_myelin, dir_temp, dir_masks)
-
+    imp_myelin = myelin_raw_mask(imp_myelin, dir_temp, dir_masks)
 
     imp_debris = load_channel(path_debris, channel=2)
-    debris_mask(imp_debris, dir_temp, dir_data, dir_masks)
+    imp_debris = debris_mask(imp_debris, dir_temp, dir_data, dir_masks)
 
     imp_myelin.show()
     imp_debris.show()
