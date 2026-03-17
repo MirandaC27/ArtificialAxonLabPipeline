@@ -2,22 +2,21 @@ import tkinter as tk
 from tkinter import messagebox
 from pathlib import Path
 
-CONFIG_DIR = Path("../configs")
+CONFIG_DIR = Path("../data/configs")
 
 selected_config = None
 
 
 def get_all_configs():
-    config_listbox.delete(0, tk.END)
-
+    config_listbox.delete(0, tk.END) 
     configs = list(CONFIG_DIR.glob("*.json"))
-
     for config in configs:
         config_listbox.insert(tk.END, config.name)
 
 
 def create_config():
     name = filename_entry.get().strip()
+    currentConfig = "../data/folder_paths.json"
 
     if not name:
         messagebox.showerror("Error", "Enter a file name")
@@ -26,17 +25,48 @@ def create_config():
     if not name.endswith(".json"):
         name += ".json"
 
+    if not currentConfig:
+        messagebox.showerror("Error", "No current session Config")
+        return
+
     path = CONFIG_DIR / name
 
     if path.exists():
         messagebox.showerror("Error", "File already exists")
         return
+    
+    try:
+        with open(currentConfig, "r") as src:
+            content = src.read()
 
-    with open(path, "w") as f:
-        f.write("{}")
+        with open(path, "w") as dst:
+            dst.write(content)
+
+        get_all_configs()
+        filename_entry.delete(0, tk.END)
+
+        messagebox.showinfo("Success", f"Created {name} from current config")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to create config:\n{e}")
 
     get_all_configs()
     filename_entry.delete(0, tk.END)
+
+
+def load_config():
+    global selected_config
+
+    selection = config_listbox.curselection()
+
+    if not selection:
+        messagebox.showwarning("Warning", "Select a config to load")
+        return
+
+    filename = config_listbox.get(selection[0])
+    selected_config = CONFIG_DIR / filename
+
+    messagebox.showinfo("Loaded", f"Loaded {filename}")
 
 
 def save_config():
@@ -96,7 +126,7 @@ save_button.pack(side="left", padx=5)
 delete_button = tk.Button(button_frame, text="Delete", command=delete_config)
 delete_button.pack(side="left", padx=5)
 
-load_button = tk.Button(button_frame, text="Load")
+load_button = tk.Button(button_frame, text="Load", command=load_config)
 load_button.pack(side="left", padx=5)
 
 
