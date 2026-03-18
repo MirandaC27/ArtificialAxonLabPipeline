@@ -114,7 +114,7 @@ def delete_config():
     except Exception as e:
         messagebox.showerror("Error", f"Failed to delete file:\n{e}")
 
-
+'''
 root = tk.Tk()
 root.title("Config Manager")
 root.geometry("600x300")
@@ -145,3 +145,4 @@ filename_entry.grid(row=9, column=0, pady=5)
 get_all_configs()
 
 root.mainloop()
+'''
