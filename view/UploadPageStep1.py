@@ -82,6 +82,12 @@ class UploadPageStep1(tk.Frame):
                     text="Next",
                     command=lambda: self.controller.show_page("Settings")
                 ).grid(row=9, column=0, pady=5, sticky="ew", padx=20)
+        
+        tk.Button(
+                self,
+                text="Go to Image Processing",
+                command=lambda: self.controller.show_page("Image Processing Stuff")
+            ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
 
 
     def update_channel_listbox(self):

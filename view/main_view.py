@@ -2,6 +2,7 @@ import tkinter as tk
 
 from UploadPageStep1 import UploadPageStep1
 from SettingFront import SettingsPage
+from pipeline_front import ImageProcessingSettings
 
 
 class App(tk.Tk):
@@ -9,7 +10,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("Microscopy Pipeline")
+        self.title("Pipeline")
         self.geometry("700x500")
 
         container = tk.Frame(self)
@@ -22,7 +23,8 @@ class App(tk.Tk):
 
         for PageClass, name in [
             (UploadPageStep1, "Upload"),
-            (SettingsPage, "Settings")
+            (SettingsPage, "Settings"),
+            (ImageProcessingSettings, "Image Processing Stuff")
         ]:
 
             page = PageClass(container, self)
