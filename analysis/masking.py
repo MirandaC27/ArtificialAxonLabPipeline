@@ -139,7 +139,7 @@ def myelin_raw_mask(imp, dir_temp, dir_masks):
     print(f"    [myelin_raw_mask] starting")
     save_imp(imp, dir_temp / "MBP.tif")
     imp = threshold_and_mask(imp, MYELIN_THRESH)
-    myelin_raw_name = f"mask-myelin-raw-{MYELIN_THRESH}.tif"   # this line was missing
+    myelin_raw_name = f"mask-myelin-raw-{MYELIN_THRESH}.tif"   
     save_imp(imp,
              dir_temp  / myelin_raw_name,
              dir_masks / myelin_raw_name)

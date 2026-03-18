@@ -131,6 +131,11 @@ class SettingsPage(tk.Frame):
             command=self.submit
         ).grid(row=10, column=0, columnspan=2, pady=20)
 
+        tk.Button(  self,
+                    text="Go to Image Processing",
+                    command=lambda: self.controller.show_page("Image Processing Stuff")
+                ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
+
 
     def build_output_screen(self):
 
@@ -147,3 +152,9 @@ class SettingsPage(tk.Frame):
             text="Back",
             command=lambda: self.show_screen("input")
         ).grid(row=1, column=0, pady=10)
+
+        tk.Button(
+                self,
+                text="Go to Image Processing",
+                command=lambda: self.controller.show_page("Image Processing Stuff")
+            ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
