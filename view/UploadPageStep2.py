@@ -17,10 +17,9 @@ def add_folder():
         save_folders()
 
 def save_folders():
-    global DIR1, DIR2, DIR3
+    global DIR1, DIR2
     DIR1 = set()
     DIR2 = set()
-    DIR3 = set()
 
     for folder in selected_folders:
         root = Path(folder)
@@ -28,14 +27,11 @@ def save_folders():
         folder_name = root.name.upper()
         if folder_name.endswith("CLEANED"):
             DIR2.add(str(root))
-        elif folder_name.endswith("ORDERED"):
-            DIR3.add(str(root))
         else:
             DIR1.add(str(root))
 
     data = {
         "Cleaned": sorted(DIR2),
-        "Ordered": sorted(DIR3),
         "Data": sorted(DIR1)
     }
 

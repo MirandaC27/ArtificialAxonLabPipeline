@@ -4,10 +4,18 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Absolute path to jq
-JQ="$SCRIPT_DIR/../controller/jq-macos-arm64"
-JSON="$SCRIPT_DIR/../view/folder_paths.json"
+OS="$(uname -s)"
+
+if [[ "$OS" == "Darwin" ]]; then
+    JQ="$SCRIPT_DIR/../controller/jq-macos-arm64"    
+else
+    JQ="$SCRIPT_DIR/../controller/jq-windows-amd64.exe"
+fi
+
+JSON="$SCRIPT_DIR/../data/folder_paths.json"
 
 DIR0="$PWD"
+DATA_DIR="$SCRIPT_DIR/../data"
 
 # Read paths from JSON
 DIR1=$("$JQ" -r '.Data[]' "$JSON")
@@ -54,13 +62,13 @@ fi
 cd "$BASE_DIR" || { echo "Failed to cd into base directory"; exit 1; }
 
 # well loop
-ls -d W* > "$DIR0/dirlist"
-dirnum=$(wc -l < "$DIR0/dirlist")
+ls -d W* > "$DATA_DIR/dirlist"
+dirnum=$(wc -l < "$DATA_DIR/dirlist")
 echo "Number of wells: $dirnum"
 
 for ((j=1; j<=dirnum; j++))
 do
-  dirname=$(awk -v k="$j" 'NR == k {print $1}' "$DIR0/dirlist")
+  dirname=$(awk -v k="$j" 'NR == k {print $1}' "$DATA_DIR/dirlist")
   echo "Well folder: $dirname"
 
   cd "$BASE_DIR/$dirname" || { echo "Failed to cd into $dirname"; continue; }
@@ -68,13 +76,13 @@ do
   wellname=$(echo _* | awk -F '[_]' '{print $2}')
   echo "Well name: $wellname"
 
-  ls -d P* > "$DIR0/tracklist"
-  tracknum=$(wc -l < "$DIR0/tracklist")
+  ls -d P* > "$DATA_DIR/tracklist"
+  tracknum=$(wc -l < "$DATA_DIR/tracklist")
   echo "Positions: $tracknum"
 
   for ((n=1; n<=tracknum; n++))
   do
-    trackname=$(awk -v k="$n" 'NR == k {print $1}' "$DIR0/tracklist")
+    trackname=$(awk -v k="$n" 'NR == k {print $1}' "$DATA_DIR/tracklist")
     echo "  Position: $trackname"
 
     cd "$BASE_DIR/$dirname/$trackname" || { echo "Failed to cd into $trackname"; continue; }
@@ -123,14 +131,13 @@ fi
 
 echo "Detecting wells from filenames..."
 
-#list tiff files | Suppress errors | get rid of path | get well name 
-ls "$DIR2"/*.tif 2>/dev/null | xargs -n1 basename | awk -F '_' '{print $1}' | sort -u > "$DIR0/welllist"
+ls "$DIR2"/*.tif 2>/dev/null | xargs -n1 basename | awk -F '_' '{print $1}' | grep -E '^[A-Z][0-9]{2}$' | sort -u > "$DATA_DIR/welllist"
 
 wells=()
 while read -r line
 do
     wells+=("$line")
-done < "$DIR0/welllist"
+done < "$DATA_DIR/welllist"
 
 
 for well in "${wells[@]}"
