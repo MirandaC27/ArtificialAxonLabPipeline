@@ -11,19 +11,22 @@ from view.UploadPageStep1 import UploadPageStep1
 # -----------------------
 # FIXTURES
 # -----------------------
+_root = None
 
 @pytest.fixture
 def app_instance(tmp_path, monkeypatch):
     """
     Create an UploadPageStep1 instance with isolated filesystem.
     """
-    root = tk.Tk()
-    root.withdraw()
+    global _root
+    if _root is None:
+        _root = tk.Tk()
+        _root.withdraw()
 
-    frame = UploadPageStep1(root)
+    frame = UploadPageStep1(_root)
 
     # Create fake module directory
-    fake_dir = tmp_path / "view"
+    fake_dir = tmp_path / "data"
     fake_dir.mkdir()
 
     fake_file = fake_dir / "UploadPageStep1.py"
@@ -35,7 +38,7 @@ def app_instance(tmp_path, monkeypatch):
         str(fake_file)
     )
 
-    return frame, fake_dir
+    yield frame, fake_dir
 
 
 # -----------------------
@@ -55,14 +58,14 @@ def test_save_folders_classifies_directories(app_instance):
 
     app.save_folders()
 
-    json_path = fake_dir / "folder_paths.json"
+    json_path = fake_dir.parent / "data" / "folder_paths.json"
 
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    assert data["Tracks"] == ["/data/exp_RAW"]
-    assert data["Tracks1"] == ["/data/CLEANED"]
-    assert data["Data"] == ["/data/other_folder"]
+    assert data["Tracks"] == [str(Path("/data/exp_RAW"))]
+    assert data["Tracks1"] == [str(Path("/data/CLEANED"))]
+    assert data["Data"] == [str(Path("/data/other_folder"))]
     assert data["ImageType"] == "2D"
     assert data["Channels"] == [
         {"code": "CH1", "label": "Axons"}
@@ -79,28 +82,30 @@ def test_save_folders_sorts_tracks(app_instance):
 
     app.save_folders()
 
-    json_path = fake_dir / "folder_paths.json"
+    json_path = fake_dir.parent / "data" / "folder_paths.json"
 
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     assert data["Tracks"] == [
-        "/data/A_RAW",
-        "/data/B_RAW"
+        str(Path("/data/A_RAW")),
+        str(Path("/data/B_RAW"))
     ]
 
 
 def test_save_txt_output(app_instance):
-    app, _ = app_instance
+    app, fake_dir = app_instance
 
     app.selected_folders.append("/data/exp_RAW")
     app.save_folders()
+    
+    txt_path = fake_dir.parent / "data" / "folder_paths.txt"
 
-    with open("folder_paths.txt", "r", encoding="utf-8") as f:
+    with open(txt_path, "r", encoding="utf-8") as f:
         contents = f.read()
 
     assert "TRACKS" in contents
-    assert "/data/exp_RAW" in contents
+    assert str(Path("/data/exp_RAW")) in contents
 
 
 # -----------------------
@@ -115,7 +120,7 @@ def test_start_time_adds_timestamp(app_instance):
 
     app.start_time()
 
-    json_path = fake_dir / "folder_paths.json"
+    json_path = fake_dir.parent / "data" / "folder_paths.json"
 
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -183,7 +188,7 @@ def test_channels_convert_to_json_format(app_instance):
 
     app.save_folders()
 
-    json_path = fake_dir / "folder_paths.json"
+    json_path = fake_dir.parent / "data" / "folder_paths.json"
 
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
