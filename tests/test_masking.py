@@ -100,11 +100,11 @@ def test_load_channel_multi_channel_extracts_correct(tmp_path):
     import scyjava
     splitter = MagicMock()
     splitter.split.return_value = [ch1, ch2, ch3]
-    scyjava.jimport.return_value = splitter
 
     m.IJ.openImage.return_value = fake_imp
 
-    result = m.load_channel(fake_path, channel=2)
+    with patch.object(scyjava, "jimport", return_value=splitter):
+        result = m.load_channel(fake_path, channel=2)
     # channel=2 → index 1
     assert result is ch2
 

@@ -32,7 +32,7 @@ def ensure_dirs(dirs):
 
 
 def find_file(directory, keyword):
-    all_tifs = list(directory.glob("*.tif")) + list(directory.glob("*.TIF"))
+    all_tifs = [f for f in directory.iterdir() if f.is_file() and f.suffix.lower() == '.tif']
 
     print(f"    [find_file] searching '{directory}' for keyword '{keyword}'")
     print(f"    [find_file] all .tif files found: {[f.name for f in all_tifs]}")
