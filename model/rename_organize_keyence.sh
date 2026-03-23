@@ -3,8 +3,8 @@
 # Get directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-source "$SCRIPT_DIR/../controller/CleanUtil.sh"
-source "$SCRIPT_DIR/../controller/OrderedUtil.sh"
+source "$SCRIPT_DIR/../controller/CleanDataController.sh"
+source "$SCRIPT_DIR/../controller/OrderDataController.sh"
 
 # Absolute path to jq
 OS="$(uname -s)"
