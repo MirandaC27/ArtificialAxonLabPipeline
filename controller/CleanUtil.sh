@@ -43,16 +43,23 @@ process_wells(){
     done
 }
 
-process_tracks(){
+process_tracks() {
     for ((n=1; n<=tracknum; n++))
     do
-        trackname=$(awk -v k="$n" 'NR == k {print $1}' "$DATA_DIR/tracklist")
-        echo "  Position: $trackname"
+        (
+            trackname=$(awk -v k="$n" 'NR == k {print $1}' "$DATA_DIR/tracklist")
+            echo "  Position: $trackname"
 
-        cd "$BASE_DIR/$dirname/$trackname" || { echo "Failed to cd into $trackname"; continue; }
+            cd "$BASE_DIR/$dirname/$trackname" || {
+                echo "Failed to cd into $trackname"
+                exit
+            }
 
-        process_channels   
+            process_channels
+        ) &
     done
+
+    wait
 }
 
 

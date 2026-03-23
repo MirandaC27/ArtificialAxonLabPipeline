@@ -33,18 +33,21 @@ channel_tiffs_into_oir(){
     done
 }
 
-process_fovs(){
+process_fovs() {
     for ((fov=1; fov<=numFOVs; fov++))
     do
         printf -v fov_fmt "%04d" "$fov"
-
         file="${well}_${fov_fmt}"
-
         destdir="$DIR3/$well/$file"
-        mkdir -p "$destdir"/{DATA,OIR,MASKS,TEMP,OBJECTS}
 
-        channel_tiffs_into_oir
+        (
+            mkdir -p "$destdir"/{DATA,OIR,MASKS,TEMP,OBJECTS}
+            channel_tiffs_into_oir
+        ) &
+
     done
+
+    wait
 }
 
 ordered_wells(){
