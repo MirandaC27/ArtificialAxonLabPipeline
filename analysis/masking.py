@@ -2,6 +2,8 @@ import imagej
 import scyjava
 from pathlib import Path
 
+from dataclasses import dataclass
+
 
 ij = imagej.init("sc.fiji:fiji", mode="headless")
 print(f"ImageJ version: {ij.getVersion()}")
@@ -15,14 +17,43 @@ ImageCalculator  = scyjava.jimport("ij.plugin.ImageCalculator")
 ImagePlus        = scyjava.jimport("ij.ImagePlus")
 WindowManager    = scyjava.jimport("ij.WindowManager")
 
-# Thresholds
-MYELIN_THRESH = 8000
-DEBRIS_THRESH = 15000
-#nucleithresh = 70;	optional, can be auto-thresholded
-# axonthresh=35000;
 
-BASE_PATH  = Path(r"/Users/chloemiranda/capstone/CLEANED/ORDERED")
-WELL_RANGE = range(2, 12)
+@dataclass
+class PipelineConfig:
+    # Thresholds
+    MYELIN_THRESH = 8000
+    DEBRIS_THRESH = 15000
+    #nucleithresh = 70;	optional, can be auto-thresholded
+    # axonthresh=35000;
+
+    BASE_PATH  = Path(r"/Users/chloemiranda/capstone/CLEANED/ORDERED")
+    WELL_RANGE = range(2, 12)
+
+def run_on(imp, command, args=""):
+    imp.show()
+    macro = f'run("{command}", "{args}");' if args else f'run("{command}");'
+    ij.py.run_macro(macro)
+    result = IJ.getImage()
+    if result != imp:
+        imp.hide()
+    return result
+
+def make_mask(imp, thresh, name_template, dir_temp, dir_masks, process_fn):
+    save_imp(imp, dir_temp / f"{name_template}-raw.tif")
+    imp = process_fn(imp)
+    mask_name = f"mask-{name_template}-{thresh}.tif"
+    save_imp(imp, dir_temp / mask_name, dir_masks / mask_name)
+    return imp, mask_name
+
+def stage_masks(paths, dirs, config):
+    """Returns ImagePlus objects."""
+
+def stage_clean_myelin(masks, dirs, config):
+    """Subtract debris from myelin. Returns clean myelin mask."""
+
+def stage_pillar_overlap(masks, dirs, config):
+    """Compute rim and myelin overlap."""
+    
 
 
 
@@ -120,7 +151,7 @@ def analyze_particles(imp, size_min, size_max, circ_min, circ_max):
 
 def pillar_mask(imp, dir_temp, dir_masks):
     save_imp(imp, dir_temp / "pillars.tif")
-    imp = show_run_hide(imp, "Bandpass Filter...",
+    imp = run_on(imp, "Bandpass Filter...",
                         "filter_large=40 filter_small=3 suppress=None tolerance=5 process")
     imp = auto_threshold_mask(imp)
     save_imp(imp, dir_temp / "mask-pillars.tif", dir_masks / "mask-pillars.tif")
@@ -130,7 +161,7 @@ def pillar_mask(imp, dir_temp, dir_masks):
 def nuclei_mask(imp, dir_temp, dir_masks, dir_data):
     save_imp(imp, dir_temp / "nuclei.tif")
     imp = auto_threshold_mask(imp)
-    imp = show_run_hide(imp, "Watershed", "stack")
+    imp = run_on(imp, "Watershed", "stack")
     save_imp(imp, dir_masks / "mask-nuclei.tif")
     imp.close()
 
@@ -208,9 +239,9 @@ def process_field(field_dir):
     imp_debris.close()
 
     imp_pillars_reload = IJ.openImage(str(dir_temp / "mask-pillars.tif"))
-    show_run_hide(imp_pillars_reload, "Dilate",    "stack")
-    show_run_hide(imp_pillars_reload, "Watershed", "stack")
-    show_run_hide(imp_pillars_reload, "Outline",   "stack")
+    run_on(imp_pillars_reload, "Dilate",    "stack")
+    run_on(imp_pillars_reload, "Watershed", "stack")
+    run_on(imp_pillars_reload, "Outline",   "stack")
 
     save_imp(imp_pillars_reload,
              dir_temp  / "mask-pillars-rim.tif",
