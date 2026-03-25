@@ -6,10 +6,7 @@ setup_wells(){
 
     echo "Detecting wells from filenames..."
 
-    find "$DIR2" -name "*.tif" -printf "%f\n" \
-    | awk -F '_' '/^[A-Z][0-9]{2}/ {print $1}' \
-    | sort -u \
-    > "$DATA_DIR/welllist"
+    find "$DIR2" -name "*.tif" -printf "%f\n" | awk -F '_' '/^[A-Z][0-9]{2}/ {print $1}' | sort -u > "$DATA_DIR/welllist"
     
     wells=()
     while read -r line
