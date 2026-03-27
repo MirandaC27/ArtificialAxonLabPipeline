@@ -1,3 +1,4 @@
+#masking.py
 import imagej
 import scyjava
 from pathlib import Path
@@ -21,13 +22,19 @@ WindowManager    = scyjava.jimport("ij.WindowManager")
 @dataclass
 class PipelineConfig:
     # Thresholds
-    MYELIN_THRESH = 8000
-    DEBRIS_THRESH = 15000
+    #MYELIN_THRESH = 8000
+    #DEBRIS_THRESH = 15000
     #nucleithresh = 70;	optional, can be auto-thresholded
     # axonthresh=35000;
 
-    BASE_PATH  = Path(r"/Users/chloemiranda/capstone/CLEANED/ORDERED")
-    WELL_RANGE = range(2, 12)
+    #BASE_PATH  = Path(r"/Users/chloemiranda/capstone/CLEANED/ORDERED")
+    #WELL_RANGE = range(2, 12)
+    MYELIN_THRESH: int = 8000
+    DEBRIS_THRESH: int = 15000
+    BASE_PATH: Path = Path("/Users/chloemiranda/capstone/CLEANED/ORDERED")
+    WELL_RANGE: range = range(2, 12)
+
+config = PipelineConfig()
 
 def run_on(imp, command, args=""):
     imp.show()
@@ -38,21 +45,52 @@ def run_on(imp, command, args=""):
         imp.hide()
     return result
 
-def make_mask(imp, thresh, name_template, dir_temp, dir_masks, process_fn):
+"""def make_mask(imp, thresh, name_template, dir_temp, dir_masks, process_fn):
     save_imp(imp, dir_temp / f"{name_template}-raw.tif")
     imp = process_fn(imp)
     mask_name = f"mask-{name_template}-{thresh}.tif"
     save_imp(imp, dir_temp / mask_name, dir_masks / mask_name)
-    return imp, mask_name
+    return imp, mask_name"""
 
-def stage_masks(paths, dirs, config):
-    """Returns ImagePlus objects."""
+def build_mask(imp, raw_name, mask_name, dir_temp, dir_masks, process_fn):
+    """Save raw, apply process_fn to create mask, save mask, return masked imp."""
+    save_imp(imp, dir_temp / raw_name)
+    imp = process_fn(imp)
+    save_imp(imp, dir_temp / mask_name, dir_masks / mask_name)
+    return imp
 
-def stage_clean_myelin(masks, dirs, config):
-    """Subtract debris from myelin. Returns clean myelin mask."""
+def pillar_mask(imp, dir_temp, dir_masks):
+    def process(imp):
+        imp = run_on(imp, "Bandpass Filter...",
+                     "filter_large=40 filter_small=3 suppress=None tolerance=5 process")
+        imp = run_on(imp, "Auto Threshold", "method=Default white")
+        imp = run_on(imp, "Convert to Mask")
+        return imp
 
-def stage_pillar_overlap(masks, dirs, config):
-    """Compute rim and myelin overlap."""
+    return build_mask(imp, "pillars.tif", "mask-pillars.tif",
+                      dir_temp, dir_masks, process)
+
+def myelin_raw_mask(imp, dir_temp, dir_masks):
+    mask_name = f"mask-myelin-raw-{config.MYELIN_THRESH}.tif"
+
+    def process(imp):
+        imp.getProcessor().setThreshold(config.MYELIN_THRESH, 65535,
+                                        imp.getProcessor().NO_LUT_UPDATE)
+        return run_on(imp, "Convert to Mask")
+
+    return build_mask(imp, "MBP.tif", mask_name,
+                      dir_temp, dir_masks, process)
+
+def debris_mask(imp, dir_temp, dir_data, dir_masks):
+    mask_name = f"mask-debris-{config.DEBRIS_THRESH}.tif"
+
+    def process(imp):
+        imp.getProcessor().setThreshold(config.DEBRIS_THRESH, 65535,
+                                        imp.getProcessor().NO_LUT_UPDATE)
+        return run_on(imp, "Convert to Mask")
+
+    return build_mask(imp, "debris.tif", mask_name,
+                      dir_temp, dir_masks, process)
     
 
 
@@ -135,7 +173,7 @@ def analyze_particles(imp, size_min, size_max, circ_min, circ_max):
     rt = ResultsTable()
     options = ParticleAnalyzer.SHOW_NONE
     measurements = (
-        Measurements.AREA
+          Measurements.AREA
         | Measurements.MEAN
         | Measurements.MIN_MAX
         | Measurements.SHAPE_DESCRIPTORS
@@ -153,14 +191,16 @@ def pillar_mask(imp, dir_temp, dir_masks):
     save_imp(imp, dir_temp / "pillars.tif")
     imp = run_on(imp, "Bandpass Filter...",
                         "filter_large=40 filter_small=3 suppress=None tolerance=5 process")
-    imp = auto_threshold_mask(imp)
+    imp = run_on(imp, "Auto Threshold", "method=Default white")
+    imp = run_on(imp, "Convert to Mask")
     save_imp(imp, dir_temp / "mask-pillars.tif", dir_masks / "mask-pillars.tif")
     return imp
 
 
 def nuclei_mask(imp, dir_temp, dir_masks, dir_data):
     save_imp(imp, dir_temp / "nuclei.tif")
-    imp = auto_threshold_mask(imp)
+    imp = run_on(imp, "Auto Threshold", "method=Default white")
+    imp = run_on(imp, "Convert to Mask")
     imp = run_on(imp, "Watershed", "stack")
     save_imp(imp, dir_masks / "mask-nuclei.tif")
     imp.close()
@@ -169,8 +209,11 @@ def nuclei_mask(imp, dir_temp, dir_masks, dir_data):
 def myelin_raw_mask(imp, dir_temp, dir_masks):
     print(f"    [myelin_raw_mask] starting")
     save_imp(imp, dir_temp / "MBP.tif")
-    imp = threshold_and_mask(imp, MYELIN_THRESH)
-    myelin_raw_name = f"mask-myelin-raw-{MYELIN_THRESH}.tif"   
+    save_imp(imp, dir_temp / "MBP.tif")
+    imp.getProcessor().setThreshold(config.MYELIN_THRESH, 65535,
+                                    imp.getProcessor().NO_LUT_UPDATE)
+    imp = run_on(imp, "Convert to Mask")
+    myelin_raw_name = f"mask-myelin-raw-{config.MYELIN_THRESH}.tif"   
     save_imp(imp,
              dir_temp  / myelin_raw_name,
              dir_masks / myelin_raw_name)
@@ -179,8 +222,10 @@ def myelin_raw_mask(imp, dir_temp, dir_masks):
 
 def debris_mask(imp, dir_temp, dir_data, dir_masks):
     save_imp(imp, dir_temp / "debris.tif")
-    imp = threshold_and_mask(imp, DEBRIS_THRESH)
-    debris_name = f"mask-debris-{DEBRIS_THRESH}.tif"   # make sure this is still here
+    imp.getProcessor().setThreshold(config.DEBRIS_THRESH, 65535,
+                                    imp.getProcessor().NO_LUT_UPDATE)
+    imp = run_on(imp, "Convert to Mask")
+    debris_name = f"mask-debris-{config.DEBRIS_THRESH}.tif"   # make sure this is still here
     save_imp(imp,
              dir_temp  / debris_name,
              dir_masks / debris_name)
@@ -221,7 +266,7 @@ def process_field(field_dir):
     imp_myelin.hide()
     imp_debris.hide()
 
-    myelin_clean_name = f"mask-myelin-{MYELIN_THRESH}.tif"
+    myelin_clean_name = f"mask-myelin-{config.MYELIN_THRESH}.tif"
     save_imp(imp_myelin_clean, dir_masks / myelin_clean_name)
 
     IJ.run("Set Scale...", "distance=0 known=0 unit=pixel")
@@ -233,15 +278,15 @@ def process_field(field_dir):
         circ_min=0.20, circ_max=1.00,
     )
     save_results(rt_myelin,
-                 dir_data / f"Total-MBP-2D-{MYELIN_THRESH}-{DEBRIS_THRESH}.out")
+                 dir_data / f"Total-MBP-2D-{config.MYELIN_THRESH}-{config.DEBRIS_THRESH}.out")
 
     imp_myelin.close()
     imp_debris.close()
-
+    
     imp_pillars_reload = IJ.openImage(str(dir_temp / "mask-pillars.tif"))
-    run_on(imp_pillars_reload, "Dilate",    "stack")
-    run_on(imp_pillars_reload, "Watershed", "stack")
-    run_on(imp_pillars_reload, "Outline",   "stack")
+    imp_pillars_reload = run_on(imp_pillars_reload, "Dilate",    "stack")
+    imp_pillars_reload = run_on(imp_pillars_reload, "Watershed", "stack")
+    imp_pillars_reload = run_on(imp_pillars_reload, "Outline",   "stack")
 
     save_imp(imp_pillars_reload,
              dir_temp  / "mask-pillars-rim.tif",
@@ -255,7 +300,7 @@ def process_field(field_dir):
     imp_pillars_reload.hide()
     imp_myelin_clean.hide()
 
-    overlap_name = f"mask-myelin-overlap-{MYELIN_THRESH}-{DEBRIS_THRESH}.tif"
+    overlap_name = f"mask-myelin-overlap-{config.MYELIN_THRESH}-{config.DEBRIS_THRESH}.tif"
     save_imp(imp_overlap,
              dir_masks / overlap_name,
              dir_temp  / overlap_name)
@@ -268,9 +313,9 @@ def process_field(field_dir):
 
 
 def main():
-    for k in WELL_RANGE:
+    for k in config.WELL_RANGE:
         well_name = f"B{k:02d}"
-        well_path = BASE_PATH / well_name
+        well_path = config.BASE_PATH / well_name
         print(f"\nProcessing well: {well_name}  ({well_path})")
 
         try:

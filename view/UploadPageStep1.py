@@ -1,5 +1,6 @@
+#UploadPageStep1.py
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 from pathlib import Path
 from datetime import datetime
 import subprocess
@@ -7,6 +8,7 @@ import json
 import platform
 
 
+CHANNELS = ['axon','myelin','nuclei','debris']
 class UploadPageStep1(tk.Frame):
 
     def __init__(self, parent, controller=None):
@@ -63,9 +65,18 @@ class UploadPageStep1(tk.Frame):
         self.channel_num_entry = tk.Entry(channel_frame, width=8)
         self.channel_num_entry.grid(row=0, column=1)
 
-        tk.Label(channel_frame, text="Label:").grid(row=0, column=2)
-        self.channel_label_entry = tk.Entry(channel_frame, width=20)
-        self.channel_label_entry.grid(row=0, column=3)
+        #channel label entry
+        self.channel_label_var = tk.StringVar()
+
+        self.channel_label_dropdown = ttk.Combobox(
+            channel_frame,
+            textvariable=self.channel_label_var,
+            values=CHANNELS,
+            state="readonly",
+            width=18
+        )
+        self.channel_label_dropdown.grid(row=0, column=3)
+        self.channel_label_dropdown.set(CHANNELS[0])  # default value
 
         # Buttons
         button_frame = tk.Frame(self)
@@ -78,16 +89,23 @@ class UploadPageStep1(tk.Frame):
         self.channel_listbox = tk.Listbox(self, width=50, height=10)
         self.channel_listbox.grid(row=7, column=0, pady=10, padx=20, sticky="nsew")
 
-        tk.Button(  self,
-                    text="Next",
-                    command=lambda: self.controller.show_page("Settings")
-                ).grid(row=9, column=0, pady=5, sticky="ew", padx=20)
-        
+        tk.Button(
+            self,
+            text="Next",
+            command=lambda: self.controller.show_page("Settings")
+        ).grid(row=9, column=0, pady=5, sticky="ew", padx=20)
+
+        tk.Button(
+            self,
+            text="Go to Image Processing",
+            command=lambda: self.controller.show_page("Image Processing Stuff")
+        ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
+
         tk.Button(
                 self,
-                text="Go to Image Processing",
-                command=lambda: self.controller.show_page("Image Processing Stuff")
-            ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
+                text="Go to Masking",
+                command=lambda: self.controller.show_page("Masking Settings")
+            ).grid(row=11, column=0, pady=5, sticky="ew", padx=20)
 
 
     def update_channel_listbox(self):
@@ -104,7 +122,7 @@ class UploadPageStep1(tk.Frame):
     def add_channel(self):
 
         num = self.channel_num_entry.get().strip()
-        label = self.channel_label_entry.get().strip()
+        label = self.channel_label_var.get().strip()
 
         if not num.isdigit():
             self.status_label.config(text="Channel number must be an integer.")
@@ -127,7 +145,7 @@ class UploadPageStep1(tk.Frame):
         self.update_channel_listbox()
 
         self.channel_num_entry.delete(0, tk.END)
-        self.channel_label_entry.delete(0, tk.END)
+        self.channel_label_dropdown.set(CHANNELS[0])
 
         self.status_label.config(text="Channel added.")
 
@@ -158,10 +176,6 @@ class UploadPageStep1(tk.Frame):
         self.status_label.config(text="Channel removed.")
 
 
-    # -----------------------
-    # FOLDER FUNCTIONS
-    # -----------------------
-
     def add_folder(self):
 
         folder = filedialog.askdirectory(title="Select a folder")
@@ -173,6 +187,39 @@ class UploadPageStep1(tk.Frame):
                 text="Selected folders:\n" + "\n".join(self.selected_folders)
             )
 
+            # Push the CLEANED path to MaskingSettingsPage as soon as a
+            # RAW folder is picked, so the masking page stays in sync.
+            self._push_data_to_masking()
+
+
+    def _get_cleaned_path(self):
+        """
+        Derives the CLEANED sibling directory from whichever selected folder
+        contains '_RAW' in its name.  Returns a Path, or None if not found.
+        """
+        for folder in self.selected_folders:
+            root = Path(folder)
+            if "_RAW" in root.name.upper():
+                return root.parent / "CLEANED"
+        return None
+
+
+    def _push_data_to_masking(self):
+        if not hasattr(self.controller, "get_page"):
+            return
+
+        masking_page = self.controller.get_page("Masking Settings")
+        if masking_page is None:
+            return
+
+        # Push path
+        cleaned = self._get_cleaned_path()
+        if cleaned is not None and hasattr(masking_page, "set_base_path"):
+            masking_page.set_base_path(str(cleaned))
+
+        # Push channels
+        if hasattr(masking_page, "set_channels"):
+            masking_page.set_channels(self.channels)
 
     def save_folders(self):
 
@@ -215,6 +262,8 @@ class UploadPageStep1(tk.Frame):
             json.dump(json_data, f, indent=4)
 
         self.save_txt(json_data)
+
+        self._push_data_to_masking()
 
 
     def save_txt(self, data):

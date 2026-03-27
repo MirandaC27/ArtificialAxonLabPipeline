@@ -1,8 +1,10 @@
+#main_view.py
 import tkinter as tk
 
 from UploadPageStep1 import UploadPageStep1
 from SettingFront import SettingsPage
 from pipeline_front import ImageProcessingSettings
+from masking_front import MaskingSettingsPage
 
 
 class App(tk.Tk):
@@ -23,8 +25,9 @@ class App(tk.Tk):
 
         for PageClass, name in [
             (UploadPageStep1, "Upload"),
-            (SettingsPage, "Settings"),
-            (ImageProcessingSettings, "Image Processing Stuff")
+            # (SettingsPage, "Settings"),
+            # (ImageProcessingSettings, "Image Processing Stuff"),
+            (MaskingSettingsPage, "Masking Settings")
         ]:
 
             page = PageClass(container, self)
@@ -33,7 +36,9 @@ class App(tk.Tk):
 
         self.show_page("Upload")
 
-
+    def get_page(self, name):
+        return self.pages.get(name)
+    
     def show_page(self, name):
         page = self.pages[name]
         page.tkraise()

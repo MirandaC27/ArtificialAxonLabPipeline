@@ -1,8 +1,10 @@
+#SettingFront.py
 import tkinter as tk
 from tkinter import ttk
 
 
 EXPERIMENTS = ['DAPI','GFP-mylein','CY5-myelin','GFP-debris','CY5-debris']
+
 
 
 class SettingsPage(tk.Frame):
@@ -59,6 +61,7 @@ class SettingsPage(tk.Frame):
 
         self.state["output_label"].config(text=settings)
         self.show_screen("output")
+        self.controller.show_page("Masking Settings")
 
 
     def create_3d_widgets(self, parent):
