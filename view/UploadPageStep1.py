@@ -173,6 +173,49 @@ class UploadPageStep1(tk.Frame):
                 text="Selected folders:\n" + "\n".join(self.selected_folders)
             )
 
+    def apply_config_data(self, parsed):
+        """
+        parsed = {
+            "image_type": str,
+            "microscope": str,
+            "folders": list[str],
+            "channels": list[dict{'num', 'label'}]
+        }
+        """
+
+        if "image_type" in parsed and parsed["image_type"] in ("2D", "3D"):
+            self.image_type_var.set(parsed["image_type"])
+
+        if "microscope" in parsed and parsed["microscope"] in ("Keyence", "Olympus"):
+            self.micro_type_var.set(parsed["microscope"])
+
+        if "folders" in parsed and isinstance(parsed["folders"], list):
+            self.selected_folders = parsed["folders"]
+            self.status_label.config(
+                text="Selected folders:\n" + "\n".join(self.selected_folders)
+            )
+
+        if "channels" in parsed and isinstance(parsed["channels"], list):
+            self.channels = []
+            for ch in parsed["channels"]:
+                try:
+                    num = int(ch.get("num"))
+                    label = str(ch.get("label", ""))
+                    if label:
+                        self.channels.append({"num": num, "label": label})
+                except Exception:
+                    continue
+
+            # Sort and update UI
+            self.channels.sort(key=lambda x: x["num"])
+            self.update_channel_listbox()
+
+        # clear entry fields
+        self.channel_num_entry.delete(0, tk.END)
+        self.channel_label_entry.delete(0, tk.END)
+
+        self.status_label.config(text="Autofill applied.")
+
 
     def run_step1(self):
 
