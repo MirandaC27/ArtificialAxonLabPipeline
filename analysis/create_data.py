@@ -1,19 +1,33 @@
+#create_data.py
+
 import imagej
 import scyjava
 from pathlib import Path
 
-ij = imagej.init("/Users/chloemiranda/capstone/Fiji", mode="headless")
+# Must add mcib3d jars to classpath BEFORE initializing ImageJ. I don't know WHY this didn't occur to me but WHATEVER.
+FIJI_PATH = Path("/Users/chloemiranda/capstone/Fiji")
+mcib3d_dir = FIJI_PATH / "plugins" / "mcib3d-suite"
+scyjava.config.add_classpath(
+    str(mcib3d_dir / "mcib3d-core-4.1.7b.jar"),
+    str(mcib3d_dir / "mcib3d_plugins-4.1.7b.jar"),
+    str(mcib3d_dir / "mcib3d_dev-0.0.2.jar"),
+    str(mcib3d_dir / "quickhull3d-1.0.0.jar"),
+    str(mcib3d_dir / "mcib3d-jipipe-0.0.3.jar"),
+)
+
+ij = imagej.init(str(FIJI_PATH), mode="headless")
 print(f"ImageJ version: {ij.getVersion()}")
 
 IJ            = scyjava.jimport("ij.IJ")
 WindowManager = scyjava.jimport("ij.WindowManager")
 
-# Thresholds
-MYELIN_THRESH = 24500
+MYELIN_THRESH  = 8000
+DEBRIS_THRESH  = 15000
+SEGMENT_LOW    = 128
+SEGMENT_HIGH   = 255
 
-BASE_PATH  = Path(r"/Users/chloemiranda/capstone/CLEANED/ORDERED")
-WELL_RANGE = range(10, 11)  # k=10 to k=10 inclusive
-
+BASE_PATH  = Path("/Users/chloemiranda/capstone/CLEANED/ORDERED")
+WELL_RANGE = range(10, 11) 
 
 def ensure_dirs(dirs):
     for d in dirs:
@@ -21,132 +35,83 @@ def ensure_dirs(dirs):
 
 
 def get_field_dirs(well_path):
-    """Return sorted list of subdirectories (fields) in a well directory."""
     return sorted([p for p in well_path.iterdir() if p.is_dir()])
 
 
-def process_field_3d(field_dir, manager3d):
-    """
-    Process a single field:
-      1. Open pillar rim mask → segment with 3D Manager → save objects
-      2. Open myelin overlap mask → measure volume → save & convert results
-      3. Clean up 3D Manager and close all images
-    """
-    print(f"  [process_field_3d] {field_dir.name}")
+def open_image(path):
+  
+    imp = IJ.openImage(str(path))
+    if imp is None:
+        raise FileNotFoundError(f"IJ.openImage returned None for: {path}")
+    return imp
+
+def segment_and_save_objects(imp_pillar, path_objects):
+
+    ImageHandler           = scyjava.jimport("mcib3d.image3d.ImageHandler")
+    Objects3DIntPopulation = scyjava.jimport("mcib3d.geom2.Objects3DIntPopulation")
+    ImageLabeller          = scyjava.jimport("mcib3d.image3d.ImageLabeller")
+
+    img_binary  = ImageHandler.wrap(imp_pillar)
+
+    # Constructor takes (double minSize, double maxSize) or ()
+    labeller    = ImageLabeller()
+    img_labeled = labeller.getLabels(img_binary)
+
+    pop = Objects3DIntPopulation(img_labeled)
+    n   = pop.getNbObjects()
+    print(f"    [segment_and_save_objects] segmented {n} objects")
+    pop.saveObjects(str(path_objects))
+    print(f"    [segment_and_save_objects] saved to {path_objects.name}")
+    return pop
+
+
+def measure_and_save_volumes(population, path_converted):
+    lines   = ["Object\tVolume"]
+    objects = population.getObjects3DInt()
+    n       = population.getNbObjects()
+
+    for i in range(n):
+        obj    = objects.get(i)
+        volume = obj.size()
+        lines.append(f"{i + 1}\t{volume}")
+
+    path_converted.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"    [measure_and_save_volumes] {n} objects → {path_converted.name}")
+
+
+def process_field(field_dir):
+    print(f"  [process_field] {field_dir.name}")
 
     dir_masks   = field_dir / "MASKS"
     dir_objects = field_dir / "OBJECTS"
     dir_data    = field_dir / "DATA"
     ensure_dirs([dir_objects, dir_data])
 
-    pillar_name  = "mask-pillars-rim.tif"
-    myelin_name  = f"mask-myelin-overlap-{MYELIN_THRESH}-clean.tif"
-    objects_name = f"Objects{MYELIN_THRESH}.zip"
-    data_name    = f"Data-{MYELIN_THRESH}.txt"
+    path_pillar    = dir_masks   / "mask-pillars-rim.tif"
+    path_myelin = dir_masks / f"mask-myelin-overlap-{MYELIN_THRESH}-{DEBRIS_THRESH}.tif"
+    path_objects   = dir_objects / f"Objects{MYELIN_THRESH}.zip"
+    path_converted = dir_data    / f"V_Data-{MYELIN_THRESH}_converted.txt"
 
-    path_pillar  = dir_masks   / pillar_name
-    path_myelin  = dir_masks   / myelin_name
-    path_objects = dir_objects / objects_name
-    path_data    = dir_data    / data_name
+    #Step 1: Segment pillar rim mask into 3D objects and save
+    imp_pillar = open_image(path_pillar)
+    population = segment_and_save_objects(imp_pillar, path_objects)
+    imp_pillar.close()
 
-    # --- Step 1: Segment pillars and save 3D objects ---
-    imp_pillar = IJ.openImage(str(path_pillar))
-    if imp_pillar is None:
-        raise FileNotFoundError(f"Could not open: {path_pillar}")
-    imp_pillar.show()
+    # Step 2: Measure volume of each object and save as TSV
+    # (the myelin mask is opened here macro which opens it before calling Manager3D_SelectAll/List/SaveResult)
+    imp_myelin = open_image(path_myelin)
+    measure_and_save_volumes(population, path_converted)
+    imp_myelin.close()
 
-    manager3d.segment(128, 255)       # Ext.Manager3D_Segment(128, 255)
-    manager3d.addImage()              # Ext.Manager3D_AddImage()
-    manager3d.save(str(path_objects)) # Ext.Manager3D_Save(pathobjects)
-
-    # --- Step 2: Open myelin overlap mask and measure volume ---
-    imp_myelin = IJ.openImage(str(path_myelin))
-    if imp_myelin is None:
-        raise FileNotFoundError(f"Could not open: {path_myelin}")
-    imp_myelin.show()
-
-    manager3d.selectAll()                          # Ext.Manager3D_SelectAll()
-    manager3d.list()                               # Ext.Manager3D_List()
-    manager3d.saveResult("V", str(path_data))      # Ext.Manager3D_SaveResult("V", pathdata)
-
-    # --- Step 3: Convert CSV → TSV (replicate the inline IJM conversion) ---
-    #   The macro writes a "V_<filename>" CSV next to pathdata;
-    #   we read it, swap commas for tabs, and write a "_converted.txt" file.
-    csv_path = dir_data / f"V_{data_name}"
-    txt_path = dir_data / f"V_{data_name.replace('.txt', '_converted.txt')}"
-
-    if csv_path.exists():
-        csv_text = csv_path.read_text(encoding="utf-8")
-        txt_text = csv_text.replace(",", "\t")
-        txt_path.write_text(txt_text, encoding="utf-8")
-        print(f"    [process_field_3d] converted {csv_path.name} → {txt_path.name}")
-    else:
-        print(f"    [process_field_3d] WARNING: expected CSV not found: {csv_path}")
-
-    # --- Step 4: Clean up ---
-    manager3d.closeResult("V")  # Ext.Manager3D_CloseResult("V")
-    manager3d.delete()          # Ext.Manager3D_Delete()
-
+    # Step 3: Clean up
     IJ.run("Close All")
     IJ.run("Collect Garbage")
-
-    print(f"    [process_field_3d] done: {field_dir.name}")
-
-
-def get_manager3d():
-    """
-    Initialise the 3D Manager plugin and return a thin wrapper that exposes
-    the Ext.Manager3D_* macro functions as regular Python method calls.
-    """
-    # Run the plugin once so it registers itself as the active 3D manager
-    IJ.run("3D Manager")
-
-    # The 3D Manager exposes its API through the ImageJ macro extension
-    # mechanism.  In pyimagej we drive it via run_macro, mirroring the
-    # original IJM Ext.* calls exactly.
-    class Manager3D:
-        @staticmethod
-        def _ext(call: str):
-            ij.py.run_macro(f'Ext.Manager3D_{call};')
-
-        def segment(self, low: int, high: int):
-            self._ext(f"Segment({low},{high})")
-
-        def addImage(self):
-            self._ext("AddImage()")
-
-        def save(self, path: str):
-            # Paths passed to macro extensions need forward-slash separators
-            safe = path.replace("\\", "/")
-            self._ext(f'Save("{safe}")')
-
-        def selectAll(self):
-            self._ext("SelectAll()")
-
-        def list(self):
-            self._ext("List()")
-
-        def saveResult(self, result_type: str, path: str):
-            safe = path.replace("\\", "/")
-            self._ext(f'SaveResult("{result_type}", "{safe}")')
-
-        def closeResult(self, result_type: str):
-            self._ext(f'CloseResult("{result_type}")')
-
-        def delete(self):
-            self._ext("Delete()")
-
-        def close(self):
-            self._ext("Close()")
-
-    return Manager3D()
+    print(f"  [process_field] done: {field_dir.name}")
 
 
 def main():
-    manager3d = get_manager3d()
-
     for k in WELL_RANGE:
-        well_name = f"E{k}"
+        well_name = f"B{k}"
         well_path = BASE_PATH / well_name
         print(f"\nProcessing well: {well_name}  ({well_path})")
 
@@ -156,18 +121,17 @@ def main():
             print(f"  Well directory not found, skipping: {well_path}")
             continue
 
-        # The original macro iterates i=0..8 (first 9 subdirs)
+        
         field_dirs = field_dirs[:9]
         print(f"  Found {len(field_dirs)} field(s) (capped at 9)")
 
         for field_dir in field_dirs:
             print(field_dir.name)
             try:
-                process_field_3d(field_dir, manager3d)
+                process_field(field_dir)
             except Exception as exc:
-                print(f"  ✗ {field_dir.name}: {exc}")
+                print(f"{field_dir.name}: {exc}")
 
-    manager3d.close()  # Ext.Manager3D_Close()
     print("Done.")
 
 
