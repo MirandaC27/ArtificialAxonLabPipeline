@@ -131,11 +131,6 @@ class SettingsPage(tk.Frame):
             command=self.submit
         ).grid(row=10, column=0, columnspan=2, pady=20)
 
-        tk.Button(  self,
-                    text="Go to Image Processing",
-                    command=lambda: self.controller.show_page("Image Processing Stuff")
-                ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
-
 
     def build_output_screen(self):
 
@@ -147,14 +142,19 @@ class SettingsPage(tk.Frame):
 
         self.state["output_label"] = label
 
-        tk.Button(
-            frame,
-            text="Back",
-            command=lambda: self.show_screen("input")
-        ).grid(row=1, column=0, pady=10)
+        nav_frame = tk.Frame(self)
+        nav_frame.grid(row=10, column=0, pady=5, padx=20, sticky="ew")
+        nav_frame.grid_columnconfigure(0, weight=1)
+        nav_frame.grid_columnconfigure(1, weight=1)
 
         tk.Button(
-                self,
-                text="Go to Image Processing",
-                command=lambda: self.controller.show_page("Image Processing Stuff")
-            ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
+            nav_frame,
+            text="Back",
+            command=lambda: self.controller.show_page("Upload")
+        ).grid(row=0, column=0, padx=5, sticky="ew")
+
+        tk.Button(
+            nav_frame,
+            text="Go to Image Processing",
+            command=lambda: self.controller.show_page("Image Processing Stuff")
+        ).grid(row=0, column=1, padx=5, sticky="ew")

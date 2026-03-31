@@ -82,16 +82,31 @@ class UploadPageStep1(tk.Frame):
         self.channel_listbox = tk.Listbox(self, width=50, height=10)
         self.channel_listbox.grid(row=7, column=0, pady=10, padx=20, sticky="nsew")
 
-        tk.Button(  self,
-                    text="Next",
-                    command=lambda: self.controller.show_page("Settings")
-                ).grid(row=9, column=0, pady=5, sticky="ew", padx=20)
+        self.grid_columnconfigure(0, weight=1)
+
+        # next and Previous buttons 
+        nav_frame = tk.Frame(self)
+        nav_frame.grid(row=10, column=0, pady=5, padx=20, sticky="ew")
+        nav_frame.grid_columnconfigure(0, weight=1)
+        nav_frame.grid_columnconfigure(1, weight=1)
+
+        tk.Button(
+            nav_frame,
+            text="Back",
+            command=lambda: self.controller.show_page("Home")
+        ).grid(row=0, column=0, padx=5, sticky="ew")
+
+        tk.Button(
+            nav_frame,
+            text="Next",
+            command=lambda: self.controller.show_page("Settings")
+        ).grid(row=0, column=1, padx=5, sticky="ew")
         
         tk.Button(
                 self,
                 text="Go to Image Processing",
                 command=lambda: self.controller.show_page("Image Processing Stuff")
-            ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
+            ).grid(row=9, column=0, pady=5, sticky="ew", padx=20)
 
 
     def update_channel_listbox(self):

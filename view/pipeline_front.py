@@ -46,7 +46,7 @@ class ImageProcessingSettings(tk.Frame):
         tk.Button(
             self,
             text="Back",
-            command=lambda: self.controller.show_page("UploadPageStep1") if self.controller else None
+            command=lambda: self.controller.show_page("Settings") if self.controller else None
         ).grid(row=3, column=0, pady=5, padx=20, sticky="ew")
 
 
