@@ -4,6 +4,7 @@ from SettingFront import SettingsPage
 from pipeline_front import ImageProcessingSettings
 from HomePage import HomePage
 from Config import ConfigPage
+from SessionEnd import SessionEnd
 
 
 class App(tk.Tk):
@@ -27,13 +28,14 @@ class App(tk.Tk):
             (ConfigPage, "Config"),
             (UploadPageStep1, "Upload"),
             (SettingsPage, "Settings"),
-            (ImageProcessingSettings, "Image Processing Stuff")
+            (ImageProcessingSettings, "Image Processing Stuff"),
+            (SessionEnd, "SessionEnd")
         ]:
             page = PageClass(container, self)
             self.pages[name] = page
             page.grid(row=0, column=0, sticky="nsew")
 
-        self.show_page("Home")
+        self.show_page("SessionEnd")
 
     def show_page(self, name):
         page = self.pages[name]
