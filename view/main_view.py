@@ -35,7 +35,7 @@ class App(tk.Tk):
             self.pages[name] = page
             page.grid(row=0, column=0, sticky="nsew")
 
-        self.show_page("SessionEnd")
+        self.show_page("Home")
 
     def show_page(self, name):
         page = self.pages[name]

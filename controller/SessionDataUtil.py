@@ -50,14 +50,36 @@ class SessionDataUtil:
 
         self.save_txt(json_data)
 
+    def save_end_time(self, end_time=None):
+        json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+        if not json_path.exists():
+            print("No folder_paths.json found to update end time.")
+            return
+
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if end_time is None:
+            end_time = self.endDateTime()
+
+        data["EndTime"] = end_time
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+        self.save_txt(data)
+
 
     def save_txt(self, data):
         txt_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.txt"
 
         with open(txt_path, "w", encoding="utf-8") as f:
-
             f.write("Experiment Start Time: ")
-            f.write(data.get("StartTime", "N/A") + "\n")  
+            f.write(data.get("StartTime", "N/A") + "\n")
+
+            if data.get("EndTime"):
+                f.write("Experiment End Time: ")
+                f.write(data["EndTime"] + "\n")
 
             f.write("\nFolder Path to Tracks (Raw)\n")
             for p in data["Tracks"]:
@@ -93,5 +115,7 @@ class SessionDataUtil:
         print(f"{func.__name__} took {minutes} min {seconds:.2f} sec")
         return result
     
+    def endDateTime(self):
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     

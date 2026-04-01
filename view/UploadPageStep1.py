@@ -308,6 +308,7 @@ class UploadPageStep1(tk.Frame):
             sd.runtime(self.run_step1)
 
         finally:
+            sd.save_end_time()
             self.after(0, self.close_popup)
     
     def button_run(self):
