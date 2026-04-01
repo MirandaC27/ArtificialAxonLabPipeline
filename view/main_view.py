@@ -1,3 +1,4 @@
+#main_view.py
 import tkinter as tk
 from UploadPageStep1 import UploadPageStep1
 from SettingFront import SettingsPage
@@ -5,6 +6,7 @@ from pipeline_front import ImageProcessingSettings
 from HomePage import HomePage
 from Config import ConfigPage
 from SessionEnd import SessionEnd
+from masking_front import MaskingSettingsPage
 
 
 class App(tk.Tk):
@@ -29,6 +31,9 @@ class App(tk.Tk):
             (SettingsPage, "Settings"),
             (ImageProcessingSettings, "Image Processing Stuff"),
             (SessionEnd, "SessionEnd")
+            # (SettingsPage, "Settings"),
+            # (ImageProcessingSettings, "Image Processing Stuff"),
+            (MaskingSettingsPage, "Masking Settings")
         ]:
             page = PageClass(container, self)
             self.pages[name] = page
@@ -36,6 +41,9 @@ class App(tk.Tk):
 
         self.show_page("Home")
 
+    def get_page(self, name):
+        return self.pages.get(name)
+    
     def show_page(self, name):
         page = self.pages[name]
         page.tkraise()

@@ -16,6 +16,7 @@ from controller.SessionDataUtil import SessionDataUtil
 sd = SessionDataUtil()
 
 
+CHANNELS = ['axon','myelin','nuclei','debris']
 class UploadPageStep1(tk.Frame):
 
     def __init__(self, parent, controller=None):
@@ -72,9 +73,18 @@ class UploadPageStep1(tk.Frame):
         self.channel_num_entry = tk.Entry(channel_frame, width=8)
         self.channel_num_entry.grid(row=0, column=1)
 
-        tk.Label(channel_frame, text="Label:").grid(row=0, column=2)
-        self.channel_label_entry = tk.Entry(channel_frame, width=20)
-        self.channel_label_entry.grid(row=0, column=3)
+        #channel label entry
+        self.channel_label_var = tk.StringVar()
+
+        self.channel_label_dropdown = ttk.Combobox(
+            channel_frame,
+            textvariable=self.channel_label_var,
+            values=CHANNELS,
+            state="readonly",
+            width=18
+        )
+        self.channel_label_dropdown.grid(row=0, column=3)
+        self.channel_label_dropdown.set(CHANNELS[0])  # default value
 
         # Buttons
         button_frame = tk.Frame(self)
@@ -113,6 +123,12 @@ class UploadPageStep1(tk.Frame):
                 command=lambda: self.controller.show_page("Image Processing Stuff")
             ).grid(row=9, column=0, pady=5, sticky="ew", padx=20)
 
+        tk.Button(
+                self,
+                text="Go to Masking",
+                command=lambda: self.controller.show_page("Masking Settings")
+            ).grid(row=11, column=0, pady=5, sticky="ew", padx=20)
+
 
     def update_channel_listbox(self):
 
@@ -128,7 +144,7 @@ class UploadPageStep1(tk.Frame):
     def add_channel(self):
 
         num = self.channel_num_entry.get().strip()
-        label = self.channel_label_entry.get().strip()
+        label = self.channel_label_var.get().strip()
 
         if not num.isdigit():
             self.status_label.config(text="Channel number must be an integer.")
@@ -151,7 +167,7 @@ class UploadPageStep1(tk.Frame):
         self.update_channel_listbox()
 
         self.channel_num_entry.delete(0, tk.END)
-        self.channel_label_entry.delete(0, tk.END)
+        self.channel_label_dropdown.set(CHANNELS[0])
 
         self.status_label.config(text="Channel added.")
 
@@ -193,6 +209,83 @@ class UploadPageStep1(tk.Frame):
                 text="Selected folders:\n" + "\n".join(self.selected_folders)
             )
 
+            # Push the CLEANED path to MaskingSettingsPage as soon as a
+            # RAW folder is picked, so the masking page stays in sync.
+            self._push_data_to_masking()
+    
+    def _get_cleaned_path(self):
+        """
+        Derives the CLEANED sibling directory from whichever selected folder
+        contains '_RAW' in its name.  Returns a Path, or None if not found.
+        """
+        for folder in self.selected_folders:
+            root = Path(folder)
+            if "_RAW" in root.name.upper():
+                return root.parent / "CLEANED"
+        return None
+     
+    def _push_data_to_masking(self):
+        if not hasattr(self.controller, "get_page"):
+            return
+
+        masking_page = self.controller.get_page("Masking Settings")
+        if masking_page is None:
+            return
+
+        # Push path
+        cleaned = self._get_cleaned_path()
+        if cleaned is not None and hasattr(masking_page, "set_base_path"):
+            masking_page.set_base_path(str(cleaned))
+
+        # Push channels
+        if hasattr(masking_page, "set_channels"):
+            masking_page.set_channels(self.channels)
+    
+    def save_folders(self):
+
+        tracks = set()
+        data = set()
+
+        for folder in self.selected_folders:
+
+            root = Path(folder)
+            folder_name = root.name.upper()
+
+            if "_RAW" in folder_name:
+                tracks.add(str(root))
+            else:
+                data.add(str(root))
+
+        if not tracks:
+            print("No RAW folder selected")
+            return
+
+        raw_path = Path(list(tracks)[0])
+        clean_path = raw_path.parent / "CLEANED"
+
+        json_data = {
+            "Tracks": sorted(tracks),
+            "Tracks1": [str(clean_path)],
+            "Data": sorted(data),
+            "ImageType": self.image_type_var.get(),
+            "Microscope": self.micro_type_var.get(),
+            "Channels": [
+                {"code": f"CH{ch['num']}", "label": ch["label"]}
+                for ch in self.channels
+            ],
+        }
+
+        json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(json_data, f, indent=4)
+
+        self.save_txt(json_data)
+
+        self._push_data_to_masking()
+
+    
     def apply_config_data(self, parsed):
         """
         parsed = {

@@ -1,5 +1,5 @@
 TRACKS
-C:\Users\jonat\OneDrive - Loyola University Maryland\Desktop\VS Code\AxonLabs\Sample Data\EXP009\EXP009_Keyence_Plate1_RAW
+/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW
 
 TRACKS1
-C:\Users\jonat\OneDrive - Loyola University Maryland\Desktop\VS Code\AxonLabs\Sample Data\EXP009\CLEANED
+/Users/chloemiranda/capstone/CLEANED
