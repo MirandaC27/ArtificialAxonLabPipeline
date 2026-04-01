@@ -30,9 +30,7 @@ class App(tk.Tk):
             (UploadPageStep1, "Upload"),
             (SettingsPage, "Settings"),
             (ImageProcessingSettings, "Image Processing Stuff"),
-            (SessionEnd, "SessionEnd")
-            # (SettingsPage, "Settings"),
-            # (ImageProcessingSettings, "Image Processing Stuff"),
+            (SessionEnd, "SessionEnd"),
             (MaskingSettingsPage, "Masking Settings")
         ]:
             page = PageClass(container, self)

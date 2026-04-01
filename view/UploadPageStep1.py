@@ -7,6 +7,7 @@ import subprocess
 import platform
 import threading
 import signal
+import json
 import sys
 import os
 
@@ -101,7 +102,7 @@ class UploadPageStep1(tk.Frame):
 
         # next and Previous buttons 
         nav_frame = tk.Frame(self)
-        nav_frame.grid(row=10, column=0, pady=5, padx=20, sticky="ew")
+        nav_frame.grid(row=11, column=0, pady=5, padx=20, sticky="ew")
         nav_frame.grid_columnconfigure(0, weight=1)
         nav_frame.grid_columnconfigure(1, weight=1)
 
@@ -127,7 +128,7 @@ class UploadPageStep1(tk.Frame):
                 self,
                 text="Go to Masking",
                 command=lambda: self.controller.show_page("Masking Settings")
-            ).grid(row=11, column=0, pady=5, sticky="ew", padx=20)
+            ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
 
 
     def update_channel_listbox(self):
