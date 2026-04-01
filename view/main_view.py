@@ -30,9 +30,7 @@ class App(tk.Tk):
             (UploadPageStep1, "Upload"),
             (SettingsPage, "Settings"),
             (ImageProcessingSettings, "Image Processing Stuff"),
-            (SessionEnd, "SessionEnd")
-            # (SettingsPage, "Settings"),
-            # (ImageProcessingSettings, "Image Processing Stuff"),
+            (SessionEnd, "SessionEnd"),
             (MaskingSettingsPage, "Masking Settings")
         ]:
             page = PageClass(container, self)
@@ -45,6 +43,11 @@ class App(tk.Tk):
         return self.pages.get(name)
     
     def show_page(self, name):
+        if name == "Masking Settings":
+            self.geometry("700x600")
+        else:
+            self.geometry("700x500")
+
         page = self.pages[name]
         page.tkraise()
 

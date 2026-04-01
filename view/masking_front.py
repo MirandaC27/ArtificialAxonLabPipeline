@@ -11,6 +11,10 @@ class MaskingSettingsPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.state = self._create_state()
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
         self._build_input_screen()
         self._build_output_screen()
         self.show_screen("input")
@@ -223,9 +227,9 @@ class MaskingSettingsPage(tk.Frame):
 
 
     def _build_input_screen(self):
-        frame = tk.Frame(self, padx=20, pady=20)
+        frame = tk.Frame(self, padx=20)
         self.state["input_frame"] = frame
-        frame.grid(row=0, column=0, sticky="nsew")
+        frame.grid(row=0, column=0, sticky="nsew", pady=(0, 20))
 
         row = 0
 
@@ -337,9 +341,9 @@ class MaskingSettingsPage(tk.Frame):
 
 
     def _build_output_screen(self):
-        frame = tk.Frame(self, padx=20, pady=20)
+        frame = tk.Frame(self, padx=20)
         self.state["output_frame"] = frame
-        frame.grid(row=0, column=0, sticky="nsew")
+        frame.grid(row=0, column=0, sticky="nsew", pady=(0, 20))
 
         tk.Label(frame, text="Pipeline Configuration",
                 font=("TkDefaultFont", 12, "bold")).grid(
@@ -402,6 +406,7 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     root.title("Masking Pipeline Settings")
+    root.geometry("900x900")
     root.resizable(False, False)
 
     page = MaskingSettingsPage(root, _StubController())
