@@ -31,6 +31,8 @@ channel_tiffs_into_oir(){
 }
 
 process_fovs() {
+    max_jobs=5
+
     for ((fov=1; fov<=numFOVs; fov++))
     do
         printf -v fov_fmt "%04d" "$fov"
@@ -42,6 +44,9 @@ process_fovs() {
             channel_tiffs_into_oir
         ) &
 
+        if (( $(jobs -r | wc -l) >= max_jobs )); then
+            wait -n
+        fi
     done
 
     wait

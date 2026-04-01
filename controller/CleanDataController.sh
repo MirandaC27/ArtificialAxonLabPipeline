@@ -44,6 +44,8 @@ process_wells(){
 }
 
 process_tracks() {
+    max_jobs=5
+
     for ((n=1; n<=tracknum; n++))
     do
         (
@@ -57,6 +59,10 @@ process_tracks() {
 
             process_channels
         ) &
+
+        if (( $(jobs -r | wc -l) >= max_jobs )); then
+            wait -n
+        fi
     done
 
     wait
