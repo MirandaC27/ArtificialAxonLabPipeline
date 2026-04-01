@@ -1,11 +1,19 @@
-#UploadPageStep1.py
+from concurrent.futures import thread
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import ttk
+from tkinter import filedialog
 from pathlib import Path
-from datetime import datetime
 import subprocess
-import json
 import platform
+import threading
+import signal
+import sys
+import os
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from controller.SessionDataUtil import SessionDataUtil
+
+sd = SessionDataUtil()
 
 
 CHANNELS = ['axon','myelin','nuclei','debris']
@@ -89,17 +97,31 @@ class UploadPageStep1(tk.Frame):
         self.channel_listbox = tk.Listbox(self, width=50, height=10)
         self.channel_listbox.grid(row=7, column=0, pady=10, padx=20, sticky="nsew")
 
-        tk.Button(
-            self,
-            text="Next",
-            command=lambda: self.controller.show_page("Settings")
-        ).grid(row=9, column=0, pady=5, sticky="ew", padx=20)
+        self.grid_columnconfigure(0, weight=1)
+
+        # next and Previous buttons 
+        nav_frame = tk.Frame(self)
+        nav_frame.grid(row=10, column=0, pady=5, padx=20, sticky="ew")
+        nav_frame.grid_columnconfigure(0, weight=1)
+        nav_frame.grid_columnconfigure(1, weight=1)
 
         tk.Button(
-            self,
-            text="Go to Image Processing",
-            command=lambda: self.controller.show_page("Image Processing Stuff")
-        ).grid(row=10, column=0, pady=5, sticky="ew", padx=20)
+            nav_frame,
+            text="Back",
+            command=lambda: self.controller.show_page("Home")
+        ).grid(row=0, column=0, padx=5, sticky="ew")
+
+        tk.Button(
+            nav_frame,
+            text="Next",
+            command=lambda: self.controller.show_page("Settings")
+        ).grid(row=0, column=1, padx=5, sticky="ew")
+        
+        tk.Button(
+                self,
+                text="Go to Image Processing",
+                command=lambda: self.controller.show_page("Image Processing Stuff")
+            ).grid(row=9, column=0, pady=5, sticky="ew", padx=20)
 
         tk.Button(
                 self,
@@ -190,8 +212,7 @@ class UploadPageStep1(tk.Frame):
             # Push the CLEANED path to MaskingSettingsPage as soon as a
             # RAW folder is picked, so the masking page stays in sync.
             self._push_data_to_masking()
-
-
+    
     def _get_cleaned_path(self):
         """
         Derives the CLEANED sibling directory from whichever selected folder
@@ -202,8 +223,7 @@ class UploadPageStep1(tk.Frame):
             if "_RAW" in root.name.upper():
                 return root.parent / "CLEANED"
         return None
-
-
+     
     def _push_data_to_masking(self):
         if not hasattr(self.controller, "get_page"):
             return
@@ -220,7 +240,7 @@ class UploadPageStep1(tk.Frame):
         # Push channels
         if hasattr(masking_page, "set_channels"):
             masking_page.set_channels(self.channels)
-
+    
     def save_folders(self):
 
         tracks = set()
@@ -265,56 +285,130 @@ class UploadPageStep1(tk.Frame):
 
         self._push_data_to_masking()
 
+    
+    def apply_config_data(self, parsed):
+        """
+        parsed = {
+            "image_type": str,
+            "microscope": str,
+            "folders": list[str],
+            "channels": list[dict{'num', 'label'}]
+        }
+        """
 
-    def save_txt(self, data):
+        if "image_type" in parsed and parsed["image_type"] in ("2D", "3D"):
+            self.image_type_var.set(parsed["image_type"])
 
-        txt_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.txt"
+        if "microscope" in parsed and parsed["microscope"] in ("Keyence", "Olympus"):
+            self.micro_type_var.set(parsed["microscope"])
 
-        with open(txt_path, "w", encoding="utf-8") as f:
+        if "folders" in parsed and isinstance(parsed["folders"], list):
+            self.selected_folders = parsed["folders"]
+            self.status_label.config(
+                text="Selected folders:\n" + "\n".join(self.selected_folders)
+            )
 
-            f.write("TRACKS\n")
+        if "channels" in parsed and isinstance(parsed["channels"], list):
+            self.channels = []
+            for ch in parsed["channels"]:
+                try:
+                    num = int(ch.get("num"))
+                    label = str(ch.get("label", ""))
+                    if label:
+                        self.channels.append({"num": num, "label": label})
+                except Exception:
+                    continue
 
-            for p in data["Tracks"]:
-                f.write(p + "\n")
+            self.channels.sort(key=lambda x: x["num"])
+            self.update_channel_listbox()
 
-            f.write("\nTRACKS1\n")
+        # clear entry fields
+        self.channel_num_entry.delete(0, tk.END)
+        self.channel_label_entry.delete(0, tk.END)
 
-            for p in data["Tracks1"]:
-                f.write(p + "\n")
+        self.status_label.config(text="Autofill applied.")
 
+    def stop_script(self):
+        self.stop_flag = True
 
-    def start_time(self):
+        if self.process:
+            try:
+                if platform.system() == "Windows":
+                    subprocess.call(["taskkill", "/F", "/T", "/PID", str(self.process.pid)])
+                else:
+                    os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+            except Exception as e:
+                print("Error stopping process:", e)
+        
+    def close_popup(self):
+        if self.popup:
+            self.progress.stop()
+            self.popup.destroy()
 
-        start = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    def show_loading_popup(self):
+        self.popup = tk.Toplevel(self)
+        self.popup.title("Running")
+        self.popup.geometry("300x200")
+        self.popup.transient(self)
+        self.popup.grab_set()  
 
-        json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+        self.progress = ttk.Progressbar(self.popup, mode="indeterminate")
+        self.progress.pack(pady=20, padx=20, fill="x")
+        self.progress.start(10)
 
-        with open(json_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        tk.Label(self.popup, text="Running script...").pack(pady=10)
 
-        data["START_TIME"] = start
+        btn_frame = tk.Frame(self.popup)
+        btn_frame.pack(pady=10)
 
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4)
+        tk.Button(btn_frame, text="Stop", command=self.stop_script).grid(row=0, column=1, padx=10)
 
 
     def run_step1(self):
-
         if platform.system() == "Windows":
             bash_path = r"C:\Program Files\Git\bin\bash.exe"
+            creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+            preexec_fn = None
         else:
             bash_path = "/bin/bash"
-
+            creationflags = 0
+            preexec_fn = os.setsid
+    
         script_path = Path(__file__).resolve().parent.parent / "model" / "rename_organize_keyence.sh"
-
-        subprocess.run([bash_path, str(script_path)], check=True)
-
-
-    def button_run(self):
-
+    
+        self.process = subprocess.Popen(
+            [bash_path, str(script_path)],
+            creationflags=creationflags,
+            preexec_fn=preexec_fn
+        )
+    
+        while self.process.poll() is None:
+            if self.stop_flag:
+                break
+            
+    def run_process(self):
         print("Channels at run:", self.channels)
         print("Selected folders at run:", self.selected_folders)
 
-        self.save_folders()
-        self.start_time()
-        self.run_step1()
+        try:
+            sd.save_folders(
+                selected_folders=self.selected_folders,
+                image_type=self.image_type_var.get(),
+                microscope=self.micro_type_var.get(),
+                channels=self.channels,
+            )
+
+            sd.runtime(self.run_step1)
+
+        finally:
+            sd.save_end_time()
+            self.after(0, self.close_popup)
+    
+    def button_run(self):
+        self.stop_flag = False
+        self.process = None
+
+        self.show_loading_popup()
+
+        thread = threading.Thread(target=self.run_process)
+        thread.start()

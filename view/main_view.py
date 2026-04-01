@@ -1,14 +1,15 @@
 #main_view.py
 import tkinter as tk
-
 from UploadPageStep1 import UploadPageStep1
 from SettingFront import SettingsPage
 from pipeline_front import ImageProcessingSettings
+from HomePage import HomePage
+from Config import ConfigPage
+from SessionEnd import SessionEnd
 from masking_front import MaskingSettingsPage
 
 
 class App(tk.Tk):
-
     def __init__(self):
         super().__init__()
 
@@ -24,17 +25,21 @@ class App(tk.Tk):
         self.pages = {}
 
         for PageClass, name in [
+            (HomePage, "Home"),
+            (ConfigPage, "Config"),
             (UploadPageStep1, "Upload"),
+            (SettingsPage, "Settings"),
+            (ImageProcessingSettings, "Image Processing Stuff"),
+            (SessionEnd, "SessionEnd")
             # (SettingsPage, "Settings"),
             # (ImageProcessingSettings, "Image Processing Stuff"),
             (MaskingSettingsPage, "Masking Settings")
         ]:
-
             page = PageClass(container, self)
             self.pages[name] = page
             page.grid(row=0, column=0, sticky="nsew")
 
-        self.show_page("Upload")
+        self.show_page("Home")
 
     def get_page(self, name):
         return self.pages.get(name)
@@ -42,7 +47,6 @@ class App(tk.Tk):
     def show_page(self, name):
         page = self.pages[name]
         page.tkraise()
-
 
 if __name__ == "__main__":
     app = App()
