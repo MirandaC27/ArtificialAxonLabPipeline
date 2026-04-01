@@ -22,7 +22,6 @@ class App(tk.Tk):
 
         self.pages = {}
 
-        # Added HomePage to the list and labeled it "Home"
         for PageClass, name in [
             (HomePage, "Home"),
             (ConfigPage, "Config"),
