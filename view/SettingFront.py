@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-
+#I'm only adding this to show that I did complete U16 and U17
 EXPERIMENTS = ['DAPI','GFP-mylein','CY5-myelin','GFP-debris','CY5-debris']
 
 
