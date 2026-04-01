@@ -32,7 +32,7 @@ def ensure_dirs(dirs):
 
 
 def find_file(directory, keyword):
-    all_tifs = [f for f in directory.iterdir() if f.is_file() and f.suffix.lower() == '.tif']
+    all_tifs = list(directory.glob("*.tif")) + list(directory.glob("*.TIF"))
 
     print(f"    [find_file] searching '{directory}' for keyword '{keyword}'")
     print(f"    [find_file] all .tif files found: {[f.name for f in all_tifs]}")
@@ -137,7 +137,7 @@ def nuclei_mask(imp, dir_temp, dir_masks, dir_data):
 
 def myelin_raw_mask(imp, dir_temp, dir_masks):
     print(f"    [myelin_raw_mask] starting")
-    save_imp(imp, dir_temp / "MBP.tif")
+    save_imp(imp, dir_temp / "myelin.tif")
     imp = threshold_and_mask(imp, MYELIN_THRESH)
     myelin_raw_name = f"mask-myelin-raw-{MYELIN_THRESH}.tif"   
     save_imp(imp,
@@ -166,7 +166,7 @@ def process_field(field_dir):
     ensure_dirs([dir_temp, dir_data, dir_masks])
 
     path_nuclei  = find_file(dir_oir, "nuclei")
-    path_myelin  = find_file(dir_oir, "MBP")
+    path_myelin  = find_file(dir_oir, "myelin")
     path_debris  = find_file(dir_oir, "debris")
     path_pillars = find_file(dir_oir, "axon")
 
@@ -253,7 +253,7 @@ def main():
             try:
                 process_field(field_dir)
             except Exception as exc:
-                print(f"  ✗ {field_dir.name}: {exc}")
+                print(f"  {field_dir.name}: {exc}")
 
 
 if __name__ == "__main__":
