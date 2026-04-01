@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 import json
+import time
 
 
 class SessionDataUtil:
@@ -79,6 +80,18 @@ class SessionDataUtil:
             f.write("\nExperiment Data:\n")
             for d in data["Data"]:
                 f.write(d + "\n")
-
+    
+    def runtime(self, func, *args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+    
+        elapsed = end - start
+        minutes = int(elapsed // 60)
+        seconds = elapsed % 60
+    
+        print(f"{func.__name__} took {minutes} min {seconds:.2f} sec")
+        return result
+    
 
     

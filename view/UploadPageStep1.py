@@ -256,4 +256,4 @@ class UploadPageStep1(tk.Frame):
             channels=self.channels,
         )
         
-        self.run_step1()
+        sd.runtime(self.run_step1)
