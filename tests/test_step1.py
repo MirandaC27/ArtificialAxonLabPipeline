@@ -8,9 +8,9 @@ import tkinter as tk
 from view.UploadPageStep1 import UploadPageStep1
 
 
-# -----------------------
+
 # FIXTURES
-# -----------------------
+
 _root = None
 
 @pytest.fixture
@@ -41,9 +41,9 @@ def app_instance(tmp_path, monkeypatch):
     yield frame, fake_dir
 
 
-# -----------------------
+
 # save_folders() Tests
-# -----------------------
+
 
 def test_save_folders_classifies_directories(app_instance):
     app, fake_dir = app_instance
@@ -108,9 +108,9 @@ def test_save_txt_output(app_instance):
     assert str(Path("/data/exp_RAW")) in contents
 
 
-# -----------------------
+
 # start_time() Tests
-# -----------------------
+
 
 def test_start_time_adds_timestamp(app_instance):
     app, fake_dir = app_instance

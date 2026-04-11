@@ -1,5 +1,20 @@
-TRACKS
+Experiment Start Time: 2026-04-10 13:05:21
+Experiment End Time: 2026-04-10 13:05:38
+
+Folder Path to Tracks (Raw)
 /Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW
 
-TRACKS1
+Folder Path to Tracks1 (Cleaned)
 /Users/chloemiranda/capstone/CLEANED
+
+Microscope Used: Keyence
+
+Image Type Used: 3D
+
+Channels Used:
+CH1: axon
+CH2: myelin
+CH3: nuclei
+CH4: debris
+
+Experiment Data:

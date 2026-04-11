@@ -11,7 +11,6 @@
         exit 1
     fi
 
-    echo "Plate directory: $PLATE_DIR"
     BASE_DIR="$PLATE_DIR"
 
     else

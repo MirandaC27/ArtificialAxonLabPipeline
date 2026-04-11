@@ -76,7 +76,7 @@ def measure_and_save_volumes(population, path_converted):
         lines.append(f"{i + 1}\t{volume}")
 
     path_converted.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"    [measure_and_save_volumes] {n} objects → {path_converted.name}")
+    print(f"    [measure_and_save_volumes] {n} objects to {path_converted.name}")
 
 
 def process_field(field_dir):

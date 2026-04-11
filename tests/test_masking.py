@@ -105,7 +105,6 @@ def test_load_channel_multi_channel_extracts_correct(tmp_path):
 
     with patch.object(scyjava, "jimport", return_value=splitter):
         result = m.load_channel(fake_path, channel=2)
-    # channel=2 → index 1
     assert result is ch2
 
 

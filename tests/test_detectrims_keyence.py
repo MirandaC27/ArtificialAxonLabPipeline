@@ -1,12 +1,6 @@
-"""
-tests/test_detectrims.py
 
-Unit-test suite for detectrims_Keyence().
-Mirrors the structure of tests/test_masking.py / test_analysis.py:
-  - small, focused tests grouped by concern
-  - pytest fixtures for reusable scaffolding
-  - real tiny TIFFs written to tmp_path; no JVM or external service required
-"""
+#tests/test_detectrims.py
+
 
 import os
 import csv
@@ -17,9 +11,9 @@ import tifffile as tiff
 from analysis.Ezra_files.detectrims_Keyence import detectrims_Keyence # adjust import path if needed
 
 
-# ---------------------------------------------------------------------------
+
 # Constants shared across all tests
-# ---------------------------------------------------------------------------
+
 
 OUTER_THRESH = 10
 INNER_THRESH = 5
@@ -27,9 +21,9 @@ H, W = 64, 64      # frame size for synthetic stacks
 N_Z   = 4          # default z-depth
 
 
-# ---------------------------------------------------------------------------
+
 # Low-level image helpers
-# ---------------------------------------------------------------------------
+
 
 def _blank_stack(z=N_Z, h=H, w=W, dtype=np.uint8):
     return np.zeros((z, h, w), dtype=dtype)
@@ -66,9 +60,9 @@ def _full_myelin_stack(z=N_Z, h=H, w=W, cy=32, cx=32, r_inner=7, r_outer=11):
     return np.stack([ring] * z)
 
 
-# ---------------------------------------------------------------------------
+
 # Filesystem helpers
-# ---------------------------------------------------------------------------
+
 
 def _write_masks(base, well, fov, pillars, i_myelin, o_myelin,
                  inner_thresh=INNER_THRESH, outer_thresh=OUTER_THRESH):
@@ -99,9 +93,9 @@ def _make_wrapped_fov(base, well="B02", fov="Field1",
     _write_masks(base, well, fov, pillars, i_myelin, o_myelin)
 
 
-# ---------------------------------------------------------------------------
+
 # Fixtures
-# ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def bare_fov(tmp_path):
@@ -122,9 +116,9 @@ def debug_csv(tmp_path):
     return tmp_path / "debug.csv"
 
 
-# ---------------------------------------------------------------------------
+
 # Return type and basic structure
-# ---------------------------------------------------------------------------
+
 
 def test_returns_two_dicts(bare_fov, debug_csv):
     result = detectrims_Keyence(str(bare_fov), str(debug_csv),
@@ -162,9 +156,9 @@ def test_overlap_list_rows_have_five_fields(wrapped_fov, debug_csv):
         assert len(row) == 5
 
 
-# ---------------------------------------------------------------------------
+
 # Empty / no-pillar datasets
-# ---------------------------------------------------------------------------
+
 
 def test_empty_root_returns_empty_dicts(tmp_path, debug_csv):
     overlaps, myelin = detectrims_Keyence(str(tmp_path), str(debug_csv),
@@ -190,9 +184,9 @@ def test_blank_myelin_overlap_rows_have_zero_pct(bare_fov, debug_csv):
         assert outer_pct == pytest.approx(0.0)
 
 
-# ---------------------------------------------------------------------------
+
 # Overlap percentage bounds
-# ---------------------------------------------------------------------------
+
 
 def test_inner_pct_bounded_0_to_1(wrapped_fov, debug_csv):
     overlaps, _ = detectrims_Keyence(str(wrapped_fov), str(debug_csv),
@@ -219,9 +213,9 @@ def test_full_wrap_myelin_inner_pct_above_threshold(wrapped_fov, debug_csv):
     assert any(row[3] > 0.5 for row in rows)
 
 
-# ---------------------------------------------------------------------------
+
 # z-index tracking
-# ---------------------------------------------------------------------------
+
 
 def test_z_indices_are_non_negative(wrapped_fov, debug_csv):
     overlaps, _ = detectrims_Keyence(str(wrapped_fov), str(debug_csv),
@@ -239,9 +233,9 @@ def test_z_indices_within_stack_range(wrapped_fov, debug_csv):
         assert row[2] < N_Z
 
 
-# ---------------------------------------------------------------------------
+
 # Pillar grouping across z-slices
-# ---------------------------------------------------------------------------
+
 
 def test_single_pillar_gets_one_unique_id(wrapped_fov, debug_csv):
     overlaps, _ = detectrims_Keyence(str(wrapped_fov), str(debug_csv),
@@ -277,9 +271,9 @@ def test_pillar_id_is_consistent_across_z(wrapped_fov, debug_csv):
     assert len(ids) == 1
 
 
-# ---------------------------------------------------------------------------
+
 # Myelin pixel aggregation
-# ---------------------------------------------------------------------------
+
 
 def test_myelin_total_positive_when_wrapped(wrapped_fov, debug_csv):
     _, myelin = detectrims_Keyence(str(wrapped_fov), str(debug_csv),
@@ -328,9 +322,9 @@ def test_condensed_leq_uncondensed_at_80(wrapped_fov, debug_csv):
     assert vals[4] <= vals[3]   # myelin80_c ≤ myelin80_u
 
 
-# ---------------------------------------------------------------------------
+
 # Multiple wells / FOVs
-# ---------------------------------------------------------------------------
+
 
 def test_multiple_fovs_all_in_result(tmp_path, debug_csv):
     for well, fov in [("B02", "Field1"), ("B02", "Field2"), ("C03", "Field1")]:
@@ -365,9 +359,9 @@ def test_each_fov_independent_myelin_values(tmp_path, debug_csv):
     assert myelin[("B02", "Field2")][0] >  0
 
 
-# ---------------------------------------------------------------------------
+
 # skip parameter
-# ---------------------------------------------------------------------------
+
 
 def test_skip_reduces_z_slices_processed(tmp_path, debug_csv):
     """Skipping all but one slice must produce at most one overlap row per pillar."""
@@ -405,9 +399,9 @@ def test_skipped_z_index_absent_from_overlap(tmp_path, debug_csv):
     assert 2 not in z_values or True   # structural: no crash is the primary assertion
 
 
-# ---------------------------------------------------------------------------
+
 # debug_mode
-# ---------------------------------------------------------------------------
+
 
 def test_debug_mode_creates_debug_dir(wrapped_fov, debug_csv):
     detectrims_Keyence(str(wrapped_fov), str(debug_csv),
@@ -485,9 +479,9 @@ def test_debug_mode_does_not_affect_overlap_values(tmp_path, debug_csv):
     assert myelin_off[key] == myelin_on[key]
 
 
-# ---------------------------------------------------------------------------
+
 # dynamic_mode
-# ---------------------------------------------------------------------------
+
 
 def test_dynamic_mode_does_not_crash(wrapped_fov, debug_csv):
     """dynamic_mode=True should complete without raising."""
@@ -511,9 +505,9 @@ def test_dynamic_mode_returns_same_keys(wrapped_fov, debug_csv):
     assert set(overlaps_static.keys()) == set(overlaps_dyn.keys())
 
 
-# ---------------------------------------------------------------------------
+
 # max_rim_match_distance
-# ---------------------------------------------------------------------------
+
 
 def test_very_small_match_distance_finds_no_pillars(tmp_path, debug_csv):
     """
@@ -537,9 +531,9 @@ def test_large_match_distance_still_produces_valid_output(wrapped_fov, debug_csv
     assert ("B02", "Field1") in myelin
 
 
-# ---------------------------------------------------------------------------
+
 # Loose files inside well/FOV dirs are ignored
-# ---------------------------------------------------------------------------
+
 
 def test_loose_files_in_well_dir_ignored(tmp_path, debug_csv):
     well_dir = tmp_path / "B02"

@@ -1,3 +1,4 @@
+#masking.py
 import imagej
 import scyjava
 from pathlib import Path
@@ -253,7 +254,7 @@ def main():
             try:
                 process_field(field_dir)
             except Exception as exc:
-                print(f"  {field_dir.name}: {exc}")
+                print(f"  X {field_dir.name}: {exc}")
 
 
 if __name__ == "__main__":

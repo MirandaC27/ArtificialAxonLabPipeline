@@ -19,3 +19,10 @@ pip install numpy
 pip install tifffile
 pip install scipy
 pip install pandas
+
+Also I realized I didn't include necessary stuff to run testing:
+pip install pytest
+pip install pytest-cov
+
+run the command from the root and it should show the coverage and tests for all available files.
+pytest --cov
