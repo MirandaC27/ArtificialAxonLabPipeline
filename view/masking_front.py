@@ -1,415 +1,351 @@
 #masking_front.py
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog
 from pathlib import Path
-import json
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+
+THRESHOLD_CHANNELS = ['axon', 'myelin', 'nuclei', 'debris', 'GFAP']
+
+DEFAULT_THRESHOLDS = {
+    "myelin": 8000,
+    "debris": 15000,
+}
+
+DEFAULT_BASE_PATH   = "/Users/chloemiranda/capstone/CLEANED/ORDERED"
+DEFAULT_WELL_START  = 2
+DEFAULT_WELL_END    = 11   
+
+# ADD NOTE TO PARTICLE ANALYSIS, THAT IT ONLY APPLIES TO MYELIN
+DEFAULT_PARTICLE_SIZE_MIN = 2
+DEFAULT_PARTICLE_SIZE_MAX = 2000
+
+THRESH_MIN = 0
+THRESH_MAX = 65535
 
 
 class MaskingSettingsPage(tk.Frame):
 
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller=None):
         super().__init__(parent)
         self.controller = controller
-        self.state = self._create_state()
 
-        self.grid_rowconfigure(0, weight=1)
+        self.threshold_vars: dict[str, tk.StringVar] = {}
+        self.auto_vars: dict[str, tk.BooleanVar] = {}
+
+        self.particle_size_min_var = tk.StringVar(value=str(DEFAULT_PARTICLE_SIZE_MIN))
+        self.particle_size_max_var = tk.StringVar(value=str(DEFAULT_PARTICLE_SIZE_MAX))
+
+        self.base_path_var   = tk.StringVar(value=DEFAULT_BASE_PATH)
+        self.well_start_var  = tk.StringVar(value=str(DEFAULT_WELL_START))
+        self.well_end_var    = tk.StringVar(value=str(DEFAULT_WELL_END))
+
+        self._build_ui()
+
+
+    def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
 
-        self._build_input_screen()
-        self._build_output_screen()
-        self.show_screen("input")
+        tk.Label(
+            self,
+            text="Masking Settings",
+            font=("TkDefaultFont", 13, "bold"),
+        ).grid(row=0, column=0, pady=(16, 4), padx=20, sticky="w")
 
+        tk.Label(
+            self,
+            text="Set intensity thresholds for each channel mask.",
+            justify="left",
+            fg="gray40",
+        ).grid(row=1, column=0, pady=(0, 10), padx=20, sticky="w")
 
-        self._seed_from_json()
+        self.status_label = tk.Label(self, text="", justify="left", fg="gray30")
+        self.status_label.grid(row=2, column=0, pady=(0, 6), padx=20, sticky="w")
 
+        # ── Input Directory & Well Range ───────────────────────────────
+        path_frame = tk.LabelFrame(self, text="Input Directory & Well Range")
+        path_frame.grid(row=3, column=0, padx=20, pady=6, sticky="ew")
+        path_frame.grid_columnconfigure(1, weight=1)
 
-    def set_base_path(self, path: str):
-        """
-        Receives the CLEANED directory path from UploadPageStep1 and
-        writes it into the base_path
-        """
-        self.state["base_path_var"].set(path)
-    
-    def set_channels(self, channels):
-        """
-        Receives channel list from UploadPageStep1 and maps them into
-        masking channel inputs automatically.
-        
-        Expected format:
-        [{"num": 1, "label": "axon"}, ...]
-        """
+        tk.Label(path_frame, text="Base path", width=12, anchor="w").grid(
+            row=0, column=0, padx=(10, 8), pady=8, sticky="w"
+        )
+        tk.Entry(path_frame, textvariable=self.base_path_var).grid(
+            row=0, column=1, padx=(0, 6), pady=8, sticky="ew"
+        )
+        tk.Button(
+            path_frame,
+            text="Browse…",
+            command=self._browse_base_path,
+        ).grid(row=0, column=2, padx=(0, 10), pady=8)
 
-        mapping = {
-            "axon": "ch_pillars_var",
-            "nuclei": "ch_nuclei_var",
-            "myelin": "ch_myelin_var",
-            "debris": "ch_debris_var",
-        }
-
-        for ch in channels:
-            label = ch["label"]
-            num = ch["num"]
-
-            if label in mapping:
-                self.state[mapping[label]].set(str(num))
-
-
-    def _seed_from_json(self):
-        json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
-        if not json_path.exists():
-            return
-
-        try:
-            with open(json_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-
-            # Base path
-            tracks1 = data.get("Tracks1", [])
-            if tracks1:
-                self.state["base_path_var"].set(tracks1[0])
-
-            # Channels
-            channels = data.get("Channels", [])
-            parsed_channels = []
-
-            for ch in channels:
-                code = ch.get("code", "")
-                label = ch.get("label", "")
-                if code.startswith("CH"):
-                    num = int(code.replace("CH", ""))
-                    parsed_channels.append({"num": num, "label": label})
-
-            if parsed_channels:
-                self.set_channels(parsed_channels)
-
-        except (json.JSONDecodeError, OSError):
-            pass
-
-
-    def _create_state(self):
-        s = {}
-
-        #Threshold inputs
-        s["myelin_thresh_var"] = tk.StringVar(value="8000")
-        s["debris_thresh_var"] = tk.StringVar(value="15000")
-
-        # Path / range inputs 
-        s["base_path_var"]    = tk.StringVar(value="")
-        s["well_start_var"]   = tk.StringVar(value="2")
-        s["well_end_var"]     = tk.StringVar(value="12")
-
-        
-        s["ch_pillars_var"]   = tk.StringVar(value="")
-        s["ch_nuclei_var"]    = tk.StringVar(value="")
-        s["ch_myelin_var"]    = tk.StringVar(value="")
-        s["ch_debris_var"]    = tk.StringVar(value="")
-
-        # Particle analysis inputs
-        s["size_min_var"]     = tk.StringVar(value="")
-        s["size_max_var"]     = tk.StringVar(value="")
-        s["circ_min_var"]     = tk.StringVar(value="")
-        s["circ_max_var"]     = tk.StringVar(value="")
-
-        #Screen frames (filled in build methods)
-        s["input_frame"]  = None
-        s["output_frame"] = None
-        s["output_label"] = None
-
-        return s
-
-    def show_screen(self, name):
-        for screen in ("input", "output"):
-            if self.state[f"{screen}_frame"]:
-                self.state[f"{screen}_frame"].grid_remove()
-        self.state[f"{name}_frame"].grid(row=0, column=0, sticky="nsew")
-
-
-
-    def _validate_int(self, value, label):
-        try:
-            v = int(value)
-            if v < 0:
-                raise ValueError
-            return v
-        except ValueError:
-            raise ValueError(f"'{label}' must be a non-negative integer (got: '{value}').")
-
-    def _validate_float(self, value, label):
-        try:
-            v = float(value)
-            if not (0.0 <= v <= 1.0):
-                raise ValueError
-            return v
-        except ValueError:
-            raise ValueError(f"'{label}' must be a float between 0 and 1 (got: '{value}').")
-
-    def _validate_channel(self, value, label):
-        try:
-            v = int(value)
-            if v < 1:
-                raise ValueError
-            return v
-        except ValueError:
-            raise ValueError(f"'{label}' must be a positive integer ≥ 1 (got: '{value}').")
-
-
-    def submit(self):
-        try:
-            myelin_thresh = self._validate_int(self.state["myelin_thresh_var"].get(),  "Myelin Threshold")
-            debris_thresh = self._validate_int(self.state["debris_thresh_var"].get(),  "Debris Threshold")
-            well_start    = self._validate_int(self.state["well_start_var"].get(),     "Well Range Start")
-            well_end      = self._validate_int(self.state["well_end_var"].get(),       "Well Range End")
-            size_min      = self._validate_int(self.state["size_min_var"].get(),       "Particle Size Min")
-            size_max      = self._validate_int(self.state["size_max_var"].get(),       "Particle Size Max")
-
-            circ_min = self._validate_float(self.state["circ_min_var"].get(), "Circularity Min")
-            circ_max = self._validate_float(self.state["circ_max_var"].get(), "Circularity Max")
-
-            ch_pillars = self._validate_channel(self.state["ch_pillars_var"].get(), "Pillars Channel")
-            ch_nuclei  = self._validate_channel(self.state["ch_nuclei_var"].get(),  "Nuclei Channel")
-            ch_myelin  = self._validate_channel(self.state["ch_myelin_var"].get(),  "Myelin Channel")
-            ch_debris  = self._validate_channel(self.state["ch_debris_var"].get(),  "Debris Channel")
-
-            base_path_str = self.state["base_path_var"].get().strip()
-            if not base_path_str:
-                raise ValueError(
-                    "Base Path is empty.\n"
-                    "Please select a RAW folder on the Upload page first, "
-                    "or enter the CLEANED path manually."
-                )
-            base_path = Path(base_path_str)
-
-            if well_start >= well_end:
-                raise ValueError("Well Range Start must be less than Well Range End.")
-            if size_min >= size_max:
-                raise ValueError("Particle Size Min must be less than Max.")
-            if circ_min >= circ_max:
-                raise ValueError("Circularity Min must be less than Max.")
-
-        except ValueError as e:
-            messagebox.showerror("Invalid Input", str(e))
-            return
-
-        self.result_config = {
-            "MYELIN_THRESH": myelin_thresh,
-            "DEBRIS_THRESH": debris_thresh,
-            "BASE_PATH":     base_path,
-            "WELL_RANGE":    range(well_start, well_end),
-            "channels": {
-                "pillars": ch_pillars,
-                "nuclei":  ch_nuclei,
-                "myelin":  ch_myelin,
-                "debris":  ch_debris,
-            },
-            "particles": {
-                "size_min": size_min,
-                "size_max": size_max,
-                "circ_min": circ_min,
-                "circ_max": circ_max,
-            },
-        }
-
-        summary = (
-            f"Myelin Threshold:   {myelin_thresh}\n"
-            f"Debris Threshold:   {debris_thresh}\n"
-            f"\n"
-            f"Base Path:          {base_path}\n"
-            f"Well Range:         B{well_start:02d} → B{well_end - 1:02d}\n"
-            f"\n"
-            f"Channels  — Pillars: {ch_pillars}  |  Nuclei: {ch_nuclei}  "
-            f"|  Myelin: {ch_myelin}  |  Debris: {ch_debris}\n"
-            f"\n"
-            f"Particles — Size: {size_min}–{size_max}  |  Circularity: {circ_min:.2f}–{circ_max:.2f}"
+        tk.Label(path_frame, text="Well start", width=12, anchor="w").grid(
+            row=1, column=0, padx=(10, 8), pady=(0, 8), sticky="w"
+        )
+        tk.Entry(path_frame, textvariable=self.well_start_var, width=6).grid(
+            row=1, column=1, padx=(0, 6), pady=(0, 8), sticky="w"
         )
 
-        self.state["output_label"].config(text=summary)
-        self.show_screen("output")
+        tk.Label(path_frame, text="Well end", width=12, anchor="w").grid(
+            row=2, column=0, padx=(10, 8), pady=(0, 8), sticky="w"
+        )
+        tk.Entry(path_frame, textvariable=self.well_end_var, width=6).grid(
+            row=2, column=1, padx=(0, 6), pady=(0, 8), sticky="w"
+        )
+        tk.Label(path_frame, text="(inclusive)", fg="gray40").grid(
+            row=2, column=2, padx=(0, 10), pady=(0, 8), sticky="w"
+        )
 
+        # Channel thresholds
+        thresh_frame = tk.LabelFrame(self, text="Channel Thresholds")
+        thresh_frame.grid(row=4, column=0, padx=20, pady=6, sticky="ew")
 
-    def _build_input_screen(self):
-        frame = tk.Frame(self, padx=20)
-        self.state["input_frame"] = frame
-        frame.grid(row=0, column=0, sticky="nsew", pady=(0, 20))
+        # Column headers
+        tk.Label(thresh_frame, text="Channel", font=("TkDefaultFont", 9, "bold"), width=10, anchor="w").grid(
+            row=0, column=0, padx=(10, 20), pady=(6, 2), sticky="w"
+        )
+        tk.Label(thresh_frame, text="Low Threshold (0 – 65535)", font=("TkDefaultFont", 9, "bold")).grid(
+            row=0, column=1, pady=(6, 2), sticky="w"
+        )
+        tk.Label(thresh_frame, text="Auto", font=("TkDefaultFont", 9, "bold")).grid(
+            row=0, column=3, padx=(10, 10), pady=(6, 2), sticky="w"
+        )
 
-        row = 0
+        ttk.Separator(thresh_frame, orient="horizontal").grid(
+            row=1, column=0, columnspan=5, sticky="ew", padx=8, pady=2
+        )
 
-        #tried some formatting things, we'll see if things are good.
-        def section(text, r):
-            tk.Label(frame, text=text, font=("TkDefaultFont", 10, "bold"),
-                    fg="#333333").grid(row=r, column=0, columnspan=3,
-                                    sticky="w", pady=(14, 2))
-            ttk.Separator(frame, orient="horizontal").grid(
-                row=r + 1, column=0, columnspan=3, sticky="ew")
-            return r + 2
+        for idx, channel in enumerate(THRESHOLD_CHANNELS):
+            row = idx + 2
 
-        def lbl(text, r, c=0):
-            tk.Label(frame, text=text).grid(row=r, column=c, sticky="e",
-                                            padx=(0, 6), pady=4)
+            thresh_var = tk.StringVar(value=str(DEFAULT_THRESHOLDS.get(channel, "")))
+            auto_var   = tk.BooleanVar(value=False)
+            self.threshold_vars[channel] = thresh_var
+            self.auto_vars[channel]      = auto_var
 
-        def entry(var, r, c=1, width=18):
-            tk.Entry(frame, textvariable=var, width=width).grid(
-                row=r, column=c, sticky="w", pady=4)
-
-        row = section("Thresholds", row)
-
-        lbl("Myelin Threshold", row)
-        entry(self.state["myelin_thresh_var"], row)
-        tk.Label(frame, text="(0 – 65535)", fg="grey").grid(
-            row=row, column=2, sticky="w", padx=4)
-        row += 1
-
-        lbl("Debris Threshold", row)
-        entry(self.state["debris_thresh_var"], row)
-        tk.Label(frame, text="(0 – 65535)", fg="grey").grid(
-            row=row, column=2, sticky="w", padx=4)
-        row += 1
-
-        row = section("File Path & Well Range", row)
-
-        lbl("Base Path", row)
-        path_entry = tk.Entry(frame, textvariable=self.state["base_path_var"], width=36)
-        path_entry.grid(row=row, column=1, sticky="w", pady=4)
-        tk.Label(frame, text="set by Upload page", fg="grey").grid(
-            row=row, column=2, sticky="w", padx=4)
-        tk.Button(frame, text="Browse…",
-                command=self._browse_path).grid(row=row + 1, column=2,
-                                                sticky="w", padx=4)
-        row += 1
-
-        lbl("Well Range Start", row)
-        entry(self.state["well_start_var"], row, width=6)
-        row += 1
-
-        lbl("Well Range End", row)
-        entry(self.state["well_end_var"], row, width=6)
-        tk.Label(frame, text="(exclusive)", fg="grey").grid(
-            row=row, column=2, sticky="w", padx=4)
-        row += 1
-
-        row = section("Channel Assignments (1-based)", row)
-
-        for label, key in [
-            ("Pillars (axon file)",  "ch_pillars_var"),
-            ("Nuclei",               "ch_nuclei_var"),
-            ("Myelin (MBP file)",    "ch_myelin_var"),
-            ("Debris",               "ch_debris_var"),
-        ]:
-            lbl(label, row)
-            entry(self.state[key], row, width=4)
-            row += 1
-
-        
-        row = section("Particle Analysis", row)
-
-        lbl("Size Min (px²)", row)
-        entry(self.state["size_min_var"], row, width=8)
-        row += 1
-
-        lbl("Size Max (px²)", row)
-        entry(self.state["size_max_var"], row, width=8)
-        row += 1
-
-        lbl("Circularity Min", row)
-        entry(self.state["circ_min_var"], row, width=8)
-        tk.Label(frame, text="(0.0 – 1.0)", fg="grey").grid(
-            row=row, column=2, sticky="w", padx=4)
-        row += 1
-
-        lbl("Circularity Max", row)
-        entry(self.state["circ_max_var"], row, width=8)
-        tk.Label(frame, text="(0.0 – 1.0)", fg="grey").grid(
-            row=row, column=2, sticky="w", padx=4)
-        row += 1
-
-        btn_frame = tk.Frame(frame)
-        btn_frame.grid(row=row, column=0, columnspan=3, pady=(18, 0), sticky="ew")
-
-        tk.Button(btn_frame, text="Submit", width=14,
-                command=self.submit).pack(side="left", padx=4)
-
-        if hasattr(self.controller, "show_page"):
-            tk.Button(
-                btn_frame, text="Go to Image Processing",
-                command=lambda: self.controller.show_page("Image Processing Stuff")
-            ).pack(side="right", padx=4)
-
-
-    def _browse_path(self):
-        path = filedialog.askdirectory(title="Select Base Path")
-        if path:
-            self.state["base_path_var"].set(path)
-
-
-    def _build_output_screen(self):
-        frame = tk.Frame(self, padx=20)
-        self.state["output_frame"] = frame
-        frame.grid(row=0, column=0, sticky="nsew", pady=(0, 20))
-
-        tk.Label(frame, text="Pipeline Configuration",
-                font=("TkDefaultFont", 12, "bold")).grid(
-            row=0, column=0, columnspan=2, pady=(0, 10))
-
-        label = tk.Label(frame, text="", font=("Courier", 10),
-                        justify="left", anchor="w",
-                        relief="sunken", padx=10, pady=10, bg="#f5f5f5")
-        label.grid(row=1, column=0, columnspan=2, sticky="ew", pady=6)
-        self.state["output_label"] = label
-
-        btn_frame = tk.Frame(frame)
-        btn_frame.grid(row=2, column=0, columnspan=2, pady=12, sticky="ew")
-
-        tk.Button(btn_frame, text="← Back", width=10,
-                command=lambda: self.show_screen("input")).pack(side="left", padx=4)
-
-        tk.Button(btn_frame, text="Run Pipeline", width=14,
-                command=self._run_pipeline).pack(side="left", padx=4)
-
-        if hasattr(self, "controller") and hasattr(self.controller, "show_page"):
-            tk.Button(
-                btn_frame, text="Go to Image Processing",
-                command=lambda: self.controller.show_page("Image Processing Stuff")
-            ).pack(side="right", padx=4)
-
-
-
-    def _run_pipeline(self):
-        """
-        Hook: apply self.result_config to masking.py's PipelineConfig,
-        then call main().  Integrate as needed in main.py.
-        """
-        try:
-            from masking import PipelineConfig, main
-            cfg = self.result_config
-            import masking
-            masking.config = PipelineConfig(
-                MYELIN_THRESH=cfg["MYELIN_THRESH"],
-                DEBRIS_THRESH=cfg["DEBRIS_THRESH"],
-                BASE_PATH=cfg["BASE_PATH"],
-                WELL_RANGE=cfg["WELL_RANGE"],
+            tk.Label(thresh_frame, text=channel.capitalize(), width=10, anchor="w").grid(
+                row=row, column=0, padx=(10, 20), pady=6, sticky="w"
             )
-            messagebox.showinfo("Starting", "Pipeline started — check terminal for progress.")
-            main()
-        except Exception as e:
-            messagebox.showerror("Pipeline Error", str(e))
+
+            tk.Entry(thresh_frame, textvariable=thresh_var, width=10).grid(
+                row=row, column=1, padx=(0, 10), pady=6, sticky="w"
+            )
+
+            default_val = DEFAULT_THRESHOLDS.get(channel, "")
+            tk.Button(
+                thresh_frame,
+                text="Reset",
+                width=6,
+                command=lambda c=channel, d=default_val: self._reset_channel(c, d),
+            ).grid(row=row, column=2, padx=(0, 10), pady=6)
+
+            # Checkbutton acts as a toggle — clicking again deselects
+            tk.Checkbutton(
+                thresh_frame,
+                variable=auto_var,
+            ).grid(row=row, column=3, padx=(10, 10), pady=6)
+
+        # Particle Analysis Size Filter
+        particle_frame = tk.LabelFrame(self, text="Particle Analysis Size Filter (Myelin only)")
+        particle_frame.grid(row=5, column=0, padx=20, pady=6, sticky="ew")
+
+        tk.Label(particle_frame, text="Size (px²)", font=("TkDefaultFont", 9, "bold"), width=10, anchor="w").grid(
+            row=0, column=0, padx=(10, 20), pady=(6, 2), sticky="w"
+        )
+        tk.Label(particle_frame, text="Value", font=("TkDefaultFont", 9, "bold")).grid(
+            row=0, column=1, pady=(6, 2), sticky="w"
+        )
+
+        ttk.Separator(particle_frame, orient="horizontal").grid(
+            row=1, column=0, columnspan=3, sticky="ew", padx=8, pady=2
+        )
+
+        tk.Label(particle_frame, text="Minimum", width=10, anchor="w").grid(
+            row=2, column=0, padx=(10, 20), pady=6, sticky="w"
+        )
+        tk.Entry(particle_frame, textvariable=self.particle_size_min_var, width=10).grid(
+            row=2, column=1, padx=(0, 10), pady=6, sticky="w"
+        )
+        tk.Button(
+            particle_frame,
+            text="Reset",
+            width=6,
+            command=lambda: self._reset_particle_size("min"),
+        ).grid(row=2, column=2, padx=(0, 10), pady=6)
+
+        tk.Label(particle_frame, text="Maximum", width=10, anchor="w").grid(
+            row=3, column=0, padx=(10, 20), pady=6, sticky="w"
+        )
+        tk.Entry(particle_frame, textvariable=self.particle_size_max_var, width=10).grid(
+            row=3, column=1, padx=(0, 10), pady=6, sticky="w"
+        )
+        tk.Button(
+            particle_frame,
+            text="Reset",
+            width=6,
+            command=lambda: self._reset_particle_size("max"),
+        ).grid(row=3, column=2, padx=(0, 10), pady=6)
+
+        # Reset All 
+        tk.Button(
+            self,
+            text="Reset All to Defaults",
+            command=self._reset_all,
+        ).grid(row=6, column=0, pady=(8, 4), padx=20, sticky="w")
+
+        #Nav
+        nav_frame = tk.Frame(self)
+        nav_frame.grid(row=10, column=0, pady=12, padx=20, sticky="ew")
+        nav_frame.grid_columnconfigure(0, weight=1)
+        nav_frame.grid_columnconfigure(1, weight=1)
+
+        tk.Button(
+            nav_frame,
+            text="Back",
+            command=lambda: self.controller.show_page("Upload") if self.controller else None,
+        ).grid(row=0, column=0, padx=5, sticky="ew")
+
+        tk.Button(
+            nav_frame,
+            text="Next",
+            command=lambda: self.controller.show_page("Settings") if self.controller else None,
+        ).grid(row=0, column=1, padx=5, sticky="ew")
+
+   
+    def _browse_base_path(self):
+        chosen = filedialog.askdirectory(title="Select base input directory")
+        if chosen:
+            self.base_path_var.set(chosen)
+            self.status_label.config(text=f"Base path set to: {chosen}")
+
+    def _reset_channel(self, channel: str, default):
+        self.auto_vars[channel].set(False)
+        self.threshold_vars[channel].set(str(default))
+        self.status_label.config(text=f"{channel.capitalize()} reset to {default}.")
+
+    def _reset_particle_size(self, which: str):
+        if which == "min":
+            self.particle_size_min_var.set(str(DEFAULT_PARTICLE_SIZE_MIN))
+            self.status_label.config(text=f"Minimum particle size reset to {DEFAULT_PARTICLE_SIZE_MIN}.")
+        else:
+            self.particle_size_max_var.set(str(DEFAULT_PARTICLE_SIZE_MAX))
+            self.status_label.config(text=f"Maximum particle size reset to {DEFAULT_PARTICLE_SIZE_MAX}.")
+
+    def _reset_all(self):
+        self.base_path_var.set(DEFAULT_BASE_PATH)
+        self.well_start_var.set(str(DEFAULT_WELL_START))
+        self.well_end_var.set(str(DEFAULT_WELL_END))
+        for channel in THRESHOLD_CHANNELS:
+            self.auto_vars[channel].set(False)
+            default = DEFAULT_THRESHOLDS.get(channel, "")
+            self.threshold_vars[channel].set(str(default))
+        self.particle_size_min_var.set(str(DEFAULT_PARTICLE_SIZE_MIN))
+        self.particle_size_max_var.set(str(DEFAULT_PARTICLE_SIZE_MAX))
+        self.status_label.config(text="All values reset to defaults.")
+
+    def set_base_path(self, path: str):
+        self.base_path_var.set(path)
+
+    def set_channels(self, channels: list[dict]):
+        labels = {ch["label"].lower() for ch in channels}
+        active = [c for c in THRESHOLD_CHANNELS if c in labels]
+        if active:
+            self.status_label.config(text=f"Threshold channels detected: {', '.join(active)}")
+
+def get_base_path(self):
+    raw = self.base_path_var.get().strip()
+    return Path(raw) if raw else None
+
+def get_well_range(self):
+    """
+    Returns a range object for the well loop to match masking.py
+    """
+    try:
+        start = int(self.well_start_var.get().strip())
+        end   = int(self.well_end_var.get().strip())
+        return range(start, end + 1)   # end is displayed as inclusive
+    except ValueError:
+        return None
+
+def get_thresholds(self):
+    """
+    Returns per-channel threshold values.
+    """
+    result = {}
+    for ch, var in self.threshold_vars.items():
+        if self.auto_vars[ch].get():
+            result[ch] = "auto"
+        else:
+            raw = var.get().strip()
+            result[ch] = int(raw) if raw.lstrip("-").isdigit() else None
+    return result
+
+def get_particle_size(self):
+    result = {}
+    for key, var in (("min", self.particle_size_min_var), ("max", self.particle_size_max_var)):
+        raw = var.get().strip()
+        result[key] = int(raw) if raw.lstrip("-").isdigit() else None
+    return result
 
 
-    def get_config(self):
-        """Returns the validated config dict, or None if not yet submitted."""
-        return getattr(self, "result_config", None)
+# Standalone run: will probably get rid of this later but so it can run by itself
 
-
-if __name__ == "__main__":
-
-    class _StubController:
-        def show_page(self, name):
-            print(f"[stub] navigate to: {name}")
+def collect_settings():
+    """
+    Opens the settings window, waits for the user to click Run, and returns
+    a dict with keys: base_path, well_range, thresholds, particle_size.
+    """
+    result_holder = {}
 
     root = tk.Tk()
-    root.title("Masking Pipeline Settings")
-    root.geometry("900x900")
-    root.resizable(False, False)
+    root.title("Masking Settings")
+    root.geometry("520x700")
+    root.resizable(False, True)
 
-    page = MaskingSettingsPage(root, _StubController())
-    page.grid(row=0, column=0, sticky="nsew")
+    page = MaskingSettingsPage(root, controller=None)
+    page.pack(fill="both", expand=True)
+
+    def on_run():
+        base_path   = page.get_base_path()
+        well_range  = page.get_well_range()
+        thresholds  = page.get_thresholds()
+        particle    = page.get_particle_size()
+
+        errors = []
+        if not base_path:
+            errors.append("Base path is required.")
+        if well_range is None:
+            errors.append("Well start/end must be integers.")
+        if errors:
+            page.status_label.config(text=" | ".join(errors), fg="red")
+            return
+
+        result_holder["base_path"]     = base_path
+        result_holder["well_range"]    = well_range
+        result_holder["thresholds"]    = thresholds
+        result_holder["particle_size"] = particle
+        root.destroy()
+
+    btn_frame = tk.Frame(root)
+    btn_frame.pack(fill="x", padx=20, pady=(0, 12))
+    tk.Button(btn_frame, text="Run Masking", command=on_run,
+              bg="#2d7d46", fg="white", font=("TkDefaultFont", 10, "bold"),
+              relief="flat", padx=12, pady=6).pack(fill="x")
 
     root.mainloop()
+    return result_holder if result_holder else None
+
+
+#so the thing can run by itself
+
+if __name__ == "__main__":
+    settings = collect_settings()
+    if settings:
+        print("Base path:    ", settings["base_path"])
+        print("Well range:   ", settings["well_range"])
+        print("Thresholds:   ", settings["thresholds"])
+        print("Particle size:", settings["particle_size"])
+    else:
+        print("Cancelled.")

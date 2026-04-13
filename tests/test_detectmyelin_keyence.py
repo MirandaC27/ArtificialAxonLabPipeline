@@ -1,12 +1,4 @@
-"""
-tests/test_detectmyelinarea.py
 
-Unit-test suite for detectmyelinarea_Keyence().
-Mirrors the structure of tests/test_analysis.py:
-  - small, focused tests grouped by concern
-  - pytest fixtures for reusable scaffolding
-  - tifffile I/O replaced with real tiny TIFFs written to tmp_path
-"""
 
 import os
 import numpy as np
@@ -16,9 +8,9 @@ import tifffile as tiff
 from analysis.Ezra_files.detectmyelinarea_Keyence import detectmyelinarea_Keyence   # adjust import if needed
 
 
-# ---------------------------------------------------------------------------
+
 # Helpers
-# ---------------------------------------------------------------------------
+
 
 NARROWTHRESH = 10   # arbitrary value; used consistently across all tests
 
@@ -43,9 +35,9 @@ def _ones_stack(z=3, h=10, w=10, dtype=np.uint8):
     return np.ones((z, h, w), dtype=dtype)
 
 
-# ---------------------------------------------------------------------------
+
 # Fixtures
-# ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def single_fov(tmp_path):
@@ -65,9 +57,9 @@ def nonzero_fov(tmp_path):
     return tmp_path
 
 
-# ---------------------------------------------------------------------------
+
 # Return type and basic structure
-# ---------------------------------------------------------------------------
+
 
 def test_returns_dict(single_fov):
     result = detectmyelinarea_Keyence(str(single_fov), NARROWTHRESH, debug_mode=False)
@@ -84,9 +76,9 @@ def test_value_is_integer(single_fov):
     assert isinstance(result[("B02", "Field1")], (int, np.integer))
 
 
-# ---------------------------------------------------------------------------
+
 # Area calculation correctness
-# ---------------------------------------------------------------------------
+
 
 def test_all_zero_stack_gives_zero_area(single_fov):
     result = detectmyelinarea_Keyence(str(single_fov), NARROWTHRESH, debug_mode=False)
@@ -128,9 +120,9 @@ def test_pixel_nonzero_in_only_one_slice_is_counted(tmp_path):
     assert result[("B02", "Field1")] == 1
 
 
-# ---------------------------------------------------------------------------
+
 # Multiple wells and FOVs
-# ---------------------------------------------------------------------------
+
 
 def test_multiple_fovs_all_present_in_result(tmp_path):
     for well, fov in [("B02", "Field1"), ("B02", "Field2"), ("C03", "Field1")]:
@@ -165,9 +157,9 @@ def test_each_fov_gets_its_own_area(tmp_path):
     assert result[("B02", "Field2")] == 36
 
 
-# ---------------------------------------------------------------------------
+
 # narrowthresh parameter is used in the filename
-# ---------------------------------------------------------------------------
+
 
 def test_narrowthresh_used_in_tiff_filename(tmp_path):
     """Only a TIFF matching the given narrowthresh value should be found."""
@@ -185,9 +177,9 @@ def test_wrong_narrowthresh_raises(tmp_path):
         detectmyelinarea_Keyence(str(tmp_path), narrowthresh=99, debug_mode=False)
 
 
-# ---------------------------------------------------------------------------
+
 # debug_mode
-# ---------------------------------------------------------------------------
+
 
 def test_debug_mode_creates_debug_dir(tmp_path):
     _make_fov(tmp_path, "B02", "Field1", _ones_stack())
@@ -234,9 +226,9 @@ def test_debug_mode_does_not_affect_returned_area(tmp_path):
     assert result_no_debug[("B02", "Field1")] == result_debug[("B02", "Field1")]
 
 
-# ---------------------------------------------------------------------------
+
 # Edge cases
-# ---------------------------------------------------------------------------
+
 
 def test_empty_directory_returns_empty_dict(tmp_path):
     result = detectmyelinarea_Keyence(str(tmp_path), NARROWTHRESH, debug_mode=False)

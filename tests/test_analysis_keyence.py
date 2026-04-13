@@ -1,32 +1,18 @@
-"""
-tests/test_analysis.py
 
-Unit-test suite for analysis.analysis().
-Mirrors the structure of tests/test_masking.py:
-  - small, focused tests grouped by concern
-  - pytest fixtures for reusable scaffolding
-  - no real filesystem I/O beyond tmp_path
-"""
 
 import os
 import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
 
-# ---------------------------------------------------------------------------
-# The module under test.  Import it so tests fapil loudly if it is broken.
-# ---------------------------------------------------------------------------
+
 import importlib, sys
 
-# We import the function directly; if the module lives in a package adjust
-# the path below (e.g. "analysis.analysis" -> "analysis").
-from analysis.Ezra_files.analysis_Keyence import analysis   # adjust if needed
+
+from analysis.Ezra_files.analysis_Keyence import analysis   
 
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
-
 def _make_dirs(base, well, fov):
     """Create the well/fov directory tree that analysis() iterates over."""
     d = base / well / fov
@@ -37,16 +23,15 @@ def _make_dirs(base, well, fov):
 def _minimal_dicts(well, fov):
     """Return the four dicts that analysis() reads, with safe default values."""
     key = (well, fov)
-    overlaps_dict = {key: []}           # no pillars
-    nuclei_dict   = {key: 10}           # 10 nuclei
-    areas_dict    = {key: 500.0}        # z-projection area
-    myelin_dict   = {key: [100, 50, 40, 30, 20]}  # 5 myelin metrics
+    overlaps_dict = {key: []}          
+    nuclei_dict   = {key: 10}           
+    areas_dict    = {key: 500.0}        
+    myelin_dict   = {key: [100, 50, 40, 30, 20]}  
     return overlaps_dict, nuclei_dict, areas_dict, myelin_dict
 
 
-# ---------------------------------------------------------------------------
+
 # Fixtures
-# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def single_fov(tmp_path):
@@ -67,9 +52,9 @@ def further_path(tmp_path):
     return tmp_path / "further.csv"
 
 
-# ---------------------------------------------------------------------------
+
 # Output CSV is created and readable
-# ---------------------------------------------------------------------------
+
 
 def test_output_csv_is_created(single_fov, out_path, further_path):
     path, well, fov, overlaps, nuclei, areas, myelin = single_fov
@@ -118,13 +103,13 @@ def test_output_has_one_row_per_fov(tmp_path, out_path, further_path):
     assert len(df) == 4
 
 
-# ---------------------------------------------------------------------------
+
 # Zero-pillar / empty overlap edge cases
-# ---------------------------------------------------------------------------
+
 
 def test_zero_pillars_gives_zero_counts(single_fov, out_path, further_path):
     path, well, fov, overlaps, nuclei, areas, myelin = single_fov
-    # overlaps already empty → 0 pillars
+    # overlaps already empty to 0 pillars
     analysis(str(path), str(out_path), str(further_path),
              overlaps, nuclei, areas, myelin, skip=False,
              further_analysis_mode=False)
@@ -146,9 +131,9 @@ def test_zero_pillars_average_wrap_length_is_zero(single_fov, out_path, further_
     assert df.iloc[0]["average_full_wrapping_length_c"] == 0
 
 
-# ---------------------------------------------------------------------------
+
 # Pillar counting with synthetic overlap data
-# ---------------------------------------------------------------------------
+
 
 def _make_overlap(pillar_id, z, inner_pct, outer_pct, center=(0, 0)):
     """Return a single overlap row [id, center, z, inner_pct, outer_pct]."""
@@ -231,9 +216,9 @@ def test_two_distinct_pillars_counted_separately(tmp_path, out_path, further_pat
     assert df.iloc[0]["wrap_80_pillars_u"] == 2
 
 
-# ---------------------------------------------------------------------------
+
 # Condensed (c) vs. uncondensed (u) pillar distinction
-# ---------------------------------------------------------------------------
+
 
 def test_condensed_excludes_fully_condensed_slices(tmp_path, out_path, further_path):
     """
@@ -263,12 +248,12 @@ def test_uncondensed_includes_partially_condensed_slices(tmp_path, out_path, fur
     assert df.iloc[0]["wrap_80_pillars_c"] == 1
 
 
-# ---------------------------------------------------------------------------
+
 # Three-stack and five-stack thresholds (skip=False)
-# ---------------------------------------------------------------------------
+
 
 def test_three_stack_requires_three_consecutive_slices(tmp_path, out_path, further_path):
-    # Only 2 consecutive slices → should not qualify for three-stack
+    # Only 2 consecutive slices to should not qualify for three-stack
     rows = [_make_overlap(1, z, 0.85, 0.85) for z in [0, 1]]
     path, overlaps, nuclei, areas, myelin = _single_pillar_dataset(tmp_path, rows)
     analysis(str(path), str(out_path), str(further_path),
@@ -308,9 +293,9 @@ def test_five_stack_qualifies_with_five_consecutive(tmp_path, out_path, further_
     assert df.iloc[0]["wrap_80_pillars_five_stack_u"] == 1
 
 
-# ---------------------------------------------------------------------------
+
 # skip=True changes the consecutive-slice thresholds
-# ---------------------------------------------------------------------------
+
 
 def test_skip_mode_three_stack_threshold_is_two(tmp_path, out_path, further_path):
     """With skip=True, >1 consecutive slice should qualify for three-stack."""
@@ -334,13 +319,13 @@ def test_skip_mode_five_stack_threshold_is_three(tmp_path, out_path, further_pat
     assert df.iloc[0]["wrap_80_pillars_five_stack_c"] == 1
 
 
-# ---------------------------------------------------------------------------
+
 # Average full wrapping length
-# ---------------------------------------------------------------------------
+
 
 def test_average_wrapping_length_computed_correctly(tmp_path, out_path, further_path):
     """
-    5 consecutive 80%-wrapped slices → run of 5 → length = 5 * 2 = 10 µm.
+    5 consecutive 80%-wrapped slices to run of 5 to length = 5 * 2 = 10 µm.
     Only one pillar qualifies, so average = 10.
     """
     rows = [_make_overlap(1, z, 0.85, 0.85) for z in range(5)]
@@ -353,7 +338,7 @@ def test_average_wrapping_length_computed_correctly(tmp_path, out_path, further_
 
 
 def test_average_wrapping_length_averages_across_pillars(tmp_path, out_path, further_path):
-    """Two pillars: 4-slice run (8 µm) and 6-slice run (12 µm) → average = 10."""
+    """Two pillars: 4-slice run (8 µm) and 6-slice run (12 µm) to average = 10."""
     rows = (
         [_make_overlap(1, z, 0.85, 0.85) for z in range(4)] +
         [_make_overlap(2, z, 0.85, 0.85) for z in range(6)]
@@ -366,9 +351,9 @@ def test_average_wrapping_length_averages_across_pillars(tmp_path, out_path, fur
     assert df.iloc[0]["average_full_wrapping_length_u"] == pytest.approx(10.0)
 
 
-# ---------------------------------------------------------------------------
+
 # Myelination index
-# ---------------------------------------------------------------------------
+
 
 def test_index_is_three_stack_over_nuclei(tmp_path, out_path, further_path):
     """Index_u = wrap_80_pillars_three_stack_u / nuclei count."""
@@ -383,9 +368,9 @@ def test_index_is_three_stack_over_nuclei(tmp_path, out_path, further_path):
     assert df.iloc[0]["Index_u"] == pytest.approx(expected_index)
 
 
-# ---------------------------------------------------------------------------
+
 # Myelin area pass-through from dict
-# ---------------------------------------------------------------------------
+
 
 def test_myelin_values_passed_through_correctly(single_fov, out_path, further_path):
     path, well, fov, overlaps, nuclei, areas, myelin = single_fov
@@ -413,9 +398,9 @@ def test_z_projection_and_nuclei_passed_through(single_fov, out_path, further_pa
     assert row["total_nuclei"]       == nuclei[(well, fov)]
 
 
-# ---------------------------------------------------------------------------
+
 # further_analysis_mode
-# ---------------------------------------------------------------------------
+
 
 def test_further_analysis_csv_not_created_when_disabled(single_fov, out_path, further_path):
     path, well, fov, overlaps, nuclei, areas, myelin = single_fov
@@ -429,7 +414,7 @@ def test_further_analysis_csv_created_when_enabled(tmp_path, out_path, further_p
     well, fov = "B02", "Field1"
     _make_dirs(tmp_path, well, fov)
     key = (well, fov)
-    # 5 consecutive condensed-qualifying slices → runs80_c > 2 → appended
+    # 5 consecutive condensed-qualifying slices to runs80_c > 2 to appended
     rows = [_make_overlap(1, z, 0.85, 0.85, center=(10, 20)) for z in range(5)]
     overlaps = {key: rows}
     nuclei   = {key: 10}
@@ -478,14 +463,14 @@ def test_further_analysis_records_correct_center(tmp_path, out_path, further_pat
     assert fa_df.iloc[0]["Y"] == center[1]
 
 
-# ---------------------------------------------------------------------------
+
 # Non-contiguous z-slices: run detection
-# ---------------------------------------------------------------------------
+
 
 def test_non_contiguous_slices_use_longest_run(tmp_path, out_path, further_path):
     """
     Slices at z=0,1,2 (run of 3) and z=5,6 (run of 2).
-    Longest run = 3 → three_stack qualifies, average_length = 3*2 = 6.
+    Longest run = 3 to three_stack qualifies, average_length = 3*2 = 6.
     """
     rows = (
         [_make_overlap(1, z, 0.85, 0.85) for z in [0, 1, 2]] +
@@ -502,8 +487,8 @@ def test_non_contiguous_slices_use_longest_run(tmp_path, out_path, further_path)
 
 def test_gap_between_slices_breaks_run(tmp_path, out_path, further_path):
     """
-    Slices at z=0 and z=2 only (gap at z=1) → two runs of 1.
-    Longest run = 1 → three_stack should NOT qualify.
+    Slices at z=0 and z=2 only (gap at z=1) to two runs of 1.
+    Longest run = 1 to three_stack should NOT qualify.
     """
     rows = [_make_overlap(1, z, 0.85, 0.85) for z in [0, 2]]
     path, overlaps, nuclei, areas, myelin = _single_pillar_dataset(tmp_path, rows)
