@@ -1,7 +1,5 @@
-#main_view.py
 import tkinter as tk
 from UploadPageStep1 import UploadPageStep1
-from SettingFront import SettingsPage
 from pipeline_front import ImageProcessingSettings
 from HomePage import HomePage
 from Config import ConfigPage
@@ -25,13 +23,12 @@ class App(tk.Tk):
         self.pages = {}
 
         for PageClass, name in [
-            (HomePage, "Home"),
             (ConfigPage, "Config"),
+            (HomePage, "Home"),
             (UploadPageStep1, "Upload"),
-            (SettingsPage, "Settings"),
             (ImageProcessingSettings, "Image Processing Stuff"),
-            (SessionEnd, "SessionEnd"),
-            (MaskingSettingsPage, "Masking Settings")
+            (MaskingSettingsPage, "Masking Settings"),
+            (SessionEnd, "SessionEnd")
         ]:
             page = PageClass(container, self)
             self.pages[name] = page
