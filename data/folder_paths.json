@@ -3,26 +3,29 @@
         "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
     ],
     "Tracks1": [
-        "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_CLEANED"
+        "/Users/chloemiranda/capstone/CLEANED"
     ],
     "Data": [],
+    "ImageType": "3D",
+    "Microscope": "Keyence",
     "Channels": [
         {
             "code": "CH1",
-            "label": "asdfsd"
+            "label": "axon"
         },
         {
             "code": "CH2",
-            "label": "adsfddas"
+            "label": "myelin"
         },
         {
             "code": "CH3",
-            "label": "adafsfd"
+            "label": "nuclei"
         },
         {
             "code": "CH4",
-            "label": "adfasdf"
+            "label": "debris"
         }
     ],
-    "START_TIME": "2026-02-20 23:42:33"
+    "StartTime": "2026-04-10 13:05:21",
+    "EndTime": "2026-04-10 13:05:38"
 }

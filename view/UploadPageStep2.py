@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
-from datetime import datetime
 import subprocess
+import platform
 import json
 
 selected_folders = []
@@ -17,10 +17,9 @@ def add_folder():
         save_folders()
 
 def save_folders():
-    global DIR1, DIR2, DIR3
+    global DIR1, DIR2
     DIR1 = set()
     DIR2 = set()
-    DIR3 = set()
 
     for folder in selected_folders:
         root = Path(folder)
@@ -28,14 +27,11 @@ def save_folders():
         folder_name = root.name.upper()
         if folder_name.endswith("CLEANED"):
             DIR2.add(str(root))
-        elif folder_name.endswith("ORDERED"):
-            DIR3.add(str(root))
         else:
             DIR1.add(str(root))
 
     data = {
         "Cleaned": sorted(DIR2),
-        "Ordered": sorted(DIR3),
         "Data": sorted(DIR1)
     }
 
@@ -48,7 +44,7 @@ def run_step2():
     else:
         bash_path = "/bin/bash"
 
-    script_path = Path(__file__).resolve().parent.parent / "model" / "step2_organize-keyence-singlechan-lowe.sh"
+    script_path = Path(__file__).resolve().parent.parent / "model" / "step2_organize-keyence-multichan-lowe.sh"
 
     subprocess.run([bash_path, str(script_path)], check=True)
 
@@ -65,4 +61,5 @@ tk.Button(window, text="Run", command=button_run).pack(pady=10)
 status_label = tk.Label(window, text="")
 status_label.pack(pady=5)
 
-window.mainloop()
+if __name__ == "__main__":
+    window.mainloop()
