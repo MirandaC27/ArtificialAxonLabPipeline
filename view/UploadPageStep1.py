@@ -1,4 +1,3 @@
-from concurrent.futures import thread
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -17,7 +16,9 @@ from controller.SessionDataUtil import SessionDataUtil
 sd = SessionDataUtil()
 
 
-CHANNELS = ['axon','myelin','nuclei','debris']
+CHANNELS = ['axon', 'myelin', 'nuclei', 'debris']
+
+
 class UploadPageStep1(tk.Frame):
 
     def __init__(self, parent, controller=None):
@@ -29,7 +30,6 @@ class UploadPageStep1(tk.Frame):
         self.channels = []
 
         self.build_ui()
-
 
     def build_ui(self):
 
@@ -75,7 +75,7 @@ class UploadPageStep1(tk.Frame):
         self.channel_num_entry = tk.Entry(channel_frame, width=8)
         self.channel_num_entry.grid(row=0, column=1)
 
-        #channel label entry
+        # Channel label entry
         self.channel_label_var = tk.StringVar()
 
         self.channel_label_dropdown = ttk.Combobox(
@@ -86,7 +86,7 @@ class UploadPageStep1(tk.Frame):
             width=9
         )
         self.channel_label_dropdown.grid(row=0, column=2)
-        self.channel_label_dropdown.set(CHANNELS[0])  # default value
+        self.channel_label_dropdown.set(CHANNELS[0])
 
         tk.Label(channel_frame, text="# of FOVs:").grid(row=0, column=3, padx=(10, 0))
         tk.Entry(channel_frame, textvariable=self.fov_var, width=6).grid(row=0, column=4)
@@ -104,7 +104,7 @@ class UploadPageStep1(tk.Frame):
 
         self.grid_columnconfigure(0, weight=1)
 
-        # next and Previous buttons 
+        # Next and Previous buttons
         nav_frame = tk.Frame(self)
         nav_frame.grid(row=11, column=0, pady=5, padx=20, sticky="ew")
         nav_frame.grid_columnconfigure(0, weight=1)
@@ -121,9 +121,8 @@ class UploadPageStep1(tk.Frame):
             text="Next",
             command=lambda: self.controller.show_page("Settings")
         ).grid(row=0, column=1, padx=5, sticky="ew")
-        
-    def update_channel_listbox(self):
 
+    def update_channel_listbox(self):
         self.channel_listbox.delete(0, tk.END)
 
         for ch in self.channels:
@@ -132,9 +131,7 @@ class UploadPageStep1(tk.Frame):
                 f"Channel {ch['num']} — {ch['label']}"
             )
 
-
     def add_channel(self):
-
         num = self.channel_num_entry.get().strip()
         label = self.channel_label_var.get().strip()
 
@@ -163,9 +160,7 @@ class UploadPageStep1(tk.Frame):
 
         self.status_label.config(text="Channel added.")
 
-
     def remove_channel(self):
-
         num = self.channel_num_entry.get().strip()
 
         if not num.isdigit():
@@ -189,9 +184,7 @@ class UploadPageStep1(tk.Frame):
 
         self.status_label.config(text="Channel removed.")
 
-
     def add_folder(self):
-
         folder = filedialog.askdirectory(title="Select a folder")
 
         if folder:
@@ -201,21 +194,15 @@ class UploadPageStep1(tk.Frame):
                 text="Selected folders:\n" + "\n".join(self.selected_folders)
             )
 
-            # Push the CLEANED path to MaskingSettingsPage as soon as a
-            # RAW folder is picked, so the masking page stays in sync.
             self._push_data_to_masking()
-    
+
     def _get_cleaned_path(self):
-        """
-        Derives the CLEANED sibling directory from whichever selected folder
-        contains '_RAW' in its name.  Returns a Path, or None if not found.
-        """
         for folder in self.selected_folders:
             root = Path(folder)
             if "_RAW" in root.name.upper():
                 return root.parent / "CLEANED"
         return None
-     
+
     def _push_data_to_masking(self):
         if not hasattr(self.controller, "get_page"):
             return
@@ -224,65 +211,17 @@ class UploadPageStep1(tk.Frame):
         if masking_page is None:
             return
 
-        # Push path
         cleaned = self._get_cleaned_path()
         if cleaned is not None and hasattr(masking_page, "set_base_path"):
             masking_page.set_base_path(str(cleaned))
 
-        # Push channels
         if hasattr(masking_page, "set_channels"):
             masking_page.set_channels(self.channels)
 
     def get_num_fovs(self):
         val = self.fov_var.get().strip()
         return int(val) if val.isdigit() else 0
-    
-    def save_folders(self):
 
-        tracks = set()
-        data = set()
-
-        for folder in self.selected_folders:
-
-            root = Path(folder)
-            folder_name = root.name.upper()
-
-            if "_RAW" in folder_name:
-                tracks.add(str(root))
-            else:
-                data.add(str(root))
-
-        if not tracks:
-            print("No RAW folder selected")
-            return
-
-        raw_path = Path(list(tracks)[0])
-        clean_path = raw_path.parent / "CLEANED"
-
-        json_data = {
-            "Tracks": sorted(tracks),
-            "Tracks1": [str(clean_path)],
-            "Data": sorted(data),
-            "ImageType": self.image_type_var.get(),
-            "Microscope": self.micro_type_var.get(),
-            "NumFOVs": self.get_num_fovs(),
-            "Channels": [
-                {"code": f"CH{ch['num']}", "label": ch["label"]}
-                for ch in self.channels
-            ],
-        }
-
-        json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(json_data, f, indent=4)
-
-        self.save_txt(json_data)
-
-        self._push_data_to_masking()
-
-    
     def apply_config_data(self, parsed):
         """
         parsed = {
@@ -292,7 +231,6 @@ class UploadPageStep1(tk.Frame):
             "channels": list[dict{'num', 'label'}]
         }
         """
-
         if "image_type" in parsed and parsed["image_type"] in ("2D", "3D"):
             self.image_type_var.set(parsed["image_type"])
 
@@ -319,7 +257,6 @@ class UploadPageStep1(tk.Frame):
             self.channels.sort(key=lambda x: x["num"])
             self.update_channel_listbox()
 
-        # clear entry fields
         self.channel_num_entry.delete(0, tk.END)
         self.channel_label_dropdown.set(CHANNELS[0])
 
@@ -336,7 +273,7 @@ class UploadPageStep1(tk.Frame):
                     os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
             except Exception as e:
                 print("Error stopping process:", e)
-        
+
     def close_popup(self):
         if self.popup:
             self.progress.stop()
@@ -347,7 +284,7 @@ class UploadPageStep1(tk.Frame):
         self.popup.title("Running")
         self.popup.geometry("300x200")
         self.popup.transient(self)
-        self.popup.grab_set()  
+        self.popup.grab_set()
 
         self.progress = ttk.Progressbar(self.popup, mode="indeterminate")
         self.progress.pack(pady=20, padx=20, fill="x")
@@ -360,7 +297,6 @@ class UploadPageStep1(tk.Frame):
 
         tk.Button(btn_frame, text="Stop", command=self.stop_script).grid(row=0, column=1, padx=10)
 
-
     def run_step1(self):
         if platform.system() == "Windows":
             bash_path = r"C:\Program Files\Git\bin\bash.exe"
@@ -370,19 +306,19 @@ class UploadPageStep1(tk.Frame):
             bash_path = "/bin/bash"
             creationflags = 0
             preexec_fn = os.setsid
-    
+
         script_path = Path(__file__).resolve().parent.parent / "model" / "rename_organize_keyence.sh"
-    
+
         self.process = subprocess.Popen(
             [bash_path, str(script_path)],
             creationflags=creationflags,
             preexec_fn=preexec_fn
         )
-    
+
         while self.process.poll() is None:
             if self.stop_flag:
                 break
-            
+
     def run_process(self):
         print("Channels at run:", self.channels)
         print("Selected folders at run:", self.selected_folders)
@@ -401,7 +337,7 @@ class UploadPageStep1(tk.Frame):
         finally:
             sd.save_end_time()
             self.after(0, self.close_popup)
-    
+
     def button_run(self):
         self.stop_flag = False
         self.process = None

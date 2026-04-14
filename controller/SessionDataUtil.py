@@ -40,7 +40,7 @@ class SessionDataUtil:
                 {"code": f"CH{ch['num']}", "label": ch["label"]}
                 for ch in channels
             ],
-            "StartTime": start_time  
+            "StartTime": start_time
         }
 
         json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
@@ -50,6 +50,8 @@ class SessionDataUtil:
             json.dump(json_data, f, indent=4)
 
         self.save_txt(json_data)
+
+        self.session_data(json_data)  # Fixed: was self.session_data(json)
 
     def save_end_time(self, end_time=None):
         json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
@@ -69,7 +71,7 @@ class SessionDataUtil:
             json.dump(data, f, indent=4)
 
         self.save_txt(data)
-
+        self.session_data(data)  # Fixed: added so sessionData.txt is updated on run completion
 
     def save_txt(self, data):
         txt_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.txt"
@@ -96,27 +98,44 @@ class SessionDataUtil:
             f.write("\nImage Type Used: ")
             f.write(data["ImageType"] + "\n")
 
+            f.write("\nNumber of Fields of View: ")
+            f.write(str(data["NumFOVs"]) + "\n")
+
             f.write("\nChannels Used:\n")
             for ch in data["Channels"]:
                 f.write(f"{ch['code']}: {ch['label']}\n")
-            
+
             f.write("\nExperiment Data:\n")
             for d in data["Data"]:
                 f.write(d + "\n")
-    
+
+    def get_folder_name(self, path: str) -> str:
+        return Path(path).name
+
+    def session_data(self, data):
+        txt_path = Path(__file__).resolve().parent.parent / "data" / "sessionData.txt"
+
+        raw_path = data.get("Tracks", [None])[0]
+        folder_name = self.get_folder_name(raw_path) if raw_path else "N/A"
+
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(f"Name of Folder: {folder_name}\n")
+
+            f.write("\nChannels Used:\n")
+            for ch in data["Channels"]:
+                f.write(f"{ch['code']}: {ch['label']}\n")
+
     def runtime(self, func, *args, **kwargs):
         start = time.perf_counter()
         result = func(*args, **kwargs)
         end = time.perf_counter()
-    
+
         elapsed = end - start
         minutes = int(elapsed // 60)
         seconds = elapsed % 60
-    
+
         print(f"{func.__name__} took {minutes} min {seconds:.2f} sec")
         return result
-    
+
     def endDateTime(self):
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    
