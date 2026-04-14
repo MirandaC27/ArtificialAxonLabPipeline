@@ -7,6 +7,7 @@ from HomePage import HomePage
 from Config import ConfigPage
 from SessionEnd import SessionEnd
 from masking_front import MaskingSettingsPage
+from history import HistoryPage
 
 
 class App(tk.Tk):
@@ -31,13 +32,14 @@ class App(tk.Tk):
             (SettingsPage, "Settings"),
             (ImageProcessingSettings, "Image Processing Stuff"),
             (SessionEnd, "SessionEnd"),
-            (MaskingSettingsPage, "Masking Settings")
+            (MaskingSettingsPage, "Masking Settings"),
+            (HistoryPage, "History")
         ]:
             page = PageClass(container, self)
             self.pages[name] = page
             page.grid(row=0, column=0, sticky="nsew")
 
-        self.show_page("Home")
+        self.show_page("History")
 
     def get_page(self, name):
         return self.pages.get(name)

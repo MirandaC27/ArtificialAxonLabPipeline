@@ -54,7 +54,7 @@ class HomePage(tk.Frame):
         self.btn_old = tk.Button(self.right_frame, text="use old\nconfiguration", command=lambda: controller.show_page("Config"), **button_options)
         self.btn_old.pack(pady=10)
 
-        self.btn_history = tk.Button(self.right_frame, text="view history", **button_options)
+        self.btn_history = tk.Button(self.right_frame, text="view history", command=lambda: controller.show_page("History"), **button_options)
         self.btn_history.pack(pady=10)
 
         self.btn_quit = tk.Button(self.right_frame, text="quit", command=self.controller.quit, **button_options)
