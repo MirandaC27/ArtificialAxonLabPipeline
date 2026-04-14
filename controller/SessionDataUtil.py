@@ -6,7 +6,7 @@ import time
 
 class SessionDataUtil:
 
-    def save_folders(self, selected_folders, image_type, microscope, channels):
+    def save_folders(self, selected_folders, image_type, microscope, channels, num_fovs=None):
 
         tracks = set()
         data = set()
@@ -35,6 +35,7 @@ class SessionDataUtil:
             "Data": sorted(data),
             "ImageType": image_type,
             "Microscope": microscope,
+            "NumFOVs": num_fovs,
             "Channels": [
                 {"code": f"CH{ch['num']}", "label": ch["label"]}
                 for ch in channels
