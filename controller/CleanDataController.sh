@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+SKIP_CHANNELS=($("$JQ" -r '.SkipChannels[]? // empty' "$JSON"))
+SKIP_FOVS=($("$JQ" -r '.SkipFOVs[]? // empty' "$JSON"))
+
 2Dvs3D(){
     if [ "$IMAGE_TYPE" = "3D" ]; then
 
@@ -74,6 +77,11 @@ process_channels(){
         channel_code=$("$JQ" -r ".Channels[$c].code" "$JSON")
         channel_label=$("$JQ" -r ".Channels[$c].label" "$JSON")
 
+        if should_skip_channel "$channel_label"; then
+            echo "    Skipping channel $channel_label"
+            continue
+        fi
+
         oldname=$(echo *"${channel_code}".tif 2>/dev/null)
 
         if [ -z "$oldname" ] || [ "$oldname" = "*${channel_code}.tif" ]; then
@@ -81,10 +89,16 @@ process_channels(){
             continue
         fi
 
-        echo "    Found: $oldname"
-
         position_id=$(echo "$oldname" | awk -F 'P0' '{print $2}')
         position_id=$(echo "$position_id" | awk -F "_${channel_code}" '{print $1}')
+
+        # Convert to integer FOV
+        fov_num=$(echo "$position_id" | sed 's/^0*//')
+
+        if should_skip_fov "$fov_num"; then
+            echo "    Skipping FOV $fov_num"
+            continue
+        fi
 
         newname="${wellname}_${position_id}_${channel_label}.tif"
 
@@ -92,4 +106,20 @@ process_channels(){
 
         cp "$BASE_DIR/$dirname/$trackname/$oldname" "$TRACKS1/$newname"
     done
+}
+
+should_skip_channel() {
+    local label="$1"
+    for skip in "${SKIP_CHANNELS[@]}"; do
+        [[ "$label" == "$skip" ]] && return 0
+    done
+    return 1
+}
+
+should_skip_fov() {
+    local fov="$1"
+    for skip in "${SKIP_FOVS[@]}"; do
+        [[ "$fov" -eq "$skip" ]] && return 0
+    done
+    return 1
 }

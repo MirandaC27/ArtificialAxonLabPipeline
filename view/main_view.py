@@ -39,7 +39,7 @@ class App(tk.Tk):
             self.pages[name] = page
             page.grid(row=0, column=0, sticky="nsew")
 
-        self.show_page("History")
+        self.show_page("Home")
 
     def get_page(self, name):
         return self.pages.get(name)

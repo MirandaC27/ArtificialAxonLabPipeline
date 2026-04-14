@@ -1,3 +1,7 @@
+
+SKIP_FOVS=($("$JQ" -r '.SkipFOVs[]? // empty' "$JSON"))
+SKIP_CHANNELS=($("$JQ" -r '.SkipChannels[]? // empty' "$JSON"))
+
 setup_wells(){
     numFOVs=$("$JQ" -r '.NumFOVs' "$JSON")
     if [ -z "$numFOVs" ] || [ "$numFOVs" = "null" ]; then
@@ -20,6 +24,12 @@ channel_tiffs_into_oir(){
     for ((c=0; c<channel_count; c++))
     do
         label=$("$JQ" -r ".Channels[$c].label" "$JSON")
+
+        if should_skip_channel "$label"; then
+            echo "Skipping channel $label"
+            continue
+        fi
+
         src="$DIR2/${file}_${label}.tif"
 
         if [ -f "$src" ]; then
@@ -35,6 +45,11 @@ process_fovs() {
 
     for ((fov=1; fov<=numFOVs; fov++))
     do
+        if should_skip_fov "$well" "$fov"; then
+            echo "Skipping FOV $fov in $well"
+            continue
+        fi
+
         printf -v fov_fmt "%04d" "$fov"
         file="${well}_${fov_fmt}"
         destdir="$DIR3/$well/$file"
@@ -65,4 +80,31 @@ ordered_wells(){
     done
 }
 
+
+should_skip_fov() {
+    local well="$1"
+    local fov="$2"
+
+    for skip in "${SKIP_FOVS[@]}"; do
+        [[ "$fov" -eq "$skip" ]] && return 0
+    done
+
+    # Per-well skip
+    per_well=$("$JQ" -r --arg w "$well" '.SkipFOVsPerWell[$w][]? // empty' "$JSON")
+    for skip in $per_well; do
+        [[ "$fov" -eq "$skip" ]] && return 0
+    done
+
+    return 1
+}
+
+should_skip_channel() {
+    local label="$1"
+
+    for skip in "${SKIP_CHANNELS[@]}"; do
+        [[ "$label" == "$skip" ]] && return 0
+    done
+
+    return 1
+}
 
