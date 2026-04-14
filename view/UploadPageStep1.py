@@ -1,3 +1,4 @@
+from concurrent.futures import thread
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -42,7 +43,7 @@ class UploadPageStep1(tk.Frame):
         self.fov_var = tk.StringVar()
         self.disable_mode_var = tk.BooleanVar(value=False)
 
-        # --- Top Section ---
+        # Top section: Folder selection and settings
         tk.Button(self, text="Add Folder", command=self.add_folder).grid(
             row=0, column=0, columnspan=2, pady=8, sticky="ew", padx=20
         )
@@ -60,7 +61,7 @@ class UploadPageStep1(tk.Frame):
         self.status_label = tk.Label(self, text="", justify="left")
         self.status_label.grid(row=3, column=0, columnspan=2, pady=5, padx=20, sticky="w")
 
-        # --- LEFT SIDE: Channel Controls ---
+        # Left side channel controls
         left_side = tk.Frame(self)
         left_side.grid(row=4, column=0, rowspan=4, sticky="nw", padx=20)
 
@@ -94,7 +95,7 @@ class UploadPageStep1(tk.Frame):
                                             command=self.toggle_disable_ui)
         self.disable_check.pack(anchor="w", pady=5)
 
-        # --- RIGHT SIDE: FOV Exclusion ---
+        # Right side FOV disable controls
         self.fov_disable_frame = tk.LabelFrame(self, text="FOV Exclusion")
         self.fov_disable_frame.grid(row=4, column=1, rowspan=4, padx=20, sticky="nsew")
         
@@ -109,7 +110,7 @@ class UploadPageStep1(tk.Frame):
         
         self.fov_disable_frame.grid_remove()
 
-        # --- BOTTOM SECTION ---
+        # Button navigation and run buttons
         tk.Button(self, text="Run", command=self.button_run).grid(row=13, column=0, columnspan=2, pady=10, sticky="ew", padx=20)
 
         nav_frame = tk.Frame(self)
@@ -175,15 +176,6 @@ class UploadPageStep1(tk.Frame):
     def get_num_fovs(self):
         val = self.fov_var.get().strip()
         return int(val) if val.isdigit() else 0
-
-    # --- Execution Logic ---
-
-    def button_run(self):
-        self.stop_flag = False
-        self.process = None
-        self.show_loading_popup()
-        thread = threading.Thread(target=self.run_process)
-        thread.start()
 
     def show_loading_popup(self):
         self.popup = tk.Toplevel(self)
@@ -255,3 +247,11 @@ class UploadPageStep1(tk.Frame):
         finally:
             sd.save_end_time()
             self.after(0, self.close_popup)
+
+    def button_run(self):
+        self.stop_flag = False
+        self.process = None
+        self.show_loading_popup()
+        
+        thread = threading.Thread(target=self.run_process)
+        thread.start()

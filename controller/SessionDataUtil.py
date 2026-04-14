@@ -6,7 +6,15 @@ import time
 
 class SessionDataUtil:
 
+    def clear_session_files(self):
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        for name in ("folder_paths.json", "folder_paths.txt", "sessionData.txt"):
+            path = data_dir / name
+            if path.exists():
+                path.unlink()
+
     def save_folders(self, selected_folders, image_type, microscope, channels, num_fovs=None, disabled_fovs=None):
+        self.clear_session_files()
 
         tracks = set()
         data = set()
@@ -19,14 +27,12 @@ class SessionDataUtil:
             else:
                 data.add(str(root))
 
-        # --- FIX: Handle empty tracks to avoid IndexError ---
+        # Handle empty tracks 
         if tracks:
             raw_path = Path(list(tracks)[0])
             clean_path = raw_path.parent / "CLEANED"
         else:
-            # Fallback if no _RAW folder is selected
             clean_path = "N/A"
-        # ----------------------------------------------------
 
         start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -56,7 +62,7 @@ class SessionDataUtil:
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=4)
 
-        # Update secondary files
+        # Update files
         self.save_txt(json_data)
         self.session_data(json_data)  
 
