@@ -244,7 +244,7 @@ def process_field(field_dir, settings):
 
     myelin_thresh = thresholds.get("myelin") or 8000
     debris_thresh = thresholds.get("debris") or 15000
-    nuclei_thresh = thresholds.get("nuclei")          # None = auto inside nuclei_mask()
+    nuclei_thresh = thresholds.get("nuclei")          
 
     size_min = particle_size.get("min") or 2
     size_max = particle_size.get("max") or 2000
@@ -330,7 +330,7 @@ def process_field(field_dir, settings):
 
 
 def main():
-    #Collect settings from the UI 
+    # Collect settings from the UI 
     settings = collect_settings()
     if settings is None:
         print("Settings window closed without confirming. Exiting.")
@@ -350,7 +350,7 @@ def main():
         print(f"Skip channels: {sorted(skip_config['skip_channels'])}")
         print(f"Per-well skipped FOVs: {skip_config['skip_fovs_per_well']}\n")
 
-    #proccess wells
+    #  Process wells 
     for k in well_range:
         well_name = f"B{k:02d}"
         well_path = base_path / well_name
