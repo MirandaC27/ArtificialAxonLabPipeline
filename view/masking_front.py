@@ -59,14 +59,14 @@ class MaskingSettingsPage(tk.Frame):
             text="Set intensity thresholds for each channel mask.",
             justify="left",
             fg="gray40",
-        ).grid(row=1, column=0, pady=(0, 10), padx=20, sticky="w")
+        ).grid(row=1, column=0, padx=20, sticky="w")
 
         self.status_label = tk.Label(self, text="", justify="left", fg="gray30")
         self.status_label.grid(row=2, column=0, pady=(0, 6), padx=20, sticky="w")
 
         # ── Input Directory & Well Range ───────────────────────────────
         path_frame = tk.LabelFrame(self, text="Input Directory & Well Range")
-        path_frame.grid(row=3, column=0, padx=20, pady=6, sticky="ew")
+        path_frame.grid(row=3, column=0, padx=20, sticky="ew")
         path_frame.grid_columnconfigure(1, weight=1)
 
         tk.Label(path_frame, text="Base path", width=12, anchor="w").grid(

@@ -6,6 +6,9 @@ import analysis.masking as m
 
 
 
+# ensure_dirs
+
+
 def test_ensure_dirs_creates_all_directories(tmp_path):
     dirs = [tmp_path / "a", tmp_path / "b" / "c"]
     m.ensure_dirs(dirs)
@@ -16,9 +19,12 @@ def test_ensure_dirs_creates_all_directories(tmp_path):
 def test_ensure_dirs_is_idempotent(tmp_path):
     d = tmp_path / "existing"
     d.mkdir()
-    m.ensure_dirs([d])         
+    m.ensure_dirs([d])
     assert d.is_dir()
 
+
+
+# find_file
 
 
 def test_find_file_returns_matching_tif(tmp_path):
@@ -52,12 +58,18 @@ def test_find_file_empty_directory(tmp_path):
 
 
 
+# save_results
+
+
 def test_save_results_calls_rt_save(tmp_path):
     rt = MagicMock()
     out = tmp_path / "results.out"
     m.save_results(rt, out)
     rt.save.assert_called_once_with(str(out))
 
+
+
+# save_imp
 
 
 def test_save_imp_saves_to_multiple_paths(tmp_path):
@@ -75,6 +87,9 @@ def test_save_imp_single_path(tmp_path):
     m.save_imp(imp, p)
     m.IJ.saveAsTiff.assert_called_once_with(imp, str(p))
 
+
+
+# load_channel
 
 
 def test_load_channel_single_channel_image(tmp_path):
@@ -97,13 +112,12 @@ def test_load_channel_multi_channel_extracts_correct(tmp_path):
     fake_imp = MagicMock()
     fake_imp.getNChannels.return_value = 3
 
-    import scyjava
     splitter = MagicMock()
     splitter.split.return_value = [ch1, ch2, ch3]
 
     m.IJ.openImage.return_value = fake_imp
 
-    with patch.object(scyjava, "jimport", return_value=splitter):
+    with patch("scyjava.jimport", return_value=splitter):
         result = m.load_channel(fake_path, channel=2)
     assert result is ch2
 
@@ -118,14 +132,16 @@ def test_load_channel_raises_if_openimage_returns_none(tmp_path):
 
 
 
+# threshold_and_mask
+
+
 def test_threshold_and_mask_calls_convert_to_mask():
     imp = MagicMock()
     fake_result = MagicMock()
     m.IJ.getImage.return_value = fake_result
 
-    import analysis.masking as mod
     ij_mock = MagicMock()
-    with patch.object(mod, "ij", ij_mock):
+    with patch.object(m, "ij", ij_mock):
         result = m.threshold_and_mask(imp, low=8000)
 
     imp.show.assert_called_once()
@@ -140,12 +156,14 @@ def test_threshold_and_mask_sets_processor_threshold():
     imp.getProcessor.return_value = proc
     m.IJ.getImage.return_value = MagicMock()
 
-    import analysis.masking as mod
-    with patch.object(mod, "ij", MagicMock()):
+    with patch.object(m, "ij", MagicMock()):
         m.threshold_and_mask(imp, low=8000, high=65535)
 
     proc.setThreshold.assert_called_once_with(8000, 65535, 0)
 
+
+
+# analyze_particles
 
 
 def test_analyze_particles_returns_results_table():
@@ -160,13 +178,27 @@ def test_analyze_particles_returns_results_table():
 
 def test_analyze_particles_calls_pa_analyze():
     imp = MagicMock()
-    fake_rt   = MagicMock()
-    fake_pa   = MagicMock()
-    m.ResultsTable.return_value    = fake_rt
+    fake_rt = MagicMock()
+    fake_pa = MagicMock()
+    m.ResultsTable.return_value = fake_rt
     m.ParticleAnalyzer.return_value = fake_pa
 
     m.analyze_particles(imp, 2, 2000, 0.2, 1.0)
     fake_pa.analyze.assert_called_once_with(imp)
+
+
+
+# process_field
+
+
+DEFAULT_SETTINGS = {
+    "thresholds": {
+        "myelin": 8000,
+        "debris": 15000,
+        "nuclei": None,
+    },
+    "particle_size": {"min": 2, "max": 2000},
+}
 
 
 @pytest.fixture
@@ -176,11 +208,11 @@ def field_dir(tmp_path):
     can run without touching a real filesystem or JVM.
     """
     field = tmp_path / "B02" / "Field1"
-    oir   = field / "OIR"
+    oir = field / "OIR"
     oir.mkdir(parents=True)
 
-    # Create placeholder tif files with the expected keyword names
-    for name in ("nuclei.tif", "MBP.tif", "debris.tif", "axon.tif"):
+
+    for name in ("nuclei.tif", "myelin.tif", "debris.tif", "axon.tif"):
         (oir / name).touch()
 
     return field
@@ -189,14 +221,13 @@ def field_dir(tmp_path):
 def test_process_field_creates_output_dirs(field_dir):
     fake_imp = MagicMock()
     fake_imp.getNChannels.return_value = 1
-    m.IJ.openImage.return_value  = fake_imp
-    m.IJ.getImage.return_value   = fake_imp
+    m.IJ.openImage.return_value = fake_imp
+    m.IJ.getImage.return_value = fake_imp
 
-    import analysis.masking as mod
-    with patch.object(mod, "ij", MagicMock()), \
-         patch.object(mod, "ImageCalculator", MagicMock(
+    with patch.object(m, "ij", MagicMock()), \
+         patch.object(m, "ImageCalculator", MagicMock(
              return_value=MagicMock(run=MagicMock(return_value=fake_imp)))):
-        m.process_field(field_dir)
+        m.process_field(field_dir, DEFAULT_SETTINGS)
 
     assert (field_dir / "TEMP").is_dir()
     assert (field_dir / "DATA").is_dir()
@@ -206,21 +237,35 @@ def test_process_field_creates_output_dirs(field_dir):
 def test_process_field_raises_on_missing_channel_file(tmp_path):
     """If a required keyword file is absent, process_field should propagate FileNotFoundError."""
     field = tmp_path / "B02" / "FieldX"
-    oir   = field / "OIR"
+    oir = field / "OIR"
     oir.mkdir(parents=True)
-    # Deliberately omit 'MBP.tif'
+    # Deliberately omit 'myelin.tif'
     for name in ("nuclei.tif", "debris.tif", "axon.tif"):
         (oir / name).touch()
 
     with pytest.raises(FileNotFoundError):
-        m.process_field(field)
+        m.process_field(field, DEFAULT_SETTINGS)
 
 
+def test_process_field_uses_settings_thresholds(field_dir):
+    """Threshold values from settings should flow through to analyze_particles."""
+    fake_imp = MagicMock()
+    fake_imp.getNChannels.return_value = 1
+    m.IJ.openImage.return_value = fake_imp
+    m.IJ.getImage.return_value = fake_imp
 
-def test_threshold_constants_are_ordered():
-    """MYELIN_THRESH must be lower than DEBRIS_THRESH."""
-    assert m.MYELIN_THRESH < m.DEBRIS_THRESH
+    custom_settings = {
+        "thresholds": {"myelin": 9000, "debris": 20000, "nuclei": None},
+        "particle_size": {"min": 5, "max": 500},
+    }
 
+    with patch.object(m, "ij", MagicMock()), \
+         patch.object(m, "ImageCalculator", MagicMock(
+             return_value=MagicMock(run=MagicMock(return_value=fake_imp)))), \
+         patch.object(m, "analyze_particles", wraps=m.analyze_particles) as mock_ap:
+        m.process_field(field_dir, custom_settings)
 
-def test_well_range_is_non_empty():
-    assert len(list(m.WELL_RANGE)) > 0
+    mock_ap.assert_called_once()
+    _, kwargs = mock_ap.call_args
+    assert kwargs.get("size_min") == 5
+    assert kwargs.get("size_max") == 500
