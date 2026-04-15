@@ -1,7 +1,13 @@
 #masking.py
 import imagej
 import scyjava
+import json
 from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
 
 from view.masking_front import collect_settings
 
@@ -18,10 +24,73 @@ ImageCalculator  = scyjava.jimport("ij.plugin.ImageCalculator")
 ImagePlus        = scyjava.jimport("ij.ImagePlus")
 WindowManager    = scyjava.jimport("ij.WindowManager")
 
+CONFIG_PATH = PROJECT_ROOT / "data" / "folder_paths.json"
+MASKING_REQUIRED_CHANNELS = {"axon", "myelin", "nuclei", "debris"}
+
 
 def ensure_dirs(dirs):
     for d in dirs:
         d.mkdir(parents=True, exist_ok=True)
+
+
+def load_skip_config():
+    if not CONFIG_PATH.exists():
+        return {
+            "skip_fovs": set(),
+            "skip_channels": set(),
+            "skip_fovs_per_well": {},
+        }
+
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    raw_skip_fovs = list(data.get("DisabledFOVs", [])) + list(data.get("SkipFOVs", []))
+    skip_fovs = {
+        int(fov)
+        for fov in raw_skip_fovs
+        if str(fov).strip().isdigit()
+    }
+    skip_channels = {
+        str(label).strip().lower()
+        for label in data.get("SkipChannels", [])
+        if str(label).strip()
+    }
+    skip_channels.update(
+        ch["label"].strip().lower()
+        for ch in data.get("Channels", [])
+        if ch.get("label") and not ch.get("active", True)
+    )
+
+    raw_per_well = data.get("SkipFOVsPerWell", {})
+    skip_fovs_per_well = {}
+    for well, fovs in raw_per_well.items():
+        skip_fovs_per_well[well] = {
+            int(fov) for fov in fovs if str(fov).strip().isdigit()
+        }
+
+    return {
+        "skip_fovs": skip_fovs,
+        "skip_channels": skip_channels,
+        "skip_fovs_per_well": skip_fovs_per_well,
+    }
+
+
+def parse_fov_num(field_name):
+    parts = field_name.split("_")
+    if len(parts) < 2 or not parts[1].isdigit():
+        return None
+    return int(parts[1])
+
+
+def should_skip_field(well_name, field_name, skip_config):
+    fov_num = parse_fov_num(field_name)
+    if fov_num is None:
+        return False
+
+    if fov_num in skip_config["skip_fovs"]:
+        return True
+
+    return fov_num in skip_config["skip_fovs_per_well"].get(well_name, set())
 
 
 def find_file(directory, keyword):
@@ -171,6 +240,7 @@ def process_field(field_dir, settings):
     """
     thresholds    = settings["thresholds"]
     particle_size = settings["particle_size"]
+    skip_channels = settings.get("skip_channels", set())
 
     myelin_thresh = thresholds.get("myelin") or 8000
     debris_thresh = thresholds.get("debris") or 15000
@@ -178,6 +248,11 @@ def process_field(field_dir, settings):
 
     size_min = particle_size.get("min") or 2
     size_max = particle_size.get("max") or 2000
+
+    missing_required = sorted(MASKING_REQUIRED_CHANNELS & skip_channels)
+    if missing_required:
+        print(f"  [process_field] skipping {field_dir.name}; excluded channels: {', '.join(missing_required)}")
+        return
 
     print(f"  [process_field] starting {field_dir.name}")
     dir_oir   = field_dir / "OIR"
@@ -263,11 +338,17 @@ def main():
 
     base_path  = settings["base_path"]
     well_range = settings["well_range"]
+    skip_config = load_skip_config()
+    settings["skip_channels"] = skip_config["skip_channels"]
 
     print(f"\nBase path:  {base_path}")
     print(f"Well range: {list(well_range)}")
     print(f"Thresholds: {settings['thresholds']}")
     print(f"Particles:  {settings['particle_size']}\n")
+    if skip_config["skip_fovs"] or skip_config["skip_channels"] or skip_config["skip_fovs_per_well"]:
+        print(f"Skip FOVs: {sorted(skip_config['skip_fovs'])}")
+        print(f"Skip channels: {sorted(skip_config['skip_channels'])}")
+        print(f"Per-well skipped FOVs: {skip_config['skip_fovs_per_well']}\n")
 
     #  Process wells 
     for k in well_range:
@@ -283,6 +364,9 @@ def main():
 
         print(f"Found {len(field_dirs)} field(s)")
         for field_dir in field_dirs:
+            if should_skip_field(well_name, field_dir.name, skip_config):
+                print(f"  - {field_dir.name}: skipped by config")
+                continue
             try:
                 process_field(field_dir, settings)
             except Exception as exc:
