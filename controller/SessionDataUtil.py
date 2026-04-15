@@ -5,9 +5,63 @@ import time
 
 
 class SessionDataUtil:
+    HISTORY_LIMIT = 10
+
+    def data_dir(self):
+        return Path(__file__).resolve().parent.parent / "data"
+
+    def history_path(self):
+        history_dir = self.data_dir() / "history"
+        history_dir.mkdir(parents=True, exist_ok=True)
+        return history_dir / "sessions.json"
+
+    def load_session_history(self):
+        history_path = self.history_path()
+        if not history_path.exists():
+            return {"sessions": []}
+
+        try:
+            with open(history_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return {"sessions": []}
+
+        sessions = data.get("sessions", [])
+        if not isinstance(sessions, list):
+            sessions = []
+        return {"sessions": sessions}
+
+    def save_session_history(self, history):
+        with open(self.history_path(), "w", encoding="utf-8") as f:
+            json.dump(history, f, indent=4)
+
+    def next_session_id(self, sessions):
+        existing_ids = [
+            session.get("SessionId", 0)
+            for session in sessions
+            if isinstance(session.get("SessionId"), int)
+        ]
+        return (max(existing_ids) if existing_ids else 0) + 1
+
+    def upsert_session_history(self, data):
+        history = self.load_session_history()
+        sessions = history["sessions"]
+        session_id = data.get("SessionId")
+
+        for index, session in enumerate(sessions):
+            if session.get("SessionId") == session_id:
+                sessions[index] = data
+                self.save_session_history(history)
+                return
+
+        sessions.append(data)
+        sessions.sort(key=lambda session: session.get("StartTime", ""))
+        if len(sessions) > self.HISTORY_LIMIT:
+            del sessions[: len(sessions) - self.HISTORY_LIMIT]
+        self.save_session_history(history)
 
     def clear_session_files(self):
-        data_dir = Path(__file__).resolve().parent.parent / "data"
+        data_dir = self.data_dir()
         for name in ("folder_paths.json", "folder_paths.txt", "sessionData.txt"):
             path = data_dir / name
             if path.exists():
@@ -55,7 +109,10 @@ class SessionDataUtil:
             "StartTime": start_time
         }
 
-        json_dir = Path(__file__).resolve().parent.parent / "data"
+        history = self.load_session_history()
+        json_data["SessionId"] = self.next_session_id(history["sessions"])
+
+        json_dir = self.data_dir()
         json_dir.mkdir(parents=True, exist_ok=True) # Ensure data directory exists
         json_path = json_dir / "folder_paths.json"
 
@@ -65,9 +122,10 @@ class SessionDataUtil:
         # Update files
         self.save_txt(json_data)
         self.session_data(json_data)  
+        self.upsert_session_history(json_data)
 
     def save_end_time(self, end_time=None):
-        json_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+        json_path = self.data_dir() / "folder_paths.json"
         if not json_path.exists():
             return
 
@@ -84,9 +142,10 @@ class SessionDataUtil:
 
         self.save_txt(data)
         self.session_data(data)  
+        self.upsert_session_history(data)
 
     def save_txt(self, data):
-        txt_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.txt"
+        txt_path = self.data_dir() / "folder_paths.txt"
 
         with open(txt_path, "w", encoding="utf-8") as f:
             f.write(f"Experiment Start Time: {data.get('StartTime', 'N/A')}\n")
@@ -119,7 +178,7 @@ class SessionDataUtil:
         return Path(path).name
 
     def session_data(self, data):
-        txt_path = Path(__file__).resolve().parent.parent / "data" / "sessionData.txt"
+        txt_path = self.data_dir() / "sessionData.txt"
 
         tracks_list = data.get("Tracks", [])
         raw_path = tracks_list[0] if tracks_list else None

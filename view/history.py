@@ -1,5 +1,6 @@
 import tkinter as tk
 from pathlib import Path
+import json
 
 
 class HistoryPage(tk.Frame):
@@ -9,6 +10,7 @@ class HistoryPage(tk.Frame):
 
         self.CONFIG_DIR = Path(__file__).resolve().parent.parent / "data" / "history"
         self.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        self.HISTORY_FILE = self.CONFIG_DIR / "sessions.json"
 
         self.selected_config = None
         self.selected_label = None
@@ -86,15 +88,25 @@ class HistoryPage(tk.Frame):
         self.get_all_configs()
         
 
-    # Get folders + txt files
+    def refresh_sessions(self):
+        self.get_all_configs()
+
+    def load_sessions(self):
+        if not self.HISTORY_FILE.exists():
+            return []
+
+        try:
+            with open(self.HISTORY_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return []
+
+        sessions = data.get("sessions", [])
+        return sessions if isinstance(sessions, list) else []
+
     def get_all_configs(self):
-        self.config_order = [
-            p for p in self.CONFIG_DIR.iterdir()
-            if p.is_dir() or p.suffix.lower() == ".txt"
-        ]
-
-        self.config_order.sort(key=lambda x: (x.is_file(), x.name.lower()))
-
+        self.config_order = self.load_sessions()
+        self.config_order.sort(key=lambda session: session.get("SessionId", 0), reverse=True)
         self.render_config_list()
 
     # \List of sessions 
@@ -106,7 +118,7 @@ class HistoryPage(tk.Frame):
 
         for entry in self.config_order:
 
-            display_name = entry.name if entry.is_dir() else entry.stem
+            display_name = f"Session {entry.get('SessionId', 'N/A')}"
 
             item = tk.Label(
                 self.config_list_frame,
@@ -143,12 +155,8 @@ class HistoryPage(tk.Frame):
         for widget in self.preview_content_frame.winfo_children():
             widget.destroy()
 
-        session_txt = entry_path / "sessionData.txt" if entry_path.is_dir() else entry_path
-
-        text = self.read_session_txt(session_txt)
-
-        title = entry_path.name if entry_path.is_dir() else entry_path.stem
-        self.preview_title.config(text=title)
+        text = self.format_session_text(entry_path)
+        self.preview_title.config(text=f"Session {entry_path.get('SessionId', 'N/A')}")
 
         if text is None:
             tk.Label(
@@ -174,12 +182,38 @@ class HistoryPage(tk.Frame):
         text_box.insert("1.0", text)
         text_box.config(state="disabled")
 
-    # Read text content    
-    def read_session_txt(self, txt_path):
-        if not txt_path.exists():
+    def format_session_text(self, session):
+        if not isinstance(session, dict):
             return None
 
-        try:
-            return txt_path.read_text(encoding="utf-8").strip()
-        except Exception:
-            return None
+        lines = [
+            f"Session ID: {session.get('SessionId', 'N/A')}",
+            f"Start Time: {session.get('StartTime', 'N/A')}",
+            f"End Time: {session.get('EndTime', 'In Progress')}",
+            f"Microscope: {session.get('Microscope', 'N/A')}",
+            f"Image Type: {session.get('ImageType', 'N/A')}",
+            f"Number of FOVs: {session.get('NumFOVs', 0)}",
+            "",
+            "Tracks (Raw):",
+        ]
+
+        lines.extend(session.get("Tracks", []) or ["None"])
+        lines.extend(["", "Tracks1 (Cleaned):"])
+        lines.extend(session.get("Tracks1", []) or ["None"])
+        lines.extend(["", "Data:"])
+        lines.extend(session.get("Data", []) or ["None"])
+        lines.extend(["", "Disabled FOVs:"])
+
+        disabled_fovs = session.get("DisabledFOVs", [])
+        lines.append(", ".join(disabled_fovs) if disabled_fovs else "None")
+
+        lines.extend(["", "Channels:"])
+        channels = session.get("Channels", [])
+        if channels:
+            for ch in channels:
+                status = "Active" if ch.get("active") else "Disabled"
+                lines.append(f"{ch.get('code', 'N/A')}: {ch.get('label', 'N/A')} ({status})")
+        else:
+            lines.append("None")
+
+        return "\n".join(lines)

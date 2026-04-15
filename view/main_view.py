@@ -46,11 +46,13 @@ class App(tk.Tk):
     
     def show_page(self, name):
         if name == "Masking Settings":
-            self.geometry("700x600")
+            self.geometry("520x700")
         else:
             self.geometry("700x500")
 
         page = self.pages[name]
+        if hasattr(page, "refresh_sessions"):
+            page.refresh_sessions()
         page.tkraise()
 
 if __name__ == "__main__":
