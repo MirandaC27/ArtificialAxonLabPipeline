@@ -3,9 +3,6 @@
 # Get directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-source "$SCRIPT_DIR/../controller/CleanDataController.sh"
-source "$SCRIPT_DIR/../controller/OrderDataController.sh"
-
 # Absolute path to jq
 OS="$(uname -s)"
 
@@ -16,6 +13,9 @@ else
 fi
 
 JSON="$SCRIPT_DIR/../data/folder_paths.json"
+
+source "$SCRIPT_DIR/../controller/CleanDataController.sh"
+source "$SCRIPT_DIR/../controller/OrderDataController.sh"
 
 DIR0="$PWD"
 DATA_DIR="$SCRIPT_DIR/../data"

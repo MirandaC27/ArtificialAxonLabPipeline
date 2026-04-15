@@ -26,7 +26,6 @@ class SettingsPage(tk.Frame):
         state = {}
 
         state["experiment_var"] = tk.StringVar()
-        state["fov_var"] = tk.StringVar()
         state["frame_var"] = tk.StringVar()
         state["ezra_var"] = tk.BooleanVar()
 
@@ -46,15 +45,13 @@ class SettingsPage(tk.Frame):
     def submit(self):
 
         exp = self.state["experiment_var"].get()
-        fovs = self.state["fov_var"].get()
         frames = self.state["frame_var"].get()
         ezra = self.state["ezra_var"].get()
 
-        print(exp, fovs, frames, ezra)
+        print(exp, frames, ezra)
 
         settings = (
             f"Experiment: {exp}\n"
-            f"FOVs: {fovs}\n"
             f"Frames: {frames}\n"
             f"Run Ezra: {ezra}"
         )
@@ -115,14 +112,7 @@ class SettingsPage(tk.Frame):
         )
         exp_menu.grid(row=0, column=1, pady=10)
         exp_menu.set("Select experiment")
-
-        tk.Label(frame, text="Fields of view").grid(row=1, column=0, padx=10, pady=10, sticky="e")
-
-        tk.Entry(
-            frame,
-            textvariable=self.state["fov_var"]
-        ).grid(row=1, column=1, padx=10, pady=10, sticky="w")
-
+        
         self.create_3d_widgets(frame)
 
         # show 3D widgets by default

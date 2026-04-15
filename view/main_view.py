@@ -7,6 +7,7 @@ from HomePage import HomePage
 from Config import ConfigPage
 from SessionEnd import SessionEnd
 from masking_front import MaskingSettingsPage
+from history import HistoryPage
 
 
 class App(tk.Tk):
@@ -31,7 +32,8 @@ class App(tk.Tk):
             (SettingsPage, "Settings"),
             (ImageProcessingSettings, "Image Processing Stuff"),
             (SessionEnd, "SessionEnd"),
-            (MaskingSettingsPage, "Masking Settings")
+            (MaskingSettingsPage, "Masking Settings"),
+            (HistoryPage, "History")
         ]:
             page = PageClass(container, self)
             self.pages[name] = page
@@ -44,11 +46,13 @@ class App(tk.Tk):
     
     def show_page(self, name):
         if name == "Masking Settings":
-            self.geometry("700x600")
+            self.geometry("520x700")
         else:
             self.geometry("700x500")
 
         page = self.pages[name]
+        if hasattr(page, "refresh_sessions"):
+            page.refresh_sessions()
         page.tkraise()
 
 if __name__ == "__main__":

@@ -45,14 +45,14 @@ class ImageProcessingSettings(tk.Frame):
 
         # next and back buttons 
         nav_frame = tk.Frame(self)
-        nav_frame.grid(row=3, column=0, pady=5, padx=20, sticky="ew")
+        nav_frame.grid(row=4, column=0, pady=5, padx=20, sticky="ew")
         nav_frame.grid_columnconfigure(0, weight=1)
         nav_frame.grid_columnconfigure(1, weight=1)
 
         tk.Button(
             nav_frame,
             text="Back",
-            command=lambda: self.controller.show_page("Settings")
+            command=lambda: self.controller.show_page("Upload")
         ).grid(row=0, column=0, padx=5, sticky="ew")
 
         tk.Button(
