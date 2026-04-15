@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import patch
 import tkinter as tk
 
-from view.UploadPageStep1 import UploadPageStep1
+from ArtificialAxonLabPipeline.Frontend.view.UploadPageStep1 import UploadPageStep1
 
 
 

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import tifffile as tiff
 
-from analysis.Ezra_files.detectmyelinarea_Keyence import detectmyelinarea_Keyence   # adjust import if needed
+from ArtificialAxonLabPipeline.Backend.analysis.Ezra_files.detectmyelinarea_Keyence import detectmyelinarea_Keyence   # adjust import if needed
 
 
 

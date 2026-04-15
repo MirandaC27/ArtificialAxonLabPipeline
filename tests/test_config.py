@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import view.Config as app
+import ArtificialAxonLabPipeline.Frontend.view.Config as app
 
 
 @pytest.fixture

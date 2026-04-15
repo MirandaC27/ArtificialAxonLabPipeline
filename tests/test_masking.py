@@ -2,7 +2,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, call
-import analysis.masking as m
+import ArtificialAxonLabPipeline.Backend.analysis.masking as m
 
 
 

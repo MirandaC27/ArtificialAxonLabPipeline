@@ -9,7 +9,7 @@ from unittest.mock import patch, MagicMock
 import importlib, sys
 
 
-from analysis.Ezra_files.analysis_Keyence import analysis   
+from ArtificialAxonLabPipeline.Backend.analysis.Ezra_files.analysis_Keyence import analysis   
 
 
 # Helpers

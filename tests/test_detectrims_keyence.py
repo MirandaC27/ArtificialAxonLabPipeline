@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 import tifffile as tiff
 
-from analysis.Ezra_files.detectrims_Keyence import detectrims_Keyence # adjust import path if needed
+from ArtificialAxonLabPipeline.Backend.analysis.Ezra_files.detectrims_Keyence import detectrims_Keyence # adjust import path if needed
 
 
 

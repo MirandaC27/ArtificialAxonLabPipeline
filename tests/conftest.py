@@ -23,7 +23,7 @@ sys.modules["scyjava"] = scyjava_stub
 
 
 import importlib
-import analysis.masking as masking_module  
+import ArtificialAxonLabPipeline.Backend.analysis.masking as masking_module  
 
 
 @pytest.fixture(autouse=True)

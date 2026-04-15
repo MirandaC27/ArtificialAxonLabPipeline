@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import tkinter as tk
 
-from view.history import HistoryPage
+from ArtificialAxonLabPipeline.Frontend.view.history import HistoryPage
 from tests.test_session_data_util import _make_workspace_temp_root
 
 

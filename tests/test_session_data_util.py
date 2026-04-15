@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 import uuid
 
-from controller.SessionDataUtil import SessionDataUtil
+from ArtificialAxonLabPipeline.Backend.controller.SessionDataUtil import SessionDataUtil
 
 
 def _set_fake_module_file(randompatch, root_path):

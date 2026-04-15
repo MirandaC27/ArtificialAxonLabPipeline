@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from controller.AutoFillUtil import AutoFillUtil
+from ArtificialAxonLabPipeline.Backend.controller.AutoFillUtil import AutoFillUtil
 
 
 class _Node:

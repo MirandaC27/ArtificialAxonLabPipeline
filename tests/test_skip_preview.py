@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-import analysis.create_data as create_data
-import analysis.masking as masking
+import ArtificialAxonLabPipeline.Backend.analysis.create_data as create_data
+import ArtificialAxonLabPipeline.Backend.analysis.masking as masking
 
 
 def _write_config(path: Path, payload: dict) -> None:
