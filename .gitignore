@@ -8,3 +8,11 @@ view/__pycache__/
 # Ignore other Python cache artifacts
 *.pyo
 *.pyd
+
+# Ignore virtual environment directories
+*venv/
+*.env
+
+__pycache__/
+*.pyc
+*.pyo
