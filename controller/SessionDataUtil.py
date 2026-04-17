@@ -93,6 +93,7 @@ class SessionDataUtil:
         json_data = {
             "Tracks": sorted(tracks),
             "Tracks1": [str(clean_path)] if clean_path != "N/A" else [],
+            "OrderedTrack": [str(clean_path.parent / "ORDERED")] if clean_path != "N/A" else [],
             "Data": sorted(data),
             "ImageType": image_type,
             "Microscope": microscope,

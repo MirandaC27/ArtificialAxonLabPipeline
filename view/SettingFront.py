@@ -1,10 +1,15 @@
 #SettingFront.py
 import tkinter as tk
 from tkinter import ttk
+from pathlib import Path
+import sys
 
-#I'm only adding this to show that I did complete U16 and U17
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from controller.SettingsData import SettingsData
+
+# I'm only adding this to show that I did complete U16 and U17
 EXPERIMENTS = ['DAPI','GFP-mylein','CY5-myelin','GFP-debris','CY5-debris']
-
 
 
 class SettingsPage(tk.Frame):
@@ -27,6 +32,7 @@ class SettingsPage(tk.Frame):
 
         state["experiment_var"] = tk.StringVar()
         state["frame_var"] = tk.StringVar()
+        state["dist_var"] = tk.StringVar()   
         state["ezra_var"] = tk.BooleanVar()
 
         state["widgets_3d"] = {}
@@ -46,13 +52,18 @@ class SettingsPage(tk.Frame):
 
         exp = self.state["experiment_var"].get()
         frames = self.state["frame_var"].get()
+        distance = self.state["dist_var"].get()
         ezra = self.state["ezra_var"].get()
 
-        print(exp, frames, ezra)
+        print(exp, frames, distance, ezra)
+
+        saver = SettingsData()
+        saver.save_settings(exp, frames, ezra, distance)
 
         settings = (
             f"Experiment: {exp}\n"
             f"Frames: {frames}\n"
+            f"Distance: {distance}\n"
             f"Run Ezra: {ezra}"
         )
 
@@ -69,7 +80,7 @@ class SettingsPage(tk.Frame):
         w["frame_entry"] = tk.Entry(parent, textvariable=self.state["frame_var"])
 
         w["dist_label"] = tk.Label(parent, text="Distance between frames")
-        w["dist_entry"] = tk.Entry(parent)
+        w["dist_entry"] = tk.Entry(parent, textvariable=self.state["dist_var"])  
 
         w["ezra_check"] = tk.Checkbutton(
             parent,
@@ -85,6 +96,7 @@ class SettingsPage(tk.Frame):
 
         w["ezra_check"].grid(row=5, column=1, padx=10, pady=5, sticky="w")
 
+        # Hide initially
         for widget in w.values():
             widget.grid_remove()
 
@@ -112,7 +124,7 @@ class SettingsPage(tk.Frame):
         )
         exp_menu.grid(row=0, column=1, pady=10)
         exp_menu.set("Select experiment")
-        
+
         self.create_3d_widgets(frame)
 
         # show 3D widgets by default

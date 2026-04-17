@@ -7,9 +7,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OS="$(uname -s)"
 
 if [[ "$OS" == "Darwin" ]]; then
-    JQ="$SCRIPT_DIR/../controller/jq-macos-arm64"    
+    JQ="$SCRIPT_DIR/../services/jq-macos-arm64"    
 else
-    JQ="$SCRIPT_DIR/../controller/jq-windows-amd64.exe"
+    JQ="$SCRIPT_DIR/../services/jq-windows-amd64.exe"
 fi
 
 JSON="$SCRIPT_DIR/../data/folder_paths.json"
