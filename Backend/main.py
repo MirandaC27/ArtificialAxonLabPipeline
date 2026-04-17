@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 from .database import engine, Base
-from . import api_sum
+from . import api_sum 
+from . import api_name
 
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
 app.include_router(api_sum.router)
+app.include_router(api_name.router)
 
 @app.get("/")
 def read_root():

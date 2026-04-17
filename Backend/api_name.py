@@ -13,13 +13,13 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/add", response_model=schemas.NumberResult)
-def add_numbers(nums: schemas.Numbers, db: Session = Depends(get_db)):
-    result = nums.a + nums.b
+@router.post("/name", response_model=schemas.NameResult)
+def add_numbers(name: schemas.Name, db: Session = Depends(get_db)):
+    result = f"{name.first_name} {name.last_name}"
 
-    record = models.Calculation(
-        a=nums.a,
-        b=nums.b,
+    record = models.Name(
+        first_name=name.first_name,
+        last_name=name.last_name,
         result=result
     )
 

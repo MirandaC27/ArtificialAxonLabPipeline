@@ -11,3 +11,15 @@ def add_numbers(a, b):
     )
     response.raise_for_status()
     return response.json()
+
+def add_name(first_name, last_name):
+    response = requests.post(
+        f"{BASE_URL}/name",
+        json={
+            "first_name": first_name,
+            "last_name": last_name
+        },
+        timeout=5,
+    )
+    response.raise_for_status()
+    return response.json()
