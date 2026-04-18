@@ -160,6 +160,6 @@ class SettingsPage(tk.Frame):
 
         tk.Button(
             nav_frame,
-            text="Go to Image Processing",
-            command=lambda: self.controller.show_page("Image Processing Stuff")
+            text="Next",
+            command=lambda: self.controller.show_page("Masking Settings")
         ).grid(row=0, column=1, padx=5, sticky="ew")

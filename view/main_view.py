@@ -1,12 +1,12 @@
 #main_view.py
 import tkinter as tk
-from UploadPageStep1 import UploadPageStep1
-from SettingFront import SettingsPage
-from pipeline_front import ImageProcessingSettings
 from HomePage import HomePage
 from Config import ConfigPage
-from SessionEnd import SessionEnd
+from UploadPageStep1 import UploadPageStep1
+from SettingFront import SettingsPage
+#from pipeline_front import ImageProcessingSettings
 from masking_front import MaskingSettingsPage
+from SessionEnd import SessionEnd
 from history import HistoryPage
 
 
@@ -30,9 +30,9 @@ class App(tk.Tk):
             (ConfigPage, "Config"),
             (UploadPageStep1, "Upload"),
             (SettingsPage, "Settings"),
-            (ImageProcessingSettings, "Image Processing Stuff"),
-            (SessionEnd, "SessionEnd"),
+            #(ImageProcessingSettings, "Image Processing Stuff"),
             (MaskingSettingsPage, "Masking Settings"),
+            (SessionEnd, "SessionEnd"),
             (HistoryPage, "History")
         ]:
             page = PageClass(container, self)

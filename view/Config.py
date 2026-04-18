@@ -15,11 +15,11 @@ class ConfigPage(tk.Frame):
 
         self.af = AutoFillUtil()
 
-        self.CONFIG_DIR = Path("../data/configs")
-        self.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        BASE_DIR = Path(__file__).resolve().parent.parent
 
-        self.currentConfig = Path("../data/folder_paths.json")
-        self.ORDER_FILE = Path("../data/config_order.json")
+        self.CONFIG_DIR = BASE_DIR / "data" / "configs"
+        self.currentConfig = BASE_DIR / "data" / "folder_paths.json"
+        self.ORDER_FILE = BASE_DIR / "data" / "config_order.json"
 
         self.selected_config = None
         self.selected_label = None

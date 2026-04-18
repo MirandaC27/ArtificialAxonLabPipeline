@@ -204,13 +204,13 @@ class MaskingSettingsPage(tk.Frame):
         tk.Button(
             nav_frame,
             text="Back",
-            command=lambda: self.controller.show_page("Upload") if self.controller else None,
+            command=lambda: self.controller.show_page("Settings") if self.controller else None,
         ).grid(row=0, column=0, padx=5, sticky="ew")
 
         tk.Button(
             nav_frame,
             text="Next",
-            command=lambda: self.controller.show_page("Settings") if self.controller else None,
+            command=lambda: self.controller.show_page("SessionEnd") if self.controller else None,
         ).grid(row=0, column=1, padx=5, sticky="ew")
 
    
