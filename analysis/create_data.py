@@ -194,43 +194,43 @@ def main():
 
     # --- Main processing loop ---
     for k in well_range:
-    skip_config = load_skip_config()
-    if skip_config["skip_fovs"] or skip_config["skip_channels"] or skip_config["skip_fovs_per_well"]:
-        print(f"Skip FOVs: {sorted(skip_config['skip_fovs'])}")
-        print(f"Skip channels: {sorted(skip_config['skip_channels'])}")
-        print(f"Per-well skipped FOVs: {skip_config['skip_fovs_per_well']}")
+        skip_config = load_skip_config()
+        if skip_config["skip_fovs"] or skip_config["skip_channels"] or skip_config["skip_fovs_per_well"]:
+            print(f"Skip FOVs: {sorted(skip_config['skip_fovs'])}")
+            print(f"Skip channels: {sorted(skip_config['skip_channels'])}")
+            print(f"Per-well skipped FOVs: {skip_config['skip_fovs_per_well']}")
 
-    if CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"]:
-        missing_required = sorted(CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"])
-        print(f"Skipping create_data stage because required channels are excluded: {', '.join(missing_required)}")
-        return
+        if CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"]:
+            missing_required = sorted(CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"])
+            print(f"Skipping create_data stage because required channels are excluded: {', '.join(missing_required)}")
+            return
 
-    for k in WELL_RANGE:
-        well_name = f"B{k}"
-        well_path = base_path / well_name
-        print(f"\nProcessing well: {well_name}  ({well_path})")
+        for k in WELL_RANGE:
+            well_name = f"B{k}"
+            well_path = base_path / well_name
+            print(f"\nProcessing well: {well_name}  ({well_path})")
 
-        try:
-            field_dirs = get_field_dirs(well_path)
-        except FileNotFoundError:
-            print(f"  Well directory not found, skipping: {well_path}")
-            continue
-
-        field_dirs = field_dirs[:9]
-        print(f"  Found {len(field_dirs)} field(s) (capped at 9)")
-
-        for field_dir in field_dirs:
-            if should_skip_field(well_name, field_dir.name, skip_config):
-                print(f"  - {field_dir.name}: skipped by config")
-                continue
-            print(field_dir.name)
             try:
-                process_field(field_dir, myelin_thresh, debris_thresh)
-            except Exception as exc:
-                print(f"  {field_dir.name}: {exc}")
+                field_dirs = get_field_dirs(well_path)
+            except FileNotFoundError:
+                print(f"  Well directory not found, skipping: {well_path}")
+                continue
 
-    print("Done.")
-    ij.dispose()
+            field_dirs = field_dirs[:9]
+            print(f"  Found {len(field_dirs)} field(s) (capped at 9)")
+
+            for field_dir in field_dirs:
+                if should_skip_field(well_name, field_dir.name, skip_config):
+                    print(f"  - {field_dir.name}: skipped by config")
+                    continue
+                print(field_dir.name)
+                try:
+                    process_field(field_dir, myelin_thresh, debris_thresh)
+                except Exception as exc:
+                    print(f"  {field_dir.name}: {exc}")
+
+        print("Done.")
+        ij.dispose()
 
 if __name__ == "__main__":
     main()

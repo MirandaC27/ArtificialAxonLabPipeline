@@ -25,6 +25,11 @@ DEFAULT_PARTICLE_SIZE_MAX = 2000
 THRESH_MIN = 0
 THRESH_MAX = 65535
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+from analysis.masking import main as run_masking
 
 class MaskingSettingsPage(tk.Frame):
 
@@ -213,7 +218,53 @@ class MaskingSettingsPage(tk.Frame):
             command=lambda: self.controller.show_page("Settings") if self.controller else None,
         ).grid(row=0, column=1, padx=5, sticky="ew")
 
+
+        tk.Button(
+            self,
+            text="Run Masking",
+            command=self._run_masking,
+            bg="#2d7d46",
+            fg="white",
+            font=("TkDefaultFont", 10, "bold"),
+            relief="flat",
+            padx=12,
+            pady=8,
+        ).grid(row=9, column=0, pady=(10, 4), padx=20, sticky="ew")
+
    
+    def _run_masking(self):
+        base_path   = self.get_base_path()
+        well_range  = self.get_well_range()
+        thresholds  = self.get_thresholds()
+        particle    = self.get_particle_size()
+
+        errors = []
+        if not base_path:
+            errors.append("Base path is required.")
+        if well_range is None:
+            errors.append("Well start/end must be integers.")
+
+        if errors:
+            self.status_label.config(text=" | ".join(errors), fg="red")
+            return
+
+        settings = {
+            "base_path": base_path,
+            "well_range": well_range,
+            "thresholds": thresholds,
+            "particle_size": particle,
+        }
+
+        self.status_label.config(text="Running masking...", fg="blue")
+        self.update_idletasks()
+
+        try:
+            run_masking(settings)   # <-- call masking.py logic directly
+            self.status_label.config(text="Masking complete.", fg="green")
+        except Exception as e:
+            self.status_label.config(text=f"Error: {e}", fg="red")
+
+            
     def _browse_base_path(self):
         chosen = filedialog.askdirectory(title="Select base input directory")
         if chosen:

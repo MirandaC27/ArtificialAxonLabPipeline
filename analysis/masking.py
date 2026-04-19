@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
-from view.masking_front import collect_settings
+#rom view.masking_front import collect_settings
 
 
 ij = imagej.init("sc.fiji:fiji", mode="headless")
@@ -329,11 +329,10 @@ def process_field(field_dir, settings):
     print(f" {field_dir.name}")
 
 
-def main():
-    # Collect settings from the UI 
-    settings = collect_settings()
+def main(settings):
+   # If no settings passed, fall back to UI
     if settings is None:
-        print("Settings window closed without confirming. Exiting.")
+        print("No Settings. Exiting.")
         return
 
     base_path  = settings["base_path"]

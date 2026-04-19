@@ -15,7 +15,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from controller.SessionDataUtil import SessionDataUtil
 
 sd = SessionDataUtil()
-CHANNELS = ['axon', 'myelin', 'nuclei', 'debris']
+CHANNELS = ['axon', 'myelin', 'nuclei', 'debris', 'GFAP']
 
 class UploadPageStep1(tk.Frame):
 
@@ -119,7 +119,7 @@ class UploadPageStep1(tk.Frame):
         nav_frame.grid_columnconfigure(1, weight=1)
 
         tk.Button(nav_frame, text="Back", command=lambda: self.controller.show_page("Home")).grid(row=0, column=0, padx=5, sticky="ew")
-        tk.Button(nav_frame, text="Next", command=lambda: self.controller.show_page("Settings")).grid(row=0, column=1, padx=5, sticky="ew")
+        tk.Button(nav_frame, text="Next", command=lambda: self.controller.show_page("Masking Settings")).grid(row=0, column=1, padx=5, sticky="ew")
 
     def toggle_disable_ui(self):
         if self.disable_mode_var.get():

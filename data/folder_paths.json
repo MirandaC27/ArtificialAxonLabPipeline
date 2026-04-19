@@ -6,26 +6,33 @@
         "/Users/chloemiranda/capstone/CLEANED"
     ],
     "Data": [],
-    "ImageType": "3D",
+    "ImageType": "2D",
     "Microscope": "Keyence",
+    "NumFOVs": 9,
+    "DisabledFOVs": [],
     "Channels": [
         {
             "code": "CH1",
-            "label": "axon"
+            "label": "debris",
+            "active": true
         },
         {
             "code": "CH2",
-            "label": "myelin"
+            "label": "axon",
+            "active": true
         },
         {
             "code": "CH3",
-            "label": "nuclei"
+            "label": "nuclei",
+            "active": true
         },
         {
             "code": "CH4",
-            "label": "debris"
+            "label": "myelin",
+            "active": true
         }
     ],
-    "StartTime": "2026-04-13 23:58:13",
-    "EndTime": "2026-04-13 23:58:26"
+    "StartTime": "2026-04-19 00:31:59",
+    "SessionId": 7,
+    "EndTime": "2026-04-19 00:32:04"
 }
