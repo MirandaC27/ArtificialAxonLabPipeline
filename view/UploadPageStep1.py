@@ -288,10 +288,20 @@ class UploadPageStep1(tk.Frame):
 
     def run_process(self):
         try:
+            if not self.selected_folders:
+                print("No folders selected")
+                self.after(0, lambda: self.status_label.config(
+                    text="Please select at least one folder before running."
+                ))
+                return
+
             self.save_folders()
             sd.runtime(self.run_step1)
+
         finally:
-            sd.save_end_time()
+            if self.selected_folders:
+                sd.save_end_time()
+
             self.after(0, self.close_popup)
 
     def button_run(self):
