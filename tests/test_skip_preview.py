@@ -19,7 +19,7 @@ def _format_skip_summary(skip_config: dict) -> str:
 
 
 def test_skip_preview_reads_selected_channels_and_fovs(tmp_path, monkeypatch, capsys):
-    config_path = tmp_path / "folder_paths.json"
+    config_path = tmp_path / "upload_settings.json"
     _write_config(
         config_path,
         {
@@ -59,7 +59,7 @@ def test_skip_preview_reads_selected_channels_and_fovs(tmp_path, monkeypatch, ca
 
 
 if __name__ == "__main__":
-    config_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+    config_path = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
     if not config_path.exists():
         raise SystemExit(f"Config not found: {config_path}")
 

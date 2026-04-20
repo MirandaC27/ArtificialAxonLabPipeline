@@ -1,0 +1,41 @@
+{
+    "Tracks": [
+        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\VS Code\\AxonLabs\\Sample Data\\EXP009\\EXP009_Keyence_Plate1_RAW"
+    ],
+    "Tracks1": [
+        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\VS Code\\AxonLabs\\Sample Data\\EXP009\\CLEANED"
+    ],
+    "OrderedTrack": [
+        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\VS Code\\AxonLabs\\Sample Data\\EXP009\\ORDERED"
+    ],
+    "Data": [],
+    "ImageType": "3D",
+    "Microscope": "Keyence",
+    "NumFOVs": 9,
+    "DisabledFOVs": [],
+    "Channels": [
+        {
+            "code": "CH1",
+            "label": "axon",
+            "active": true
+        },
+        {
+            "code": "CH2",
+            "label": "myelin",
+            "active": true
+        },
+        {
+            "code": "CH3",
+            "label": "nuclei",
+            "active": true
+        },
+        {
+            "code": "CH4",
+            "label": "debris",
+            "active": true
+        }
+    ],
+    "StartTime": "2026-04-19 23:54:14",
+    "SessionId": 4,
+    "EndTime": "2026-04-19 23:54:16"
+}

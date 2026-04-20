@@ -8,11 +8,11 @@ import sys
 
 # Import settings collector from the frontend
 sys.path.append(str(Path(__file__).resolve().parent))
-from masking_front import collect_settings
+from view.masking_front import collect_settings
 
 SEGMENT_LOW  = 128
 SEGMENT_HIGH = 255
-ij = imagej.init(str(FIJI_PATH), mode="headless")
+ij = imagej.init('sc.fiji:fiji', headless=False)  
 print(f"ImageJ version: {ij.getVersion()}")
 
 IJ            = scyjava.jimport("ij.IJ")
@@ -23,9 +23,14 @@ DEBRIS_THRESH  = 15000
 SEGMENT_LOW    = 128
 SEGMENT_HIGH   = 255
 
-BASE_PATH  = Path("/Users/chloemiranda/capstone/CLEANED/ORDERED")
 WELL_RANGE = range(10, 11) 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
+
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+BASE_PATH = data.get("OrderedTrack", []) # Ordered Data folder path
+
 CREATE_DATA_REQUIRED_CHANNELS = {"axon", "myelin", "debris"}
 
 def ensure_dirs(dirs):
@@ -158,10 +163,10 @@ def process_field(field_dir, myelin_thresh, debris_thresh):
 
 def main():
    
-    settings = collect_settings()
-    if settings is None:
-        print("Cancelled by user.")
-        return
+    DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+    with open(DATA_DIR / "masking_settings.json", "r") as f:
+        settings = json.load(f)
 
     base_path     = settings["base_path"]
     well_range    = settings["well_range"]
@@ -194,43 +199,43 @@ def main():
 
     # --- Main processing loop ---
     for k in well_range:
-    skip_config = load_skip_config()
-    if skip_config["skip_fovs"] or skip_config["skip_channels"] or skip_config["skip_fovs_per_well"]:
-        print(f"Skip FOVs: {sorted(skip_config['skip_fovs'])}")
-        print(f"Skip channels: {sorted(skip_config['skip_channels'])}")
-        print(f"Per-well skipped FOVs: {skip_config['skip_fovs_per_well']}")
-
-    if CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"]:
-        missing_required = sorted(CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"])
-        print(f"Skipping create_data stage because required channels are excluded: {', '.join(missing_required)}")
-        return
-
-    for k in WELL_RANGE:
-        well_name = f"B{k}"
-        well_path = base_path / well_name
-        print(f"\nProcessing well: {well_name}  ({well_path})")
-
-        try:
-            field_dirs = get_field_dirs(well_path)
-        except FileNotFoundError:
-            print(f"  Well directory not found, skipping: {well_path}")
-            continue
-
-        field_dirs = field_dirs[:9]
-        print(f"  Found {len(field_dirs)} field(s) (capped at 9)")
-
-        for field_dir in field_dirs:
-            if should_skip_field(well_name, field_dir.name, skip_config):
-                print(f"  - {field_dir.name}: skipped by config")
-                continue
-            print(field_dir.name)
+        skip_config = load_skip_config()
+        if skip_config["skip_fovs"] or skip_config["skip_channels"] or skip_config["skip_fovs_per_well"]:
+            print(f"Skip FOVs: {sorted(skip_config['skip_fovs'])}")
+            print(f"Skip channels: {sorted(skip_config['skip_channels'])}")
+            print(f"Per-well skipped FOVs: {skip_config['skip_fovs_per_well']}")
+    
+        if CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"]:
+            missing_required = sorted(CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"])
+            print(f"Skipping create_data stage because required channels are excluded: {', '.join(missing_required)}")
+            return
+    
+        for k in WELL_RANGE:
+            well_name = f"B{k}"
+            well_path = base_path / well_name
+            print(f"\nProcessing well: {well_name}  ({well_path})")
+    
             try:
-                process_field(field_dir, myelin_thresh, debris_thresh)
-            except Exception as exc:
-                print(f"  {field_dir.name}: {exc}")
-
-    print("Done.")
-    ij.dispose()
+                field_dirs = get_field_dirs(well_path)
+            except FileNotFoundError:
+                print(f"  Well directory not found, skipping: {well_path}")
+                continue
+            
+            field_dirs = field_dirs[:9]
+            print(f"  Found {len(field_dirs)} field(s) (capped at 9)")
+    
+            for field_dir in field_dirs:
+                if should_skip_field(well_name, field_dir.name, skip_config):
+                    print(f"  - {field_dir.name}: skipped by config")
+                    continue
+                print(field_dir.name)
+                try:
+                    process_field(field_dir, myelin_thresh, debris_thresh)
+                except Exception as exc:
+                    print(f"  {field_dir.name}: {exc}")
+    
+        print("Done.")
+        ij.dispose()
 
 if __name__ == "__main__":
     main()
