@@ -18,7 +18,7 @@ class ConfigPage(tk.Frame):
         BASE_DIR = Path(__file__).resolve().parent.parent
 
         self.CONFIG_DIR = BASE_DIR / "data" / "configs"
-        self.currentConfig = BASE_DIR / "data" / "folder_paths.json"
+        self.currentConfig = BASE_DIR / "data" / "upload_settings.json"
         self.ORDER_FILE = BASE_DIR / "data" / "config_order.json"
 
         self.selected_config = None

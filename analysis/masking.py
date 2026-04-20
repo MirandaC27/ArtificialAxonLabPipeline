@@ -24,7 +24,7 @@ ImageCalculator  = scyjava.jimport("ij.plugin.ImageCalculator")
 ImagePlus        = scyjava.jimport("ij.ImagePlus")
 WindowManager    = scyjava.jimport("ij.WindowManager")
 
-CONFIG_PATH = PROJECT_ROOT / "data" / "folder_paths.json"
+CONFIG_PATH = PROJECT_ROOT / "data" / "upload_settings.json"
 MASKING_REQUIRED_CHANNELS = {"axon", "myelin", "nuclei", "debris"}
 
 

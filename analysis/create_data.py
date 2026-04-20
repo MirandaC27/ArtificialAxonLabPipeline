@@ -24,7 +24,7 @@ SEGMENT_LOW    = 128
 SEGMENT_HIGH   = 255
 
 WELL_RANGE = range(10, 11) 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     data = json.load(f)

@@ -219,7 +219,7 @@ class UploadPageStep1(tk.Frame):
             creationflags = 0
             preexec_fn = os.setsid
 
-        script_path = Path(__file__).resolve().parent.parent / "model" / "rename_organize_keyence.sh"
+        script_path = Path(__file__).resolve().parent.parent / "analysis" / "rename_organize_keyence.sh"
 
         if not script_path.exists():
             print(f"Error: Script not found at {script_path}")
@@ -281,7 +281,7 @@ class UploadPageStep1(tk.Frame):
 
         json_dir = sd.data_dir()
         json_dir.mkdir(parents=True, exist_ok=True)
-        json_path = json_dir / "folder_paths.json"
+        json_path = json_dir / "upload_settings.json"
 
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=4)

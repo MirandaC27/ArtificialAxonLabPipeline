@@ -63,13 +63,13 @@ class SessionDataUtil:
 
     def clear_session_files(self):
         data_dir = self.data_dir()
-        for name in ("folder_paths.json", "folder_paths.txt", "sessionData.txt"):
+        for name in ("upload_settings.json", "upload_settings.txt", "sessionData.txt"):
             path = data_dir / name
             if path.exists():
                 path.unlink()
 
     def save_end_time(self, end_time=None):
-        json_path = self.data_dir() / "folder_paths.json"
+        json_path = self.data_dir() / "upload_settings.json"
         if not json_path.exists():
             return
 
@@ -89,7 +89,7 @@ class SessionDataUtil:
         self.upsert_session_history(data)
 
     def save_txt(self, data):
-        txt_path = self.data_dir() / "folder_paths.txt"
+        txt_path = self.data_dir() / "upload_settings.txt"
 
         with open(txt_path, "w", encoding="utf-8") as f:
             f.write(f"Experiment Start Time: {data.get('StartTime', 'N/A')}\n")

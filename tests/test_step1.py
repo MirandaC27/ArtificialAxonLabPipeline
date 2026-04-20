@@ -58,7 +58,7 @@ def test_save_folders_classifies_directories(app_instance):
 
     app.save_folders()
 
-    json_path = fake_dir.parent / "data" / "folder_paths.json"
+    json_path = fake_dir.parent / "data" / "upload_settings.json"
 
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -82,7 +82,7 @@ def test_save_folders_sorts_tracks(app_instance):
 
     app.save_folders()
 
-    json_path = fake_dir.parent / "data" / "folder_paths.json"
+    json_path = fake_dir.parent / "data" / "upload_settings.json"
 
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -99,7 +99,7 @@ def test_save_txt_output(app_instance):
     app.selected_folders.append("/data/exp_RAW")
     app.save_folders()
     
-    txt_path = fake_dir.parent / "data" / "folder_paths.txt"
+    txt_path = fake_dir.parent / "data" / "upload_settings.txt"
 
     with open(txt_path, "r", encoding="utf-8") as f:
         contents = f.read()
@@ -120,7 +120,7 @@ def test_start_time_adds_timestamp(app_instance):
 
     app.start_time()
 
-    json_path = fake_dir.parent / "data" / "folder_paths.json"
+    json_path = fake_dir.parent / "data" / "upload_settings.json"
 
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -188,7 +188,7 @@ def test_channels_convert_to_json_format(app_instance):
 
     app.save_folders()
 
-    json_path = fake_dir.parent / "data" / "folder_paths.json"
+    json_path = fake_dir.parent / "data" / "upload_settings.json"
 
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)

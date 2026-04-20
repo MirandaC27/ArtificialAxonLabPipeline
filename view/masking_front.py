@@ -15,7 +15,7 @@ DEFAULT_THRESHOLDS = {
     "debris": 15000,
 }
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     data = json.load(f)
@@ -334,7 +334,7 @@ class MaskingSettingsPage(tk.Frame):
         self.status_label.config(text=f"Settings saved to {save_path.name}", fg="green")
     
     def refresh_base_path(self):
-        config_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+        config_path = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
     
         if not config_path.exists():
             return
