@@ -49,10 +49,15 @@ class App(tk.Tk):
             self.geometry("520x700")
         else:
             self.geometry("700x500")
-
+    
         page = self.pages[name]
+    
+        if name == "Masking Settings" and hasattr(page, "refresh_base_path"):
+            page.refresh_base_path()
+    
         if hasattr(page, "refresh_sessions"):
             page.refresh_sessions()
+    
         page.tkraise()
 
 if __name__ == "__main__":

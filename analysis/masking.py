@@ -331,10 +331,10 @@ def process_field(field_dir, settings):
 
 def main():
     # Collect settings from the UI 
-    settings = collect_settings()
-    if settings is None:
-        print("Settings window closed without confirming. Exiting.")
-        return
+    DATA_DIR = PROJECT_ROOT / "data"
+
+    with open(DATA_DIR / "masking_settings.json", "r") as f:
+        settings = json.load(f)
 
     base_path  = settings["base_path"]
     well_range = settings["well_range"]

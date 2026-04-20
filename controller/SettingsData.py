@@ -7,7 +7,7 @@ import json
 class SettingsData:
 
     def data_dir(self):
-        return Path("../data") 
+        return Path(__file__).resolve().parent.parent / "data"
 
     def clear_session_files(self):
         json_path = self.data_dir() / "settingsInputs.json"

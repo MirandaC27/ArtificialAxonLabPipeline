@@ -1,4 +1,4 @@
-from concurrent.futures import thread
+from concurrent.futures import thread as futures_thread
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog

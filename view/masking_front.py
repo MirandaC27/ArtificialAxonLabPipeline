@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 from pathlib import Path
 import sys
+import json
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -14,7 +15,12 @@ DEFAULT_THRESHOLDS = {
     "debris": 15000,
 }
 
-DEFAULT_BASE_PATH   = "/Users/chloemiranda/capstone/CLEANED/ORDERED"
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+DEFAULT_BASE_PATH = Path(data.get("OrderedTrack", [""])[0]) # Ordered Data folder path
 DEFAULT_WELL_START  = 2
 DEFAULT_WELL_END    = 11   
 
@@ -64,7 +70,7 @@ class MaskingSettingsPage(tk.Frame):
         self.status_label = tk.Label(self, text="", justify="left", fg="gray30")
         self.status_label.grid(row=2, column=0, pady=(0, 6), padx=20, sticky="w")
 
-        # ── Input Directory & Well Range ───────────────────────────────
+        # Input Directory & Well Range 
         path_frame = tk.LabelFrame(self, text="Input Directory & Well Range")
         path_frame.grid(row=3, column=0, padx=20, sticky="ew")
         path_frame.grid_columnconfigure(1, weight=1)
@@ -188,12 +194,21 @@ class MaskingSettingsPage(tk.Frame):
             command=lambda: self._reset_particle_size("max"),
         ).grid(row=3, column=2, padx=(0, 10), pady=6)
 
-        # Reset All 
+        # Reset All + Apply Settings
+        action_frame = tk.Frame(self)
+        action_frame.grid(row=6, column=0, pady=(8, 4), padx=20, sticky="w")
+
         tk.Button(
-            self,
+            action_frame,
             text="Reset All to Defaults",
             command=self._reset_all,
-        ).grid(row=6, column=0, pady=(8, 4), padx=20, sticky="w")
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            action_frame,
+            text="Apply Settings",
+            command=self.save_settings_to_json,
+        ).pack(side="left")
 
         #Nav
         nav_frame = tk.Frame(self)
@@ -215,10 +230,8 @@ class MaskingSettingsPage(tk.Frame):
 
    
     def _browse_base_path(self):
-        chosen = filedialog.askdirectory(title="Select base input directory")
-        if chosen:
-            self.base_path_var.set(chosen)
-            self.status_label.config(text=f"Base path set to: {chosen}")
+        self.base_path_var.set(str(DEFAULT_BASE_PATH))
+        self.status_label.config(text=f"Base path set to: {DEFAULT_BASE_PATH}")
 
     def _reset_channel(self, channel: str, default):
         self.auto_vars[channel].set(False)
@@ -254,40 +267,86 @@ class MaskingSettingsPage(tk.Frame):
         if active:
             self.status_label.config(text=f"Threshold channels detected: {', '.join(active)}")
 
-def get_base_path(self):
-    raw = self.base_path_var.get().strip()
-    return Path(raw) if raw else None
+    def get_base_path(self):
+        raw = self.base_path_var.get().strip()
+        return Path(raw) if raw else None
 
-def get_well_range(self):
-    """
-    Returns a range object for the well loop to match masking.py
-    """
-    try:
-        start = int(self.well_start_var.get().strip())
-        end   = int(self.well_end_var.get().strip())
-        return range(start, end + 1)   # end is displayed as inclusive
-    except ValueError:
-        return None
+    def get_well_range(self):
+        """
+        Returns a range object for the well loop to match masking.py
+        """
+        try:
+            start = int(self.well_start_var.get().strip())
+            end   = int(self.well_end_var.get().strip())
+            return range(start, end + 1)   # end is displayed as inclusive
+        except ValueError:
+            return None
 
-def get_thresholds(self):
-    """
-    Returns per-channel threshold values.
-    """
-    result = {}
-    for ch, var in self.threshold_vars.items():
-        if self.auto_vars[ch].get():
-            result[ch] = "auto"
-        else:
+    def get_thresholds(self):
+        """
+        Returns per-channel threshold values.
+        """
+        result = {}
+        for ch, var in self.threshold_vars.items():
+            if self.auto_vars[ch].get():
+                result[ch] = "auto"
+            else:
+                raw = var.get().strip()
+                result[ch] = int(raw) if raw.lstrip("-").isdigit() else None
+        return result
+
+    def get_particle_size(self):
+        result = {}
+        for key, var in (("min", self.particle_size_min_var), ("max", self.particle_size_max_var)):
             raw = var.get().strip()
-            result[ch] = int(raw) if raw.lstrip("-").isdigit() else None
-    return result
+            result[key] = int(raw) if raw.lstrip("-").isdigit() else None
+        return result
 
-def get_particle_size(self):
-    result = {}
-    for key, var in (("min", self.particle_size_min_var), ("max", self.particle_size_max_var)):
-        raw = var.get().strip()
-        result[key] = int(raw) if raw.lstrip("-").isdigit() else None
-    return result
+    def save_settings_to_json(self):
+        base_path   = self.get_base_path()
+        well_range  = self.get_well_range()
+        thresholds  = self.get_thresholds()
+        particle    = self.get_particle_size()
+
+        errors = []
+        if not base_path:
+            errors.append("Base path is required.")
+        if well_range is None:
+            errors.append("Well start/end must be integers.")
+        if errors:
+            self.status_label.config(text=" | ".join(errors), fg="red")
+            return
+
+        serializable = {
+            "base_path": str(base_path),
+            "well_start": well_range.start,
+            "well_end": well_range.stop - 1,
+            "thresholds": thresholds,
+            "particle_size": particle,
+        }
+
+        save_path = Path(__file__).resolve().parent.parent / "data" / "masking_settings.json"
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(serializable, f, indent=4)
+
+        self.status_label.config(text=f"Settings saved to {save_path.name}", fg="green")
+    
+    def refresh_base_path(self):
+        config_path = Path(__file__).resolve().parent.parent / "data" / "folder_paths.json"
+    
+        if not config_path.exists():
+            return
+    
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    
+        ordered = data.get("OrderedTrack", [])
+    
+        if ordered:
+            self.base_path_var.set(str(Path(ordered[0])))
+            self.status_label.config(text=f"Loaded base path: {ordered[0]}")
 
 
 # Standalone run: will probably get rid of this later but so it can run by itself
@@ -306,6 +365,20 @@ def collect_settings():
 
     page = MaskingSettingsPage(root, controller=None)
     page.pack(fill="both", expand=True)
+
+    def save_settings_to_json(settings, path):
+        serializable = {
+            "base_path": str(settings["base_path"]),
+            "well_start": settings["well_range"].start,
+            "well_end": settings["well_range"].stop - 1,
+            "thresholds": settings["thresholds"],
+            "particle_size": settings["particle_size"],
+        }
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(serializable, f, indent=4)
 
     def on_run():
         base_path   = page.get_base_path()
@@ -326,6 +399,12 @@ def collect_settings():
         result_holder["well_range"]    = well_range
         result_holder["thresholds"]    = thresholds
         result_holder["particle_size"] = particle
+
+        settings = result_holder.copy()
+
+        save_path = Path(__file__).resolve().parent.parent / "data" / "masking_settings.json"
+        save_settings_to_json(settings, save_path)
+
         root.destroy()
 
     btn_frame = tk.Frame(root)
