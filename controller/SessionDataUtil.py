@@ -1,3 +1,4 @@
+# SessionDataUtil.py
 from pathlib import Path
 from datetime import datetime
 import json
@@ -67,64 +68,6 @@ class SessionDataUtil:
             if path.exists():
                 path.unlink()
 
-    def save_folders(self, selected_folders, image_type, microscope, channels, num_fovs=None, disabled_fovs=None):
-        self.clear_session_files()
-
-        tracks = set()
-        data = set()
-
-        for folder in selected_folders:
-            root = Path(folder)
-            # Check for _RAW in folder name to categorize as a 'Track'
-            if "_RAW" in root.name.upper():
-                tracks.add(str(root))
-            else:
-                data.add(str(root))
-
-        # Handle empty tracks 
-        if tracks:
-            raw_path = Path(list(tracks)[0])
-            clean_path = raw_path.parent / "CLEANED"
-        else:
-            clean_path = "N/A"
-
-        start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        json_data = {
-            "Tracks": sorted(tracks),
-            "Tracks1": [str(clean_path)] if clean_path != "N/A" else [],
-            "OrderedTrack": [str(clean_path.parent / "ORDERED")] if clean_path != "N/A" else [],
-            "Data": sorted(data),
-            "ImageType": image_type,
-            "Microscope": microscope,
-            "NumFOVs": num_fovs,
-            "DisabledFOVs": disabled_fovs if disabled_fovs else [],
-            "Channels": [
-                {
-                    "code": f"CH{ch['num']}", 
-                    "label": ch["label"],
-                    "active": not ch.get("disabled", False)
-                }
-                for ch in channels
-            ],
-            "StartTime": start_time
-        }
-
-        history = self.load_session_history()
-        json_data["SessionId"] = self.next_session_id(history["sessions"])
-
-        json_dir = self.data_dir()
-        json_dir.mkdir(parents=True, exist_ok=True) # Ensure data directory exists
-        json_path = json_dir / "folder_paths.json"
-
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(json_data, f, indent=4)
-
-        # Update files
-        self.save_txt(json_data)
-        self.session_data(json_data)  
-        self.upsert_session_history(json_data)
-
     def save_end_time(self, end_time=None):
         json_path = self.data_dir() / "folder_paths.json"
         if not json_path.exists():
@@ -142,7 +85,7 @@ class SessionDataUtil:
             json.dump(data, f, indent=4)
 
         self.save_txt(data)
-        self.session_data(data)  
+        self.session_data(data)
         self.upsert_session_history(data)
 
     def save_txt(self, data):
