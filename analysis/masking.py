@@ -24,7 +24,7 @@ ImageCalculator  = scyjava.jimport("ij.plugin.ImageCalculator")
 ImagePlus        = scyjava.jimport("ij.ImagePlus")
 WindowManager    = scyjava.jimport("ij.WindowManager")
 
-CONFIG_PATH = PROJECT_ROOT / "data" / "folder_paths.json"
+CONFIG_PATH = PROJECT_ROOT / "data" / "upload_settings.json"
 MASKING_REQUIRED_CHANNELS = {"axon", "myelin", "nuclei", "debris"}
 
 
@@ -341,11 +341,12 @@ def process_field(field_dir, settings):
     print(f" {field_dir.name}")
 
 
-def main(settings):
-   # If no settings passed, fall back to UI
-    if settings is None:
-        print("No Settings. Exiting.")
-        return
+def main():
+    # Collect settings from the UI 
+    DATA_DIR = PROJECT_ROOT / "data"
+
+    with open(DATA_DIR / "masking_settings.json", "r") as f:
+        settings = json.load(f)
 
     base_path  = settings["base_path"]
     well_range = settings["well_range"]

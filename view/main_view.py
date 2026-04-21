@@ -1,12 +1,12 @@
 #main_view.py
 import tkinter as tk
-from UploadPageStep1 import UploadPageStep1
-from SettingFront import SettingsPage
-from pipeline_front import ImageProcessingSettings
 from HomePage import HomePage
 from Config import ConfigPage
-from SessionEnd import SessionEnd
+from UploadPageStep1 import UploadPageStep1
+from SettingFront import SettingsPage
+#from pipeline_front import ImageProcessingSettings
 from masking_front import MaskingSettingsPage
+from SessionEnd import SessionEnd
 from history import HistoryPage
 from results import ResultsPage
 
@@ -31,9 +31,9 @@ class App(tk.Tk):
             (ConfigPage, "Config"),
             (UploadPageStep1, "Upload"),
             (SettingsPage, "Settings"),
-            (ImageProcessingSettings, "Image Processing Stuff"),
-            (SessionEnd, "SessionEnd"),
+            #(ImageProcessingSettings, "Image Processing Stuff"),
             (MaskingSettingsPage, "Masking Settings"),
+            (SessionEnd, "SessionEnd"),
             (HistoryPage, "History"),
             (ResultsPage, "Results")
         ]:
@@ -51,10 +51,15 @@ class App(tk.Tk):
             self.geometry("520x700")
         else:
             self.geometry("700x500")
-
+    
         page = self.pages[name]
+    
+        if name == "Masking Settings" and hasattr(page, "refresh_base_path"):
+            page.refresh_base_path()
+    
         if hasattr(page, "refresh_sessions"):
             page.refresh_sessions()
+    
         page.tkraise()
 
 if __name__ == "__main__":

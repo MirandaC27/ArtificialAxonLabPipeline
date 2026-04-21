@@ -1,4 +1,6 @@
-from concurrent.futures import thread
+# UploadPageStep1.py
+from concurrent.futures import thread as futures_thread
+from datetime import datetime
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -217,7 +219,7 @@ class UploadPageStep1(tk.Frame):
             creationflags = 0
             preexec_fn = os.setsid
 
-        script_path = Path(__file__).resolve().parent.parent / "model" / "rename_organize_keyence.sh"
+        script_path = Path(__file__).resolve().parent.parent / "analysis" / "rename_organize_keyence.sh"
 
         if not script_path.exists():
             print(f"Error: Script not found at {script_path}")
@@ -233,19 +235,73 @@ class UploadPageStep1(tk.Frame):
             if self.stop_flag:
                 break
 
+    def save_folders(self):
+        sd.clear_session_files()
+
+        tracks = set()
+        data = set()
+
+        for folder in self.selected_folders:
+            root = Path(folder)
+            if "_RAW" in root.name.upper():
+                tracks.add(str(root))
+            else:
+                data.add(str(root))
+
+        if tracks:
+            raw_path = Path(list(tracks)[0])
+            clean_path = raw_path.parent / "CLEANED"
+        else:
+            clean_path = "N/A"
+
+        start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        json_data = {
+            "Tracks": sorted(tracks),
+            "Tracks1": [str(clean_path)] if clean_path != "N/A" else [],
+            "OrderedTrack": [str(clean_path.parent / "ORDERED")] if clean_path != "N/A" else [],
+            "Data": sorted(data),
+            "ImageType": self.image_type_var.get(),
+            "Microscope": self.micro_type_var.get(),
+            "NumFOVs": self.get_num_fovs(),
+            "DisabledFOVs": self.disabled_fovs if self.disabled_fovs else [],
+            "Channels": [
+                {
+                    "code": f"CH{ch['num']}",
+                    "label": ch["label"],
+                    "active": not ch.get("disabled", False)
+                }
+                for ch in self.channels
+            ],
+            "StartTime": start_time
+        }
+
+        history = sd.load_session_history()
+        json_data["SessionId"] = sd.next_session_id(history["sessions"])
+
+        json_dir = sd.data_dir()
+        json_dir.mkdir(parents=True, exist_ok=True)
+        json_path = json_dir / "upload_settings.json"
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(json_data, f, indent=4)
+
     def run_process(self):
         try:
-            sd.save_folders(
-                selected_folders=self.selected_folders,
-                image_type=self.image_type_var.get(),
-                microscope=self.micro_type_var.get(),
-                num_fovs=self.get_num_fovs(),
-                channels=self.channels,
-                disabled_fovs=self.disabled_fovs
-            )
+            if not self.selected_folders:
+                print("No folders selected")
+                self.after(0, lambda: self.status_label.config(
+                    text="Please select at least one folder before running."
+                ))
+                return
+
+            self.save_folders()
             sd.runtime(self.run_step1)
+
         finally:
-            sd.save_end_time()
+            if self.selected_folders:
+                sd.save_end_time()
+
             self.after(0, self.close_popup)
 
     def button_run(self):

@@ -26,7 +26,7 @@ def test_clear_session_files_removes_known_outputs(randompatch):
 
     randompatch.setattr(
         "controller.SessionDataUtil.Path.exists",
-        lambda path: path.name in {"folder_paths.json", "sessionData.txt"},
+        lambda path: path.name in {"upload_settings.json", "sessionData.txt"},
     )
     randompatch.setattr(
         "controller.SessionDataUtil.Path.unlink",
@@ -35,7 +35,7 @@ def test_clear_session_files_removes_known_outputs(randompatch):
 
     SessionDataUtil().clear_session_files()
 
-    assert removed == ["folder_paths.json", "sessionData.txt"]
+    assert removed == ["upload_settings.json", "sessionData.txt"]
 
 
 def test_save_folders_writes_json_txt_and_session_data(randompatch):
@@ -59,8 +59,8 @@ def test_save_folders_writes_json_txt_and_session_data(randompatch):
             disabled_fovs=["3", "7"],
         )
 
-        json_data = json.loads((data_dir / "folder_paths.json").read_text(encoding="utf-8"))
-        txt_data = (data_dir / "folder_paths.txt").read_text(encoding="utf-8")
+        json_data = json.loads((data_dir / "upload_settings.json").read_text(encoding="utf-8"))
+        txt_data = (data_dir / "upload_settings.txt").read_text(encoding="utf-8")
         session_data = (data_dir / "sessionData.txt").read_text(encoding="utf-8")
         history_data = json.loads((data_dir / "history" / "sessions.json").read_text(encoding="utf-8"))
 
@@ -100,7 +100,7 @@ def test_save_folders_handles_missing_raw_tracks(randompatch):
             channels=[],
         )
 
-        json_data = json.loads((data_dir / "folder_paths.json").read_text(encoding="utf-8"))
+        json_data = json.loads((data_dir / "upload_settings.json").read_text(encoding="utf-8"))
         session_data = (data_dir / "sessionData.txt").read_text(encoding="utf-8")
 
         assert json_data["Tracks"] == []
@@ -125,8 +125,8 @@ def test_save_end_time_updates_json_and_text_outputs(randompatch):
 
         util.save_end_time("2026-04-14 22:00:00")
 
-        json_data = json.loads((data_dir / "folder_paths.json").read_text(encoding="utf-8"))
-        txt_data = (data_dir / "folder_paths.txt").read_text(encoding="utf-8")
+        json_data = json.loads((data_dir / "upload_settings.json").read_text(encoding="utf-8"))
+        txt_data = (data_dir / "upload_settings.txt").read_text(encoding="utf-8")
         history_data = json.loads((data_dir / "history" / "sessions.json").read_text(encoding="utf-8"))
 
         assert json_data["EndTime"] == "2026-04-14 22:00:00"
