@@ -9,14 +9,24 @@ import threading
 import signal
 import json
 import os
-
-from ArtificialAxonLabPipeline.Backend.controller.SessionDataUtil import SessionDataUtil
+import sys
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from ArtificialAxonLabPipeline.Backend.controller.SessionDataUtil import SessionDataUtil
+from ArtificialAxonLabPipeline.Frontend.api_client import (
+    upload_settings,
+    update_latest_end_time,
+    export_latest_settings,
+)
+
 BACKEND_MODEL_DIR = PROJECT_ROOT / "Backend" / "model"
+BACKEND_DATA_DIR = PROJECT_ROOT / "Backend" / "data"
 
 sd = SessionDataUtil()
 CHANNELS = ['axon', 'myelin', 'nuclei', 'debris']
+
 
 class UploadPageStep1(tk.Frame):
 
@@ -24,7 +34,7 @@ class UploadPageStep1(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.selected_folders = []
-        self.channels = []  # List of dicts: {'num': int, 'label': str, 'disabled': bool}
+        self.channels = []
         self.disabled_fovs = []
         self.stop_flag = False
         self.process = None
@@ -32,11 +42,8 @@ class UploadPageStep1(tk.Frame):
         self.build_ui()
 
     def build_ui(self):
-        # Configure layout: Column 0 (Left), Column 1 (Right)
         self.grid_columnconfigure(0, weight=2)
         self.grid_columnconfigure(1, weight=1)
-        
-        # Row 12 acts as spacer to push buttons to the bottom
         self.grid_rowconfigure(12, weight=1)
 
         self.image_type_var = tk.StringVar(value="3D")
@@ -44,7 +51,6 @@ class UploadPageStep1(tk.Frame):
         self.fov_var = tk.StringVar()
         self.disable_mode_var = tk.BooleanVar(value=False)
 
-        # Top section: Folder selection and settings
         tk.Button(self, text="Add Folder", command=self.add_folder).grid(
             row=0, column=0, columnspan=2, pady=8, sticky="ew", padx=20
         )
@@ -62,19 +68,24 @@ class UploadPageStep1(tk.Frame):
         self.status_label = tk.Label(self, text="", justify="left")
         self.status_label.grid(row=3, column=0, columnspan=2, pady=5, padx=20, sticky="w")
 
-        # Left side channel controls
         left_side = tk.Frame(self)
         left_side.grid(row=4, column=0, rowspan=4, sticky="nw", padx=20)
 
         chan_input = tk.Frame(left_side)
         chan_input.pack(fill="x", anchor="w")
-        
+
         tk.Label(chan_input, text="Channel #:").grid(row=0, column=0)
         self.channel_num_entry = tk.Entry(chan_input, width=6)
         self.channel_num_entry.grid(row=0, column=1, padx=2)
 
         self.channel_label_var = tk.StringVar()
-        self.channel_label_dropdown = ttk.Combobox(chan_input, textvariable=self.channel_label_var, values=CHANNELS, state="readonly", width=8)
+        self.channel_label_dropdown = ttk.Combobox(
+            chan_input,
+            textvariable=self.channel_label_var,
+            values=CHANNELS,
+            state="readonly",
+            width=8
+        )
         self.channel_label_dropdown.grid(row=0, column=2, padx=2)
         self.channel_label_dropdown.set(CHANNELS[0])
 
@@ -85,42 +96,49 @@ class UploadPageStep1(tk.Frame):
         self.btn_frame.pack(pady=10, fill="x")
         tk.Button(self.btn_frame, text="Add Channel", command=self.add_channel).grid(row=0, column=0, padx=2)
         tk.Button(self.btn_frame, text="Remove Channel", command=self.remove_channel).grid(row=0, column=1, padx=2)
-        
+
         self.disable_ch_btn = tk.Button(self.btn_frame, text="Disable Channel", command=self.toggle_disable_channel)
 
         self.channel_listbox = tk.Listbox(left_side, width=55, height=4)
         self.channel_listbox.pack(pady=5)
 
-        self.disable_check = tk.Checkbutton(left_side, text="Disable a channel or FOV", 
-                                            variable=self.disable_mode_var, 
-                                            command=self.toggle_disable_ui)
+        self.disable_check = tk.Checkbutton(
+            left_side,
+            text="Disable a channel or FOV",
+            variable=self.disable_mode_var,
+            command=self.toggle_disable_ui
+        )
         self.disable_check.pack(anchor="w", pady=5)
 
-        # Right side FOV disable controls
         self.fov_disable_frame = tk.LabelFrame(self, text="FOV Exclusion")
         self.fov_disable_frame.grid(row=4, column=1, rowspan=4, padx=20, sticky="nsew")
-        
+
         tk.Label(self.fov_disable_frame, text="FOV # to Disable:").pack(pady=2)
         self.fov_disable_entry = tk.Entry(self.fov_disable_frame, width=15)
         self.fov_disable_entry.pack(pady=2)
         tk.Button(self.fov_disable_frame, text="Disable FOV", command=self.add_disabled_fov).pack(pady=2)
-        
+
         tk.Label(self.fov_disable_frame, text="Disabled List:").pack(pady=(10, 0))
         self.fov_disabled_listbox = tk.Listbox(self.fov_disable_frame, width=25, height=4)
         self.fov_disabled_listbox.pack(pady=5, padx=10)
-        
+
         self.fov_disable_frame.grid_remove()
 
-        # Button navigation and run buttons
-        tk.Button(self, text="Run", command=self.button_run).grid(row=13, column=0, columnspan=2, pady=10, sticky="ew", padx=20)
+        tk.Button(self, text="Run", command=self.button_run).grid(
+            row=13, column=0, columnspan=2, pady=10, sticky="ew", padx=20
+        )
 
         nav_frame = tk.Frame(self)
         nav_frame.grid(row=14, column=0, columnspan=2, pady=(0, 10), padx=20, sticky="ew")
         nav_frame.grid_columnconfigure(0, weight=1)
         nav_frame.grid_columnconfigure(1, weight=1)
 
-        tk.Button(nav_frame, text="Back", command=lambda: self.controller.show_page("Home")).grid(row=0, column=0, padx=5, sticky="ew")
-        tk.Button(nav_frame, text="Next", command=lambda: self.controller.show_page("Settings")).grid(row=0, column=1, padx=5, sticky="ew")
+        tk.Button(nav_frame, text="Back", command=lambda: self.controller.show_page("Home")).grid(
+            row=0, column=0, padx=5, sticky="ew"
+        )
+        tk.Button(nav_frame, text="Next", command=lambda: self.controller.show_page("Settings")).grid(
+            row=0, column=1, padx=5, sticky="ew"
+        )
 
     def toggle_disable_ui(self):
         if self.disable_mode_var.get():
@@ -177,6 +195,88 @@ class UploadPageStep1(tk.Frame):
     def get_num_fovs(self):
         val = self.fov_var.get().strip()
         return int(val) if val.isdigit() else 0
+
+    def build_script_input_data(self, start_time):
+        tracks = []
+        data = []
+
+        for folder in self.selected_folders:
+            root = Path(folder)
+            if "_RAW" in root.name.upper():
+                tracks.append(str(root))
+            else:
+                data.append(str(root))
+
+        clean_path = None
+        if tracks:
+            raw_path = Path(tracks[0])
+            clean_path = raw_path.parent / "CLEANED"
+
+        return {
+            "Tracks": sorted(tracks),
+            "Tracks1": [str(clean_path)] if clean_path else [],
+            "OrderedTrack": [str(clean_path.parent / "ORDERED")] if clean_path else [],
+            "Data": sorted(data),
+            "ImageType": self.image_type_var.get(),
+            "Microscope": self.micro_type_var.get(),
+            "NumFOVs": self.get_num_fovs(),
+            "DisabledFOVs": self.disabled_fovs if self.disabled_fovs else [],
+            "Channels": [
+                {
+                    "code": f"CH{ch['num']}",
+                    "label": ch["label"],
+                    "active": not ch.get("disabled", False)
+                }
+                for ch in self.channels
+            ],
+            "StartTime": start_time
+        }
+
+    def write_script_input_files(self, start_time, end_time=None):
+        BACKEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+        data = self.build_script_input_data(start_time)
+        if end_time:
+            data["EndTime"] = end_time
+
+        with open(BACKEND_DATA_DIR / "folder_paths.json", "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+
+        with open(BACKEND_DATA_DIR / "folder_paths.txt", "w", encoding="utf-8") as f:
+            f.write(f"Experiment Start Time: {data.get('StartTime', 'N/A')}\n")
+            if data.get("EndTime"):
+                f.write(f"Experiment End Time: {data.get('EndTime')}\n")
+
+            f.write("\nFolder Path to Tracks (Raw)\n")
+            for p in data.get("Tracks", []):
+                f.write(p + "\n")
+
+            f.write("\nFolder Path to Tracks1 (Cleaned)\n")
+            for p in data.get("Tracks1", []):
+                f.write(p + "\n")
+
+            f.write(f"\nMicroscope Used: {data.get('Microscope', 'N/A')}\n")
+            f.write(f"Image Type Used: {data.get('ImageType', 'N/A')}\n")
+            f.write(f"Number of Fields of View: {data.get('NumFOVs', 0)}\n")
+
+            f.write("\nChannels Used:\n")
+            for ch in data.get("Channels", []):
+                status = "Active" if ch.get("active") else "Disabled"
+                f.write(f"{ch['code']}: {ch['label']} ({status})\n")
+
+            f.write("\nExperiment Data:\n")
+            for d in data.get("Data", []):
+                f.write(d + "\n")
+
+        tracks_list = data.get("Tracks", [])
+        raw_path = tracks_list[0] if tracks_list else None
+        folder_name = Path(raw_path).name if raw_path else "No Raw Folder Selected"
+
+        with open(BACKEND_DATA_DIR / "sessionData.txt", "w", encoding="utf-8") as f:
+            f.write(f"Name of Folder: {folder_name}\n")
+            f.write("\nChannels Used:\n")
+            for ch in data.get("Channels", []):
+                f.write(f"{ch['code']}: {ch['label']}\n")
 
     def show_loading_popup(self):
         self.popup = tk.Toplevel(self)
@@ -235,24 +335,45 @@ class UploadPageStep1(tk.Frame):
                 break
 
     def run_process(self):
+        start_time = sd.endDateTime()
+
         try:
-            sd.save_folders(
+            # write local files needed by the shell script
+            self.write_script_input_files(start_time)
+
+            # save to API / Postgres
+            upload_settings(
                 selected_folders=self.selected_folders,
                 image_type=self.image_type_var.get(),
                 microscope=self.micro_type_var.get(),
                 num_fovs=self.get_num_fovs(),
                 channels=self.channels,
-                disabled_fovs=self.disabled_fovs
+                disabled_fovs=self.disabled_fovs,
+                start_time=start_time,
             )
+
+            # run the shell script
             sd.runtime(self.run_step1)
+
         finally:
-            sd.save_end_time()
+            end_time = sd.endDateTime()
+
+            try:
+                # update local files with end time too
+                self.write_script_input_files(start_time, end_time=end_time)
+
+                # update API / Postgres and export latest summary
+                update_latest_end_time(end_time)
+                export_latest_settings()
+            except Exception as e:
+                print("Error updating/exporting settings:", e)
+
             self.after(0, self.close_popup)
 
     def button_run(self):
         self.stop_flag = False
         self.process = None
         self.show_loading_popup()
-        
+
         thread = threading.Thread(target=self.run_process)
         thread.start()

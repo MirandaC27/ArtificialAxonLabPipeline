@@ -1,14 +1,20 @@
-Experiment Start Time: 2026-04-15 16:53:47
-Experiment End Time: 2026-04-15 16:53:54
+Experiment Start Time: 2026-04-20 20:07:12
+Experiment End Time: 2026-04-20 20:07:17
 
 Folder Path to Tracks (Raw)
+C:\Users\jonat\OneDrive - Loyola University Maryland\Desktop\VS Code\AxonLabs\Sample Data\EXP009\EXP009_Keyence_Plate1_RAW
 
 Folder Path to Tracks1 (Cleaned)
+C:\Users\jonat\OneDrive - Loyola University Maryland\Desktop\VS Code\AxonLabs\Sample Data\EXP009\CLEANED
 
 Microscope Used: Keyence
 Image Type Used: 3D
-Number of Fields of View: 0
+Number of Fields of View: 9
 
 Channels Used:
+CH1: axon (Active)
+CH2: myelin (Active)
+CH3: nuclei (Active)
+CH4: debris (Active)
 
 Experiment Data:
