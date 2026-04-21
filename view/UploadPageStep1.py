@@ -31,6 +31,13 @@ class UploadPageStep1(tk.Frame):
         self.process = None
 
         self.build_ui()
+        
+    def _on_next(self):
+        # Save channels BEFORE switching pages
+        self.save_folders()
+
+        if self.controller:
+            self.controller.show_page("Masking Settings")
 
     def build_ui(self):
         # Configure layout: Column 0 (Left), Column 1 (Right)
@@ -121,7 +128,7 @@ class UploadPageStep1(tk.Frame):
         nav_frame.grid_columnconfigure(1, weight=1)
 
         tk.Button(nav_frame, text="Back", command=lambda: self.controller.show_page("Home")).grid(row=0, column=0, padx=5, sticky="ew")
-        tk.Button(nav_frame, text="Next", command=lambda: self.controller.show_page("Masking Settings")).grid(row=0, column=1, padx=5, sticky="ew")
+        tk.Button(nav_frame, text="Next", command=self._on_next).grid(row=0, column=1, padx=5, sticky="ew")
 
     def toggle_disable_ui(self):
         if self.disable_mode_var.get():

@@ -75,9 +75,19 @@ class MaskingSettingsPage(tk.Frame):
         self.status_label = tk.Label(self, text="", justify="left", fg="gray30")
         self.status_label.grid(row=2, column=0, pady=(0, 6), padx=20, sticky="w")
 
+        # Channel display (from Upload page)
+        self.channel_display_label = tk.Label(
+            self,
+            text="Channels: (not loaded)",
+            justify="left",
+            fg="gray30",
+        )
+        self.channel_display_label.grid(row=3, column=0, padx=20, sticky="e")
+        self.load_channels_from_upload()
+
         # Input Directory and Well Range
         path_frame = tk.LabelFrame(self, text="Input Directory & Well Range")
-        path_frame.grid(row=3, column=0, padx=20, sticky="ew")
+        path_frame.grid(row=4, column=0, padx=20, sticky="ew")
         path_frame.grid_columnconfigure(1, weight=1)
 
         tk.Label(path_frame, text="Base path", width=12, anchor="w").grid(
@@ -230,7 +240,7 @@ class MaskingSettingsPage(tk.Frame):
         tk.Button(
             nav_frame,
             text="Next",
-            command=lambda: self.controller.show_page("SessionEnd") if self.controller else None,
+            command=self._on_next,
         ).grid(row=0, column=1, padx=5, sticky="ew")
 
 
@@ -264,6 +274,10 @@ class MaskingSettingsPage(tk.Frame):
 
    
     def _run_masking(self):
+
+        # Load and display channels before running
+        self.load_channels_from_upload()
+
         base_path   = self.get_base_path()
         well_range  = self.get_well_range()
         thresholds  = self.get_thresholds()
@@ -330,11 +344,39 @@ class MaskingSettingsPage(tk.Frame):
     def set_base_path(self, path: str):
         self.base_path_var.set(path)
 
+    def load_channels_from_upload(self):
+        config_path = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
+
+        if not config_path.exists():
+            self.channel_display_label.config(text="Channels: (no upload data)")
+            return
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        channels = data.get("Channels", [])
+        self.set_channels(channels)
+        print("Loading channels from:", config_path)
+        print("Channels found:", channels)
+
     def set_channels(self, channels: list[dict]):
-        labels = {ch["label"].lower() for ch in channels}
-        active = [c for c in THRESHOLD_CHANNELS if c in labels]
-        if active:
-            self.status_label.config(text=f"Threshold channels detected: {', '.join(active)}")
+        if not channels:
+            self.channel_display_label.config(text="Channels: (none)")
+            return
+
+        formatted = []
+        for ch in channels:
+            label = ch.get("label", "").lower()
+            code = ch.get("code", "CH?")
+            active = ch.get("active", True)
+
+            status = "" if active else " (disabled)"
+            formatted.append(f"{code}: {label}{status}")
+
+        display_text = "Channels:\n" + "\n".join(formatted)
+        self.channel_display_label.config(text=display_text)
+    
+
 
     def get_base_path(self):
         raw = self.base_path_var.get().strip()
@@ -484,7 +526,11 @@ class MaskingSettingsPage(tk.Frame):
 
         root.mainloop()
         return result_holder if result_holder else None
+    def _on_next(self):
+        self.load_channels_from_upload()
 
+        if self.controller:
+            self.controller.show_page("SessionEnd")
 
 #so the thing can run by itself
 
