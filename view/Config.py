@@ -10,7 +10,7 @@ from controller.AutoFillUtil import AutoFillUtil
 
 class ConfigPage(tk.Frame):
     def __init__(self, parent, controller):
-        super().__init__(parent, bg="white")
+        super().__init__(parent, bg="black")
         self.controller = controller
 
         self.af = AutoFillUtil()
@@ -33,7 +33,7 @@ class ConfigPage(tk.Frame):
         self.grid_rowconfigure(0, weight=1)
 
         # Left Side
-        self.left_frame = tk.Frame(self, bg="white")
+        self.left_frame = tk.Frame(self, bg="black")
         self.left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
         tk.Button(
@@ -44,7 +44,7 @@ class ConfigPage(tk.Frame):
             width=12
         ).pack(anchor="w", pady=5)
 
-        self.list_container = tk.Frame(self.left_frame, bg="white")
+        self.list_container = tk.Frame(self.left_frame, bg="black")
         self.list_container.pack(fill="both", expand=True, pady=10)
 
         self.scrollbar = tk.Scrollbar(self.list_container, orient="vertical")
@@ -52,7 +52,7 @@ class ConfigPage(tk.Frame):
             self.list_container,
             yscrollcommand=self.scrollbar.set,
             width=220,
-            bg="white",
+            bg="black",
             highlightthickness=0
         )
 
@@ -60,7 +60,7 @@ class ConfigPage(tk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.config(command=self.canvas.yview)
 
-        self.config_list_frame = tk.Frame(self.canvas, bg="white")
+        self.config_list_frame = tk.Frame(self.canvas, bg="black")
         self.canvas_window = self.canvas.create_window((0, 0), window=self.config_list_frame, anchor="nw")
 
         self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfig(self.canvas_window, width=e.width))
@@ -78,7 +78,7 @@ class ConfigPage(tk.Frame):
         self.filename_entry.pack(side="bottom", fill="x", pady=5)
 
         # Right Side
-        self.right_frame = tk.Frame(self, bg="white")
+        self.right_frame = tk.Frame(self, bg="black")
         self.right_frame.grid(row=0, column=1, sticky="nsew", padx=20, pady=10)
 
         self.right_frame.grid_rowconfigure(1, weight=1)
@@ -88,14 +88,14 @@ class ConfigPage(tk.Frame):
             self.right_frame,
             text="Select a config",
             font=("Arial", 22, "bold"),
-            bg="white"
+            bg="black"
         )
         self.preview_title.grid(row=0, column=0, pady=(0, 5))
 
-        self.preview_text = tk.Text(self.right_frame, wrap="word", bg="#f5f5f5")
+        self.preview_text = tk.Text(self.right_frame, wrap="word", bg="#000000")
         self.preview_text.grid(row=1, column=0, sticky="nsew", padx=20)
 
-        bottom_frame = tk.Frame(self.right_frame, bg="white")
+        bottom_frame = tk.Frame(self.right_frame, bg="black")
         bottom_frame.grid(row=2, column=0, pady=10)
 
         tk.Button(
@@ -110,7 +110,7 @@ class ConfigPage(tk.Frame):
             text="Auto run",
             width=12,
             bg="black",
-            fg="white"
+            fg="black"
         ).pack(side="left", padx=5)
 
         self.get_all_configs()
@@ -156,7 +156,7 @@ class ConfigPage(tk.Frame):
                 anchor="w",
                 padx=10,
                 pady=8,
-                bg="white",
+                bg="black",
                 cursor="hand2"
             )
             item.pack(fill="x")
@@ -195,7 +195,7 @@ class ConfigPage(tk.Frame):
             self.af.set_selected_config(config_path)
 
             if self.selected_label and self.selected_label.winfo_exists():
-                self.selected_label.config(bg="white")
+                self.selected_label.config(bg="black")
 
             self.selected_label = self.drag_data["widget"]
             self.selected_label.config(bg="#e0e0e0")

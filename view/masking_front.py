@@ -69,7 +69,7 @@ class MaskingSettingsPage(tk.Frame):
         self.status_label = tk.Label(self, text="", justify="left", fg="gray30")
         self.status_label.grid(row=2, column=0, pady=(0, 6), padx=20, sticky="w")
 
-        # ── Input Directory & Well Range ───────────────────────────────
+        # Input Directory and Well Range
         path_frame = tk.LabelFrame(self, text="Input Directory & Well Range")
         path_frame.grid(row=3, column=0, padx=20, sticky="ew")
         path_frame.grid_columnconfigure(1, weight=1)
@@ -223,13 +223,29 @@ class MaskingSettingsPage(tk.Frame):
             self,
             text="Run Masking",
             command=self._run_masking,
-            bg="#2d7d46",
-            fg="white",
+            bg=
+            "#000000",
+            fg="black",
             font=("TkDefaultFont", 10, "bold"),
             relief="flat",
             padx=12,
             pady=8,
         ).grid(row=9, column=0, pady=(10, 4), padx=20, sticky="ew")
+
+        self.results_button = tk.Button(
+            self,
+            text="Go to Results",
+            command=lambda: self.controller.show_page("Results") if self.controller else None,
+            state="disabled",   # disabled until masking completes
+            bg="#000000",
+            fg="black",
+            font=("TkDefaultFont", 10, "bold"),
+            relief="flat",
+            padx=12,
+            pady=8,
+        )
+
+        self.results_button.grid(row=11, column=0, pady=(4, 10), padx=20, sticky="ew")          
 
    
     def _run_masking(self):
@@ -259,12 +275,14 @@ class MaskingSettingsPage(tk.Frame):
         self.update_idletasks()
 
         try:
-            run_masking(settings)   # <-- call masking.py logic directly
+            run_masking(settings)   # call masking.py logic directly
             self.status_label.config(text="Masking complete.", fg="green")
+            # Enable results button
+            self.results_button.config(state="normal")
         except Exception as e:
             self.status_label.config(text=f"Error: {e}", fg="red")
 
-            
+
     def _browse_base_path(self):
         chosen = filedialog.askdirectory(title="Select base input directory")
         if chosen:
@@ -305,88 +323,88 @@ class MaskingSettingsPage(tk.Frame):
         if active:
             self.status_label.config(text=f"Threshold channels detected: {', '.join(active)}")
 
-def get_base_path(self):
-    raw = self.base_path_var.get().strip()
-    return Path(raw) if raw else None
+    def get_base_path(self):
+        raw = self.base_path_var.get().strip()
+        return Path(raw) if raw else None
 
-def get_well_range(self):
-    """
-    Returns a range object for the well loop to match masking.py
-    """
-    try:
-        start = int(self.well_start_var.get().strip())
-        end   = int(self.well_end_var.get().strip())
-        return range(start, end + 1)   # end is displayed as inclusive
-    except ValueError:
-        return None
+    def get_well_range(self):
+        """
+        Returns a range object for the well loop to match masking.py
+        """
+        try:
+            start = int(self.well_start_var.get().strip())
+            end   = int(self.well_end_var.get().strip())
+            return range(start, end + 1)   # end is displayed as inclusive
+        except ValueError:
+            return None
 
-def get_thresholds(self):
-    """
-    Returns per-channel threshold values.
-    """
-    result = {}
-    for ch, var in self.threshold_vars.items():
-        if self.auto_vars[ch].get():
-            result[ch] = "auto"
-        else:
+    def get_thresholds(self):
+        """
+        Returns per-channel threshold values.
+        """
+        result = {}
+        for ch, var in self.threshold_vars.items():
+            if self.auto_vars[ch].get():
+                result[ch] = "auto"
+            else:
+                raw = var.get().strip()
+                result[ch] = int(raw) if raw.lstrip("-").isdigit() else None
+        return result
+
+    def get_particle_size(self):
+        result = {}
+        for key, var in (("min", self.particle_size_min_var), ("max", self.particle_size_max_var)):
             raw = var.get().strip()
-            result[ch] = int(raw) if raw.lstrip("-").isdigit() else None
-    return result
-
-def get_particle_size(self):
-    result = {}
-    for key, var in (("min", self.particle_size_min_var), ("max", self.particle_size_max_var)):
-        raw = var.get().strip()
-        result[key] = int(raw) if raw.lstrip("-").isdigit() else None
-    return result
+            result[key] = int(raw) if raw.lstrip("-").isdigit() else None
+        return result
 
 
-# Standalone run: will probably get rid of this later but so it can run by itself
+    # Standalone run: will probably get rid of this later but so it can run by itself
 
-def collect_settings():
-    """
-    Opens the settings window, waits for the user to click Run, and returns
-    a dict with keys: base_path, well_range, thresholds, particle_size.
-    """
-    result_holder = {}
+    def collect_settings():
+        """
+        Opens the settings window, waits for the user to click Run, and returns
+        a dict with keys: base_path, well_range, thresholds, particle_size.
+        """
+        result_holder = {}
 
-    root = tk.Tk()
-    root.title("Masking Settings")
-    root.geometry("520x700")
-    root.resizable(False, True)
+        root = tk.Tk()
+        root.title("Masking Settings")
+        root.geometry("520x700")
+        root.resizable(False, True)
 
-    page = MaskingSettingsPage(root, controller=None)
-    page.pack(fill="both", expand=True)
+        page = MaskingSettingsPage(root, controller=None)
+        page.pack(fill="both", expand=True)
 
-    def on_run():
-        base_path   = page.get_base_path()
-        well_range  = page.get_well_range()
-        thresholds  = page.get_thresholds()
-        particle    = page.get_particle_size()
+        def on_run():
+            base_path   = page.get_base_path()
+            well_range  = page.get_well_range()
+            thresholds  = page.get_thresholds()
+            particle    = page.get_particle_size()
 
-        errors = []
-        if not base_path:
-            errors.append("Base path is required.")
-        if well_range is None:
-            errors.append("Well start/end must be integers.")
-        if errors:
-            page.status_label.config(text=" | ".join(errors), fg="red")
-            return
+            errors = []
+            if not base_path:
+                errors.append("Base path is required.")
+            if well_range is None:
+                errors.append("Well start/end must be integers.")
+            if errors:
+                page.status_label.config(text=" | ".join(errors), fg="red")
+                return
 
-        result_holder["base_path"]     = base_path
-        result_holder["well_range"]    = well_range
-        result_holder["thresholds"]    = thresholds
-        result_holder["particle_size"] = particle
-        root.destroy()
+            result_holder["base_path"]     = base_path
+            result_holder["well_range"]    = well_range
+            result_holder["thresholds"]    = thresholds
+            result_holder["particle_size"] = particle
+            root.destroy()
 
-    btn_frame = tk.Frame(root)
-    btn_frame.pack(fill="x", padx=20, pady=(0, 12))
-    tk.Button(btn_frame, text="Run Masking", command=on_run,
-              bg="#2d7d46", fg="white", font=("TkDefaultFont", 10, "bold"),
-              relief="flat", padx=12, pady=6).pack(fill="x")
+        btn_frame = tk.Frame(root)
+        btn_frame.pack(fill="x", padx=20, pady=(0, 12))
+        tk.Button(btn_frame, text="Run Masking", command=on_run,
+                bg="#2d7d46", fg="white", font=("TkDefaultFont", 10, "bold"),
+                relief="flat", padx=12, pady=6).pack(fill="x")
 
-    root.mainloop()
-    return result_holder if result_holder else None
+        root.mainloop()
+        return result_holder if result_holder else None
 
 
 #so the thing can run by itself

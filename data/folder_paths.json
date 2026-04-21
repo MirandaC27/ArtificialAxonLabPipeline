@@ -6,7 +6,7 @@
         "/Users/chloemiranda/capstone/CLEANED"
     ],
     "Data": [],
-    "ImageType": "2D",
+    "ImageType": "3D",
     "Microscope": "Keyence",
     "NumFOVs": 9,
     "DisabledFOVs": [],
@@ -32,7 +32,7 @@
             "active": true
         }
     ],
-    "StartTime": "2026-04-19 00:31:59",
-    "SessionId": 7,
-    "EndTime": "2026-04-19 00:32:04"
+    "StartTime": "2026-04-21 05:29:12",
+    "SessionId": 10,
+    "EndTime": "2026-04-21 05:29:29"
 }

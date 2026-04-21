@@ -8,6 +8,7 @@ from Config import ConfigPage
 from SessionEnd import SessionEnd
 from masking_front import MaskingSettingsPage
 from history import HistoryPage
+from results import ResultsPage
 
 
 class App(tk.Tk):
@@ -33,7 +34,8 @@ class App(tk.Tk):
             (ImageProcessingSettings, "Image Processing Stuff"),
             (SessionEnd, "SessionEnd"),
             (MaskingSettingsPage, "Masking Settings"),
-            (HistoryPage, "History")
+            (HistoryPage, "History"),
+            (ResultsPage, "Results")
         ]:
             page = PageClass(container, self)
             self.pages[name] = page
