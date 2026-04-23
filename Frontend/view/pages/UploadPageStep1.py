@@ -21,7 +21,7 @@ from ArtificialAxonLabPipeline.Frontend.api_client import (
     export_latest_settings,
 )
 
-BACKEND_MODEL_DIR = PROJECT_ROOT / "Backend" / "model"
+BACKEND_ANALYSIS_DIR = PROJECT_ROOT / "Backend" / "analysis"
 BACKEND_DATA_DIR = PROJECT_ROOT / "Backend" / "data"
 
 sd = SessionDataUtil()
@@ -318,7 +318,7 @@ class UploadPageStep1(tk.Frame):
             creationflags = 0
             preexec_fn = os.setsid
 
-        script_path = BACKEND_MODEL_DIR / "rename_organize_keyence.sh"
+        script_path = BACKEND_ANALYSIS_DIR / "rename_organize_keyence.sh"
 
         if not script_path.exists():
             print(f"Error: Script not found at {script_path}")

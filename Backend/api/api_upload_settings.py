@@ -3,8 +3,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .database import SessionLocal
-from . import models, schemas
+from ..database import SessionLocal
+from .. import models, schemas
 
 router = APIRouter()
 

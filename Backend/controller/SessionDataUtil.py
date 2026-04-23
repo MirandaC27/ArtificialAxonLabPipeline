@@ -9,6 +9,9 @@ class SessionDataUtil:
 
     def data_dir(self):
         return Path(__file__).resolve().parent.parent / "data"
+    
+    def txtdata_dir(self):
+        return Path(__file__).resolve().parent.parent / "data" / "txt"
 
     def history_path(self):
         history_dir = self.data_dir() / "history"
@@ -145,7 +148,7 @@ class SessionDataUtil:
         self.upsert_session_history(data)
 
     def save_txt(self, data):
-        txt_path = self.data_dir() / "folder_paths.txt"
+        txt_path = self.txtdata_dir() / "folder_paths.txt"
 
         with open(txt_path, "w", encoding="utf-8") as f:
             f.write(f"Experiment Start Time: {data.get('StartTime', 'N/A')}\n")
@@ -178,7 +181,7 @@ class SessionDataUtil:
         return Path(path).name
 
     def session_data(self, data):
-        txt_path = self.data_dir() / "sessionData.txt"
+        txt_path = self.txtdata_dir() / "sessionData.txt"
 
         tracks_list = data.get("Tracks", [])
         raw_path = tracks_list[0] if tracks_list else None

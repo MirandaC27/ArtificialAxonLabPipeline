@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from .database import engine, Base
-from . import api_sum 
-from . import api_name
-from . import api_upload_settings
+from .api import api_sum 
+from .api import api_name
+from .api import api_upload_settings
 
 app = FastAPI()
 

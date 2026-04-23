@@ -20,13 +20,13 @@
 }
 
 process_wells(){
-    ls -d W* > "$DATA_DIR/dirlist"
-    dirnum=$(wc -l < "$DATA_DIR/dirlist")
+    ls -d W* > "$DATA_DIR/txt/dirlist"
+    dirnum=$(wc -l < "$DATA_DIR/txt/dirlist")
     echo "Number of wells: $dirnum"
 
     for ((j=1; j<=dirnum; j++))
     do
-        dirname=$(awk -v k="$j" 'NR == k {print $1}' "$DATA_DIR/dirlist")
+        dirname=$(awk -v k="$j" 'NR == k {print $1}' "$DATA_DIR/txt/dirlist")
         echo "Well folder: $dirname"
 
         cd "$BASE_DIR/$dirname" || { echo "Failed to cd into $dirname"; continue; }
@@ -34,8 +34,8 @@ process_wells(){
         wellname=$(echo _* | awk -F '[_]' '{print $2}')
         echo "Well name: $wellname"
 
-        ls -d P* > "$DATA_DIR/tracklist"
-        tracknum=$(wc -l < "$DATA_DIR/tracklist")
+        ls -d P* > "$DATA_DIR/txt/tracklist"
+        tracknum=$(wc -l < "$DATA_DIR/txt/tracklist")
         echo "Positions: $tracknum"
 
         process_tracks   
