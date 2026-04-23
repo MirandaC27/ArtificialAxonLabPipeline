@@ -39,6 +39,55 @@ class UploadPageStep1(tk.Frame):
         if self.controller:
             self.controller.show_page("Masking Settings")
 
+    def apply_upload_data(self, config):
+        self.selected_folders = []
+        self.channels = []
+        self.disabled_fovs = []
+        self.image_type_var.set("3D")
+        self.micro_type_var.set("Keyence")
+        self.fov_var.set("")
+        self.disable_mode_var.set(False)
+        self.status_label.config(text="")
+        self.channel_num_entry.delete(0, tk.END)
+        self.channel_label_dropdown.set(CHANNELS[0])
+        self.fov_disable_entry.delete(0, tk.END)
+        self.channel_listbox.delete(0, tk.END)
+        self.fov_disabled_listbox.delete(0, tk.END)
+        self.toggle_disable_ui()
+
+        self.image_type_var.set(config.get("image_type", "3D"))
+        self.micro_type_var.set(config.get("microscope", "Keyence"))
+
+        self.selected_folders = list(config.get("folders", []))
+        if self.selected_folders:
+            self.status_label.config(text=f"Selected: {len(self.selected_folders)} folders")
+
+        self.fov_var.set(str(config.get("num_fovs", "")) if config.get("num_fovs", 0) else "")
+
+        self.channels = [
+            {
+                "num": int(ch["num"]),
+                "label": str(ch["label"]),
+                "disabled": bool(ch.get("disabled", False)),
+            }
+            for ch in config.get("channels", [])
+            if str(ch.get("num", "")).isdigit() and str(ch.get("label", "")).strip()
+        ]
+        self.channels.sort(key=lambda ch: ch["num"])
+        self.update_channel_listbox()
+
+        self.disabled_fovs = [
+            str(fov).strip()
+            for fov in config.get("disabled_fovs", [])
+            if str(fov).strip().isdigit()
+        ]
+        for fov in self.disabled_fovs:
+            self.fov_disabled_listbox.insert(tk.END, f"FOV {fov} Disabled")
+
+        if any(ch.get("disabled") for ch in self.channels) or self.disabled_fovs:
+            self.disable_mode_var.set(True)
+            self.toggle_disable_ui()
+
     def build_ui(self):
         # Configure layout: Column 0 (Left), Column 1 (Right)
         self.grid_columnconfigure(0, weight=2)

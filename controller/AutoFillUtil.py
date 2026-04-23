@@ -19,6 +19,13 @@ class AutoFillUtil:
     def parse_config_data(self, data):
         image_type = data.get("ImageType", data.get("image_type", "3D"))
         microscope = data.get("Microscope", data.get("microscope", "Keyence"))
+        num_fovs = data.get("NumFOVs", data.get("num_fovs", 0))
+
+        if not isinstance(num_fovs, int):
+            try:
+                num_fovs = int(str(num_fovs).strip())
+            except (TypeError, ValueError):
+                num_fovs = 0
 
         folders = []
         if isinstance(data.get("selected_folders"), list):
@@ -31,6 +38,12 @@ class AutoFillUtil:
             folders.extend(data["Tracks1"])
 
         folders = list(dict.fromkeys(folders))
+        disabled_fovs = [
+            str(fov).strip()
+            for fov in data.get("DisabledFOVs", data.get("disabled_fovs", []))
+            if str(fov).strip().isdigit()
+        ]
+        disabled_fovs = list(dict.fromkeys(disabled_fovs))
 
         channels = []
         for ch in data.get("Channels", []):
@@ -46,7 +59,13 @@ class AutoFillUtil:
                 num = ch["num"]
 
             if num is not None and label:
-                channels.append({"num": num, "label": label})
+                channels.append(
+                    {
+                        "num": num,
+                        "label": label,
+                        "disabled": not ch.get("active", True),
+                    }
+                )
 
         channels = sorted(channels, key=lambda x: x["num"])
 
@@ -54,24 +73,30 @@ class AutoFillUtil:
             "image_type": image_type,
             "microscope": microscope,
             "folders": folders,
-            "channels": channels
+            "channels": channels,
+            "num_fovs": num_fovs,
+            "disabled_fovs": disabled_fovs,
         }
 
-    def autofill_and_navigate(self, root):
+    def load_selected_config(self):
+        if not self.selected_config:
+            raise ValueError("Select a config first")
+
+        data = json.loads(self.selected_config.read_text())
+        return self.parse_config_data(data)
+
+    def autofill_and_navigate(self, root, autorun=False, show_success=True):
         if not self.selected_config:
             messagebox.showwarning("Warning", "Select a config first")
-            return
+            return False
 
         try:
-            data = json.loads(self.selected_config.read_text())
+            parsed = self.load_selected_config()
         except Exception as e:
             messagebox.showerror("Error", f"Failed to read config: {e}")
-            return
-
-        parsed = self.parse_config_data(data)
+            return False
 
         app_root = self._find_app_root(root)
-
 
         # Navigate to Upload page
         app_root.show_page("Upload")
@@ -79,10 +104,15 @@ class AutoFillUtil:
         upload_page = app_root.pages.get("Upload")
         if not upload_page:
             messagebox.showerror("Error", "Upload page not found")
-            return
+            return False
 
         try:
-            upload_page.apply_config_data(parsed)
-            messagebox.showinfo("Success", "Autofill complete!")
+            upload_page.apply_upload_data(parsed)
+            if autorun:
+                upload_page.button_run()
+            elif show_success:
+                messagebox.showinfo("Success", "Autofill complete!")
+            return True
         except Exception as e:
             messagebox.showerror("Error", f"Failed to apply config: {e}")
+            return False

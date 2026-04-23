@@ -25,13 +25,15 @@ def test_parse_config_data_merges_unique_folders_and_sorts_channels():
         {
             "ImageType": "2D",
             "Microscope": "Olympus",
+            "NumFOVs": "9",
             "selected_folders": ["/exp/raw", "/exp/raw"],
             "Tracks": ["/exp/raw"],
             "Data": ["/exp/data"],
             "Tracks1": ["/exp/CLEANED"],
+            "DisabledFOVs": ["2", 2, "bad"],
             "Channels": [
-                {"code": "CH3", "label": "debris"},
-                {"num": 1, "label": "axon"},
+                {"code": "CH3", "label": "debris", "active": False},
+                {"num": 1, "label": "axon", "active": True},
                 {"code": "bad", "label": "ignored"},
                 {"code": "CH2", "label": ""},
             ],
@@ -43,9 +45,11 @@ def test_parse_config_data_merges_unique_folders_and_sorts_channels():
         "microscope": "Olympus",
         "folders": ["/exp/raw", "/exp/data", "/exp/CLEANED"],
         "channels": [
-            {"num": 1, "label": "axon"},
-            {"num": 3, "label": "debris"},
+            {"num": 1, "label": "axon", "disabled": False},
+            {"num": 3, "label": "debris", "disabled": True},
         ],
+        "num_fovs": 9,
+        "disabled_fovs": ["2"],
     }
 
 
@@ -63,6 +67,8 @@ def test_parse_config_data_uses_lowercase_fallback_keys():
     assert parsed["microscope"] == "Keyence"
     assert parsed["folders"] == []
     assert parsed["channels"] == []
+    assert parsed["num_fovs"] == 0
+    assert parsed["disabled_fovs"] == []
 
 
 def test_autofill_and_navigate_warns_when_no_config_selected(monkeypatch):
@@ -90,7 +96,7 @@ def test_autofill_and_navigate_shows_error_when_config_read_fails(monkeypatch):
 def test_autofill_and_navigate_navigates_and_applies_config(monkeypatch):
     util = AutoFillUtil()
     config_path = SimpleNamespace(
-        read_text=lambda: '{"ImageType":"2D","Microscope":"Keyence","Tracks":["/raw"],"Channels":[{"code":"CH2","label":"myelin"}]}'
+        read_text=lambda: '{"ImageType":"2D","Microscope":"Keyence","Tracks":["/raw"],"NumFOVs":7,"DisabledFOVs":["3"],"Channels":[{"code":"CH2","label":"myelin","active":false}]}'
     )
     util.set_selected_config(config_path)
 
@@ -106,16 +112,37 @@ def test_autofill_and_navigate_navigates_and_applies_config(monkeypatch):
     util.autofill_and_navigate(root)
 
     app_root.show_page.assert_called_once_with("Upload")
-    upload_page.apply_config_data.assert_called_once_with(
+    upload_page.apply_upload_data.assert_called_once_with(
         {
             "image_type": "2D",
             "microscope": "Keyence",
             "folders": ["/raw"],
-            "channels": [{"num": 2, "label": "myelin"}],
+            "channels": [{"num": 2, "label": "myelin", "disabled": True}],
+            "num_fovs": 7,
+            "disabled_fovs": ["3"],
         }
     )
     info.assert_called_once_with("Success", "Autofill complete!")
     error.assert_not_called()
+
+
+def test_autofill_and_navigate_can_autorun_without_success_popup(monkeypatch):
+    util = AutoFillUtil()
+    util.set_selected_config(SimpleNamespace(read_text=lambda: "{}"))
+
+    upload_page = MagicMock()
+    app_root = SimpleNamespace(show_page=MagicMock(), pages={"Upload": upload_page})
+    root = _Node(master=app_root)
+
+    info = MagicMock()
+    monkeypatch.setattr("controller.AutoFillUtil.messagebox.showinfo", info)
+
+    result = util.autofill_and_navigate(root, autorun=True, show_success=False)
+
+    assert result is True
+    upload_page.apply_upload_data.assert_called_once()
+    upload_page.button_run.assert_called_once_with()
+    info.assert_not_called()
 
 
 def test_autofill_and_navigate_shows_error_when_upload_page_missing(monkeypatch):
@@ -138,7 +165,7 @@ def test_autofill_and_navigate_shows_error_when_apply_config_fails(monkeypatch):
     util.set_selected_config(SimpleNamespace(read_text=lambda: "{}"))
 
     upload_page = MagicMock()
-    upload_page.apply_config_data.side_effect = RuntimeError("bad config")
+    upload_page.apply_upload_data.side_effect = RuntimeError("bad config")
     app_root = SimpleNamespace(show_page=MagicMock(), pages={"Upload": upload_page})
     root = _Node(master=app_root)
 

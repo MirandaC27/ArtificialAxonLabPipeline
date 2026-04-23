@@ -115,6 +115,83 @@ class ConfigPage(tk.Frame):
 
         self.get_all_configs()
 
+    def format_config_text(self, config_data):
+        if not isinstance(config_data, dict):
+            return None
+
+        lines = []
+
+        # Basic info
+        lines.append(f"Microscope: {config_data.get('Microscope', 'N/A')}")
+        lines.append(f"Image Type: {config_data.get('ImageType', 'N/A')}")
+        lines.append("")
+
+        # Tracks
+        lines.append("Tracks (Raw):")
+        tracks = config_data.get("Tracks", [])
+        if tracks:
+            for t in tracks:
+                lines.append(t)
+        else:
+            lines.append("None")
+
+        lines.append("")
+        lines.append("Tracks1 (Cleaned):")
+        tracks1 = config_data.get("Tracks1", [])
+        if tracks1:
+            for t in tracks1:
+                lines.append(t)
+        else:
+            lines.append("None")
+
+        lines.append("")
+        lines.append("Ordered Track:")
+        ordered = config_data.get("OrderedTrack", [])
+        if ordered:
+            for t in ordered:
+                lines.append(t)
+        else:
+            lines.append("None")
+
+        # Data section
+        lines.append("")
+        lines.append("Data:")
+        lines.append(f"Number of FOVs: {config_data.get('NumFOVs', 0)}")
+
+        lines.append("Disabled FOVs:")
+        disabled = config_data.get("DisabledFOVs", [])
+        if disabled:
+            lines.append(", ".join(str(f) for f in disabled))
+        else:
+            lines.append("None")
+
+        # Channels
+        lines.append("")
+        lines.append("Channels:")
+        channels = config_data.get("Channels", [])
+        if channels:
+            for ch in channels:
+                status = "Active" if ch.get("active", True) else "Disabled"
+                lines.append(f"{ch.get('code', 'N/A')}: {ch.get('label', 'N/A')} ({status})")
+        else:
+            lines.append("None")
+
+        return "\n".join(lines)
+
+    def show_config_preview(self, config_path):
+        content = config_path.read_text(encoding="utf-8")
+        self.preview_title.config(text=config_path.stem)
+        self.preview_text.delete("1.0", tk.END)
+
+        try:
+            config_data = json.loads(content)
+        except json.JSONDecodeError:
+            self.preview_text.insert(tk.END, content)
+            return
+
+        formatted = self.format_config_text(config_data)
+        self.preview_text.insert(tk.END, formatted if formatted else content)
+
    
     def save_order(self):
         try:
@@ -201,10 +278,7 @@ class ConfigPage(tk.Frame):
             self.selected_label.config(bg="#e0e0e0")
 
             try:
-                content = config_path.read_text()
-                self.preview_title.config(text=config_path.stem)
-                self.preview_text.delete("1.0", tk.END)
-                self.preview_text.insert(tk.END, content[:500])
+                self.show_config_preview(config_path)
             except Exception as e:
                 messagebox.showerror("Error", str(e))
 
@@ -230,7 +304,9 @@ class ConfigPage(tk.Frame):
             return messagebox.showwarning("Warning", "Select a config")
 
         try:
-            self.currentConfig.write_text(self.selected_config.read_text())
+            self.currentConfig.parent.mkdir(parents=True, exist_ok=True)
+            self.currentConfig.write_text(self.selected_config.read_text(encoding="utf-8"), encoding="utf-8")
+            self.show_config_preview(self.selected_config)
             messagebox.showinfo("Success", f"Loaded {self.selected_config.name}")
         except Exception as e:
             messagebox.showerror("Error", str(e))
@@ -252,7 +328,7 @@ class ConfigPage(tk.Frame):
         name = self.filename_entry.get().strip()
 
         if not name:
-            return
+            return messagebox.showerror("Error", "Enter a file name")
 
         if not name.endswith(".json"):
             name += ".json"
@@ -263,8 +339,13 @@ class ConfigPage(tk.Frame):
             return messagebox.showerror("Error", "File already exists")
 
         try:
-            path.write_text(self.currentConfig.read_text())
+            self.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            path.write_text(self.currentConfig.read_text(encoding="utf-8"), encoding="utf-8")
             self.filename_entry.delete(0, tk.END)
             self.get_all_configs()
+            self.selected_config = path
+            self.af.set_selected_config(path)
+            self.show_config_preview(path)
+            messagebox.showinfo("Success", f"Saved {path.name}")
         except Exception as e:
             messagebox.showerror("Error", str(e))
