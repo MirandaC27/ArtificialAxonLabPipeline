@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
 
 2Dvs3D(){
+
+    # Try to detect a Plate directory (Keyence-style)
+    PLATE_DIR=$(find "$TRACKS" -mindepth 1 -maxdepth 1 -type d -iname "*plate*" | head -n 1)
+
     if [ "$IMAGE_TYPE" = "3D" ]; then
-
-    # 3D has Plate level
-    PLATE_DIR=$(find "$TRACKS" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-
-    if [ -z "$PLATE_DIR" ]; then
-        echo "No Plate directory found inside $TRACKS"
-        exit 1
-    fi
-
-    BASE_DIR="$PLATE_DIR"
-
+        if [ -n "$PLATE_DIR" ]; then
+            echo "Detected Plate directory (Keyence-style): $PLATE_DIR"
+            BASE_DIR="$PLATE_DIR"
+        else
+            echo "No Plate directory found, falling back to TRACKS (possible Olympus 3D export)"
+            BASE_DIR="$TRACKS"
+        fi
     else
-        # 2D has no Plate level
+        # 2D (Olympus or flat structure)
+        echo "2D dataset detected (no Plate level)"
         BASE_DIR="$TRACKS"
     fi
 }

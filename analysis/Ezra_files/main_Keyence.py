@@ -1,5 +1,6 @@
+#main_keyence.py
 from detectrims_Keyence import detectrims_Keyence
-from analysis import analysis
+from analysis_Keyence import analysis
 from detectnuclei import detectnuclei
 from detectmyelinarea_Keyence import detectmyelinarea_Keyence
 import time
@@ -18,10 +19,10 @@ skip = [] # INDEX STARTS WITH 0. THIS IS FOR TESTING SKIPPING LAYER. LAYERS IN T
 
 for setnum in setnums:
 
-    path = f"E:/AJ02 hOLs w cAMP and TNFa 3D/2025-10-01_AJ02_Keyence_ORDERED"
+    path = f"/Users/chloemiranda/capstone/CLEANED/ORDERED"
     debug_path = f"E:/EXP009/2025-08-13_2xSecAb/debug{setnum}.csv"
     further_analysis_path = f"E:/EXP009/2025-08-13_2xSecAb/further_analysis{setnum}.csv"
-    out_path = f"E:/AJ02 hOLs w cAMP and TNFa 3D/Keyence-RESULTS/2D-Wrapping-Analysis_EM-algo.csv"
+    out_path = f"/Users/chloemiranda/capstone/CLEANED/ORDERED/2D-Wrapping-Analysis_EM-algo.csv"
 
     # Extract the directory part of the path
     out_dir = os.path.dirname(out_path)
@@ -31,9 +32,9 @@ for setnum in setnums:
 
     print("Loading Overlap")
     # Returns overlaps_dict: {well,fov}:[[inner[x][y][z][%],outer[x][y][z][%]]     myelin_dict: [(well,fov)] = [myelin,myelin50,myelin80]
-    overlaps_dict, myelin_dict = detectrims_Keyence(path,debug_path,  # Paths
-                                            outerthresh,innerthresh,  # Perams
-                                            dynamic_mode,debug_mode,skip) # Modes
+    #overlaps_dict, myelin_dict = detectrims_Keyence(path,debug_path,  # Paths
+    #                                        outerthresh,innerthresh,  # Perams
+    #                                        dynamic_mode,debug_mode,skip) # Modes
 
     print("Detecting Nuclei")
     # Detect nuclei {well,fov}:[nuclei]
@@ -47,7 +48,7 @@ for setnum in setnums:
     print("Analyzing")
     # Analysis
     analysis(path,out_path,further_analysis_path,   # Paths
-             overlaps_dict,nuclei_dict,areas_dict,myelin_dict,  # Dicts
+             #overlaps_dict,nuclei_dict,areas_dict,myelin_dict,  # Dicts
              skip,further_analysis_mode) # Modes
 
 end = time.time() - start

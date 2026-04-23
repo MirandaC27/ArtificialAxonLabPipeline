@@ -1,13 +1,30 @@
 {
-    "Tracks": [],
-    "Tracks1": [],
-    "OrderedTrack": [],
+    "Tracks": [
+        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\VS Code\\AxonLabs\\Sample Data\\EXP009\\EXP009_Keyence_Plate1_RAW"
+    ],
+    "Tracks1": [
+        "C:\\Users\\jonat\\OneDrive - Loyola University Maryland\\Desktop\\VS Code\\AxonLabs\\Sample Data\\EXP009\\CLEANED"
+    ],
     "Data": [],
     "ImageType": "3D",
     "Microscope": "Keyence",
-    "NumFOVs": 0,
-    "DisabledFOVs": [],
-    "Channels": [],
-    "StartTime": "2026-04-21 17:43:18",
-    "SessionId": 19
+    "Channels": [
+        {
+            "code": "CH1",
+            "label": "nuclei"
+        },
+        {
+            "code": "CH2",
+            "label": "debris"
+        },
+        {
+            "code": "CH3",
+            "label": "axons"
+        },
+        {
+            "code": "CH4",
+            "label": "MBP"
+        }
+    ],
+    "StartTime": "2026-03-25 18:51:28"
 }

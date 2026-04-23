@@ -43,8 +43,8 @@ def detectrims_Keyence(path, debug_path,outerthresh,innerthresh,dynamic_mode,deb
                     pillar_group_centroids = []
 
                     # Load full z-stacks
-                    pillars = tiff.imread(os.path.join(fov_path, "MASKS/mask-pillars-stack.tif"))
-                    i_myelins = tiff.imread(os.path.join(fov_path, f"MASKS/mask-myelin-stack-{innerthresh}.tif"))
+                    pillars = tiff.imread(os.path.join(fov_path, "MASKS/mask-pillars.tif"))
+                    i_myelins = tiff.imread(os.path.join(fov_path, f"MASKS/mask-myelin-raw-8000.tif"))
                     o_myelins = tiff.imread(os.path.join(fov_path, f"MASKS/mask-myelin-stack-{outerthresh}.tif"))
 
 

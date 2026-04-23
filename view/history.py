@@ -5,7 +5,7 @@ import json
 
 class HistoryPage(tk.Frame):
     def __init__(self, parent, controller):
-        super().__init__(parent, bg="white")
+        super().__init__(parent, bg="black")
         self.controller = controller
 
         self.CONFIG_DIR = Path(__file__).resolve().parent.parent / "data" / "history"
@@ -21,7 +21,7 @@ class HistoryPage(tk.Frame):
         self.grid_rowconfigure(0, weight=1)
 
         #   LEFT SIDE   #
-        self.left_frame = tk.Frame(self, bg="white")
+        self.left_frame = tk.Frame(self, bg="black")
         self.left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
         tk.Button(
@@ -32,7 +32,7 @@ class HistoryPage(tk.Frame):
             width=12
         ).pack(anchor="w", pady=5)
 
-        self.list_container = tk.Frame(self.left_frame, bg="white")
+        self.list_container = tk.Frame(self.left_frame, bg="black")
         self.list_container.pack(fill="both", expand=True, pady=10)
 
         self.scrollbar = tk.Scrollbar(self.list_container, orient="vertical")
@@ -40,7 +40,7 @@ class HistoryPage(tk.Frame):
             self.list_container,
             yscrollcommand=self.scrollbar.set,
             width=220,
-            bg="white",
+            bg="black",
             highlightthickness=0
         )
 
@@ -48,7 +48,7 @@ class HistoryPage(tk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.config(command=self.canvas.yview)
 
-        self.config_list_frame = tk.Frame(self.canvas, bg="white")
+        self.config_list_frame = tk.Frame(self.canvas, bg="black")
         self.canvas_window = self.canvas.create_window(
             (0, 0), window=self.config_list_frame, anchor="nw"
         )
@@ -64,7 +64,7 @@ class HistoryPage(tk.Frame):
         )
 
         # Right side of frame - preview
-        self.right_frame = tk.Frame(self, bg="white")
+        self.right_frame = tk.Frame(self, bg="black")
         self.right_frame.grid(row=0, column=1, sticky="nsew", padx=20, pady=10)
 
         self.right_frame.grid_rowconfigure(1, weight=1)
@@ -74,11 +74,11 @@ class HistoryPage(tk.Frame):
             self.right_frame,
             text="Select a session",
             font=("Arial", 28, "bold"),
-            bg="white"
+            bg="black"
         )
         self.preview_title.grid(row=0, column=0, pady=(20, 10))
 
-        self.preview_content_frame = tk.Frame(self.right_frame, bg="white")
+        self.preview_content_frame = tk.Frame(self.right_frame, bg="black")
         self.preview_content_frame.grid(row=1, column=0, sticky="nsew")
 
         self.preview_content_frame.grid_rowconfigure(0, weight=1)
@@ -126,7 +126,7 @@ class HistoryPage(tk.Frame):
                 anchor="w",
                 padx=10,
                 pady=8,
-                bg="white",
+                bg="black",
                 cursor="hand2",
                 font=("Arial", 11)
             )
@@ -143,7 +143,7 @@ class HistoryPage(tk.Frame):
         self.selected_config = entry_path
 
         if self.selected_label and self.selected_label.winfo_exists():
-            self.selected_label.config(bg="white")
+            self.selected_label.config(bg="black")
 
         self.selected_label = event.widget
         self.selected_label.config(bg="#e0e0e0")
@@ -163,14 +163,14 @@ class HistoryPage(tk.Frame):
                 self.preview_content_frame,
                 text="No session data found.",
                 font=("Arial", 13),
-                bg="white"
+                bg="black"
             ).grid(row=0, column=0, pady=10)
             return
 
         text_box = tk.Text(
             self.preview_content_frame,
             font=("Courier New", 12),
-            bg="white",
+            bg="black",
             wrap="word",
             relief="flat",
             highlightthickness=1,

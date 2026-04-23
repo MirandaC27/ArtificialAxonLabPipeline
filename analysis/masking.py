@@ -4,6 +4,8 @@ import scyjava
 import json
 from pathlib import Path
 import sys
+import subprocess
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -341,15 +343,22 @@ def process_field(field_dir, settings):
     print(f" {field_dir.name}")
 
 
-def main():
-    # Collect settings from the UI 
-    DATA_DIR = PROJECT_ROOT / "data"
-
-    with open(DATA_DIR / "masking_settings.json", "r") as f:
-        settings = json.load(f)
-
+def main(settings):
+    print("DEBUG received base_path:", settings["base_path"])
     base_path  = settings["base_path"]
-    well_range = settings["well_range"]
+    base_path = Path(settings["base_path"])
+
+    
+    if base_path.name.lower() != "ordered":
+        ordered_candidate = base_path / "ORDERED"
+        if ordered_candidate.exists():
+            base_path = ordered_candidate
+        else:
+            print(f"WARNING: ORDERED folder not found inside {base_path}")
+            
+    well_start = settings["well_start"]
+    well_end = settings["well_end"]
+    well_range = range(well_start, well_end + 1)
     skip_config = load_skip_config()
     settings["skip_channels"] = skip_config["skip_channels"]
 
@@ -383,6 +392,13 @@ def main():
                 process_field(field_dir, settings)
             except Exception as exc:
                 print(f"  X {field_dir.name}: {exc}")
+
+    print("Masking complete. Starting nuclei aggregation stage...")
+
+    subprocess.run(
+        ["bash", str(PROJECT_ROOT / "analysis" / "consolidate_data.sh")],
+        check=True
+    )
 
 
 if __name__ == "__main__":

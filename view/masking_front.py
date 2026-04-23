@@ -4,6 +4,8 @@ from tkinter import ttk, filedialog
 from pathlib import Path
 import sys
 import json
+import threading
+
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -12,15 +14,27 @@ THRESHOLD_CHANNELS = ['axon', 'myelin', 'nuclei', 'debris', 'GFAP']
 
 DEFAULT_THRESHOLDS = {
     "myelin": 8000,
-    "debris": 15000,
+    "debris": 1500,
 }
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
+def load_default_base_path():
+    config_path = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
 
-with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-    data = json.load(f)
+    if not config_path.exists():
+        return Path("")
 
-DEFAULT_BASE_PATH = Path(data.get("OrderedTrack", [""])[0]) # Ordered Data folder path
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        ordered = data.get("OrderedTrack", [])
+        return Path(ordered[0]) if ordered else Path("")
+    except Exception:
+        return Path("")
+
+
+
+
 DEFAULT_WELL_START  = 2
 DEFAULT_WELL_END    = 11   
 
@@ -49,7 +63,7 @@ class MaskingSettingsPage(tk.Frame):
         self.particle_size_min_var = tk.StringVar(value=str(DEFAULT_PARTICLE_SIZE_MIN))
         self.particle_size_max_var = tk.StringVar(value=str(DEFAULT_PARTICLE_SIZE_MAX))
 
-        self.base_path_var   = tk.StringVar(value=DEFAULT_BASE_PATH)
+        self.base_path_var = tk.StringVar(value=str(load_default_base_path()))
         self.well_start_var  = tk.StringVar(value=str(DEFAULT_WELL_START))
         self.well_end_var    = tk.StringVar(value=str(DEFAULT_WELL_END))
 
@@ -141,7 +155,7 @@ class MaskingSettingsPage(tk.Frame):
         for idx, channel in enumerate(THRESHOLD_CHANNELS):
             row = idx + 2
 
-            thresh_var = tk.StringVar(value=str(DEFAULT_THRESHOLDS.get(channel, "")))
+            thresh_var = tk.StringVar(value="")
             auto_var   = tk.BooleanVar(value=False)
             self.threshold_vars[channel] = thresh_var
             self.auto_vars[channel]      = auto_var
@@ -150,8 +164,20 @@ class MaskingSettingsPage(tk.Frame):
                 row=row, column=0, padx=(10, 20), pady=6, sticky="w"
             )
 
-            tk.Entry(thresh_frame, textvariable=thresh_var, width=10).grid(
-                row=row, column=1, padx=(0, 10), pady=6, sticky="w"
+            vcmd = (self.register(lambda P: P == "" or P.isdigit()), "%P")
+
+            tk.Entry(
+                thresh_frame,
+                textvariable=thresh_var,
+                width=10,
+                validate="key",
+                validatecommand=vcmd
+            ).grid(
+                row=row,
+                column=1,
+                padx=(0, 10),
+                pady=6,
+                sticky="w"
             )
 
             default_val = DEFAULT_THRESHOLDS.get(channel, "")
@@ -234,7 +260,7 @@ class MaskingSettingsPage(tk.Frame):
         tk.Button(
             nav_frame,
             text="Back",
-            command=lambda: self.controller.show_page("Settings") if self.controller else None,
+            command=lambda: self.controller.show_page("Upload") if self.controller else None,
         ).grid(row=0, column=0, padx=5, sticky="ew")
 
         tk.Button(
@@ -292,13 +318,18 @@ class MaskingSettingsPage(tk.Frame):
         if errors:
             self.status_label.config(text=" | ".join(errors), fg="red")
             return
+        # Ensure we are pointing to ORDERED, not CLEANED
+        if base_path.name.lower() != "ordered":
+            if (base_path / "ORDERED").exists():
+                base_path = base_path / "ORDERED"
 
         settings = {
-            "base_path": base_path,
-            "well_range": well_range,
-            "thresholds": thresholds,
-            "particle_size": particle,
-        }
+                    "base_path": base_path,
+                    "well_start": well_range.start,
+                    "well_end": well_range.stop - 1,
+                    "thresholds": thresholds,
+                    "particle_size": particle,
+                }
 
         self.status_label.config(text="Running masking...", fg="blue")
         self.update_idletasks()
@@ -313,8 +344,10 @@ class MaskingSettingsPage(tk.Frame):
 
 
     def _browse_base_path(self):
-        self.base_path_var.set(str(DEFAULT_BASE_PATH))
-        self.status_label.config(text=f"Base path set to: {DEFAULT_BASE_PATH}")
+        path = filedialog.askdirectory(title="Select CLEANED folder")
+        if path:
+            self.base_path_var.set(path)
+            self.status_label.config(text=f"Base path set to: {path}")
 
     def _reset_channel(self, channel: str, default):
         self.auto_vars[channel].set(False)
@@ -330,7 +363,7 @@ class MaskingSettingsPage(tk.Frame):
             self.status_label.config(text=f"Maximum particle size reset to {DEFAULT_PARTICLE_SIZE_MAX}.")
 
     def _reset_all(self):
-        self.base_path_var.set(DEFAULT_BASE_PATH)
+        self.base_path_var.set(load_default_base_path())
         self.well_start_var.set(str(DEFAULT_WELL_START))
         self.well_end_var.set(str(DEFAULT_WELL_END))
         for channel in THRESHOLD_CHANNELS:
@@ -456,9 +489,20 @@ class MaskingSettingsPage(tk.Frame):
         ordered = data.get("OrderedTrack", [])
     
         if ordered:
-            self.base_path_var.set(str(Path(ordered[0])))
-            self.status_label.config(text=f"Loaded base path: {ordered[0]}")
+            p = Path(ordered[0]).resolve()
 
+            if p.name.lower() == "ordered":
+                base = p.parent
+            elif (p / "ORDERED").exists():
+                base = p
+            elif (p / "CLEANED" / "ORDERED").exists():
+                base = p / "CLEANED"
+            else:
+                base = p
+
+            self.base_path_var.set(str(base))
+            self.status_label.config(text=f"Loaded base path: {base}")
+    
 
     # Standalone run: will probably get rid of this later but so it can run by itself
 
