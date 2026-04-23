@@ -1,10 +1,16 @@
 import tkinter as tk
 from tkinter import messagebox
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from controller.AutoFillUtil import AutoFillUtil
 
 class SessionEnd(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent, bg="white")
         self.controller = controller
+        self.autofill = AutoFillUtil()
 
         #Left Side: Welcome Text 
         self.left_frame = tk.Frame(self, bg="white")
@@ -57,8 +63,10 @@ class SessionEnd(tk.Frame):
         self.btn_quit.pack(pady=10)
 
     def rerun_configuration(self):
-        upload_page = self.controller.pages.get("Upload")
-        if upload_page is None:
-            messagebox.showerror("Error", "Upload page not found")
+        config_path = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
+        if not config_path.exists():
+            messagebox.showerror("Error", "No saved configuration found to rerun")
             return
-        upload_page.button_run()
+
+        self.autofill.set_selected_config(config_path)
+        self.autofill.autofill_and_navigate(self.controller)
