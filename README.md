@@ -1,9 +1,11 @@
 # AxonLabPipeline
 
-download either of these files
-Windows: Pipeline.exe
-Mac: Pipeline.dmg
+download either of these files:
 
+Windows: pipeline.exe
+Mac: pipeline.dmg
+
+run it how you would any desktop app.
 
 # Desktop version aren't working and you need to run this raw:
 things about running:
