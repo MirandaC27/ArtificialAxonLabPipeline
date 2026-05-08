@@ -43,6 +43,7 @@ jobs:
           --onefile
           --windowed
           --name "Pipeline"
+          --paths=view
           --hidden-import=HomePage
           --hidden-import=Config
           --hidden-import=UploadPageStep1
@@ -66,7 +67,7 @@ jobs:
           --hidden-import=scyjava
           --hidden-import=pyimagej
           --hidden-import=imglyb
-          main_view.py
+          view/main_view.py
 
       - name: Upload EXE as artifact
         uses: actions/upload-artifact@v4
