@@ -10,7 +10,7 @@ run it how you would any desktop app.
 # Desktop version aren't working and you need to run this raw:
 things about running:
 You need a virtual environment. Make it with these:
-conda create -n NAME OF ENVIRONMENT HERE -c conda-forge python=3.10 pyimagej openjdk=11 maven opencv-python numpy scipy pandas pytest pytest-cov
+conda create -n NAME OF ENVIRONMENT HERE -c conda-forge python=3.10 pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov
 conda activate NAME OF ENVIRONMENT HERE
 
 conda install -c conda-forge pyimagej=1.4.1 openjdk=11 maven
