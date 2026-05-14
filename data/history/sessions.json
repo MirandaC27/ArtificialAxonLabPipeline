@@ -1,30 +1,398 @@
 {
     "sessions": [
         {
-            "Tracks": [],
-            "Tracks1": [],
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
             "Data": [],
             "ImageType": "3D",
             "Microscope": "Keyence",
-            "NumFOVs": 0,
+            "NumFOVs": 9,
             "DisabledFOVs": [],
-            "Channels": [],
-            "StartTime": "2026-04-15 15:51:54",
-            "SessionId": 1,
-            "EndTime": "2026-04-15 15:51:55"
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "debris",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "nuclei",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "myelin",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-19 23:50:26",
+            "SessionId": 9,
+            "EndTime": "2026-04-19 23:50:43"
         },
         {
-            "Tracks": [],
-            "Tracks1": [],
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "Data": [],
+            "ImageType": "3D",
+            "Microscope": "Keyence",
+            "NumFOVs": 9,
+            "DisabledFOVs": [],
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "debris",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "nuclei",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "myelin",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 05:29:12",
+            "SessionId": 10,
+            "EndTime": "2026-04-21 05:29:29"
+        },
+        {
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "OrderedTrack": [
+                "/Users/chloemiranda/capstone/ORDERED"
+            ],
+            "Data": [],
+            "ImageType": "3D",
+            "Microscope": "Keyence",
+            "NumFOVs": 9,
+            "DisabledFOVs": [],
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "debris",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "nuclei",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "myelin",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 14:58:18",
+            "SessionId": 11,
+            "EndTime": "2026-04-21 14:58:18"
+        },
+        {
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "OrderedTrack": [
+                "/Users/chloemiranda/capstone/ORDERED"
+            ],
+            "Data": [],
+            "ImageType": "3D",
+            "Microscope": "Keyence",
+            "NumFOVs": 9,
+            "DisabledFOVs": [],
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "myelin",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "nuclei",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "debris",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 17:05:56",
+            "SessionId": 12,
+            "EndTime": "2026-04-21 17:05:56"
+        },
+        {
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "OrderedTrack": [
+                "/Users/chloemiranda/capstone/ORDERED"
+            ],
+            "Data": [],
+            "ImageType": "3D",
+            "Microscope": "Keyence",
+            "NumFOVs": 9,
+            "DisabledFOVs": [],
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "myelin",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "nuclei",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "debris",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 17:06:10",
+            "SessionId": 13,
+            "EndTime": "2026-04-21 17:06:10"
+        },
+        {
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "OrderedTrack": [
+                "/Users/chloemiranda/capstone/ORDERED"
+            ],
+            "Data": [],
+            "ImageType": "3D",
+            "Microscope": "Keyence",
+            "NumFOVs": 9,
+            "DisabledFOVs": [],
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "axon",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 17:10:00",
+            "SessionId": 14,
+            "EndTime": "2026-04-21 17:10:01"
+        },
+        {
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "OrderedTrack": [
+                "/Users/chloemiranda/capstone/ORDERED"
+            ],
+            "Data": [],
+            "ImageType": "3D",
+            "Microscope": "Keyence",
+            "NumFOVs": 9,
+            "DisabledFOVs": [],
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "axon",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 17:11:58",
+            "SessionId": 15,
+            "EndTime": "2026-04-21 17:11:58"
+        },
+        {
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "OrderedTrack": [
+                "/Users/chloemiranda/capstone/ORDERED"
+            ],
             "Data": [],
             "ImageType": "3D",
             "Microscope": "Keyence",
             "NumFOVs": 0,
             "DisabledFOVs": [],
-            "Channels": [],
-            "StartTime": "2026-04-15 15:52:29",
-            "SessionId": 2,
-            "EndTime": "2026-04-15 15:52:29"
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "axon",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 17:16:13",
+            "SessionId": 16,
+            "EndTime": "2026-04-21 17:16:13"
+        },
+        {
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "OrderedTrack": [
+                "/Users/chloemiranda/capstone/ORDERED"
+            ],
+            "Data": [],
+            "ImageType": "3D",
+            "Microscope": "Keyence",
+            "NumFOVs": 9,
+            "DisabledFOVs": [],
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "myelin",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "nuclei",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "debris",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "debris",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 17:18:49",
+            "SessionId": 17,
+            "EndTime": "2026-04-21 17:19:07"
+        },
+        {
+            "Tracks": [
+                "/Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW"
+            ],
+            "Tracks1": [
+                "/Users/chloemiranda/capstone/CLEANED"
+            ],
+            "OrderedTrack": [
+                "/Users/chloemiranda/capstone/ORDERED"
+            ],
+            "Data": [],
+            "ImageType": "3D",
+            "Microscope": "Keyence",
+            "NumFOVs": 0,
+            "DisabledFOVs": [],
+            "Channels": [
+                {
+                    "code": "CH1",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH2",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH3",
+                    "label": "axon",
+                    "active": true
+                },
+                {
+                    "code": "CH4",
+                    "label": "axon",
+                    "active": true
+                }
+            ],
+            "StartTime": "2026-04-21 17:31:29",
+            "SessionId": 18,
+            "EndTime": "2026-04-21 17:31:39"
         }
     ]
 }

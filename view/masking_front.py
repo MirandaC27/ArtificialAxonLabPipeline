@@ -31,6 +31,11 @@ DEFAULT_PARTICLE_SIZE_MAX = 2000
 THRESH_MIN = 0
 THRESH_MAX = 65535
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+from analysis.masking import main as run_masking
 
 class MaskingSettingsPage(tk.Frame):
 
@@ -70,9 +75,19 @@ class MaskingSettingsPage(tk.Frame):
         self.status_label = tk.Label(self, text="", justify="left", fg="gray30")
         self.status_label.grid(row=2, column=0, pady=(0, 6), padx=20, sticky="w")
 
-        # Input Directory & Well Range 
+        # Channel display (from Upload page)
+        self.channel_display_label = tk.Label(
+            self,
+            text="Channels: (not loaded)",
+            justify="left",
+            fg="gray30",
+        )
+        self.channel_display_label.grid(row=3, column=0, padx=20, sticky="e")
+        self.load_channels_from_upload()
+
+        # Input Directory and Well Range
         path_frame = tk.LabelFrame(self, text="Input Directory & Well Range")
-        path_frame.grid(row=3, column=0, padx=20, sticky="ew")
+        path_frame.grid(row=4, column=0, padx=20, sticky="ew")
         path_frame.grid_columnconfigure(1, weight=1)
 
         tk.Label(path_frame, text="Base path", width=12, anchor="w").grid(
@@ -225,10 +240,78 @@ class MaskingSettingsPage(tk.Frame):
         tk.Button(
             nav_frame,
             text="Next",
-            command=lambda: self.controller.show_page("SessionEnd") if self.controller else None,
+            command=self._on_next,
         ).grid(row=0, column=1, padx=5, sticky="ew")
 
+
+        tk.Button(
+            self,
+            text="Run Masking",
+            command=self._run_masking,
+            bg=
+            "#000000",
+            fg="black",
+            font=("TkDefaultFont", 10, "bold"),
+            relief="flat",
+            padx=12,
+            pady=8,
+        ).grid(row=9, column=0, pady=(10, 4), padx=20, sticky="ew")
+
+        self.results_button = tk.Button(
+            self,
+            text="Go to Results",
+            command=lambda: self.controller.show_page("Results") if self.controller else None,
+            state="disabled",   # disabled until masking completes
+            bg="#000000",
+            fg="black",
+            font=("TkDefaultFont", 10, "bold"),
+            relief="flat",
+            padx=12,
+            pady=8,
+        )
+
+        self.results_button.grid(row=11, column=0, pady=(4, 10), padx=20, sticky="ew")          
+
    
+    def _run_masking(self):
+
+        # Load and display channels before running
+        self.load_channels_from_upload()
+
+        base_path   = self.get_base_path()
+        well_range  = self.get_well_range()
+        thresholds  = self.get_thresholds()
+        particle    = self.get_particle_size()
+
+        errors = []
+        if not base_path:
+            errors.append("Base path is required.")
+        if well_range is None:
+            errors.append("Well start/end must be integers.")
+
+        if errors:
+            self.status_label.config(text=" | ".join(errors), fg="red")
+            return
+
+        settings = {
+            "base_path": base_path,
+            "well_range": well_range,
+            "thresholds": thresholds,
+            "particle_size": particle,
+        }
+
+        self.status_label.config(text="Running masking...", fg="blue")
+        self.update_idletasks()
+
+        try:
+            run_masking(settings)   # call masking.py logic directly
+            self.status_label.config(text="Masking complete.", fg="green")
+            # Enable results button
+            self.results_button.config(state="normal")
+        except Exception as e:
+            self.status_label.config(text=f"Error: {e}", fg="red")
+
+
     def _browse_base_path(self):
         self.base_path_var.set(str(DEFAULT_BASE_PATH))
         self.status_label.config(text=f"Base path set to: {DEFAULT_BASE_PATH}")
@@ -261,11 +344,39 @@ class MaskingSettingsPage(tk.Frame):
     def set_base_path(self, path: str):
         self.base_path_var.set(path)
 
+    def load_channels_from_upload(self):
+        config_path = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
+
+        if not config_path.exists():
+            self.channel_display_label.config(text="Channels: (no upload data)")
+            return
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        channels = data.get("Channels", [])
+        self.set_channels(channels)
+        print("Loading channels from:", config_path)
+        print("Channels found:", channels)
+
     def set_channels(self, channels: list[dict]):
-        labels = {ch["label"].lower() for ch in channels}
-        active = [c for c in THRESHOLD_CHANNELS if c in labels]
-        if active:
-            self.status_label.config(text=f"Threshold channels detected: {', '.join(active)}")
+        if not channels:
+            self.channel_display_label.config(text="Channels: (none)")
+            return
+
+        formatted = []
+        for ch in channels:
+            label = ch.get("label", "").lower()
+            code = ch.get("code", "CH?")
+            active = ch.get("active", True)
+
+            status = "" if active else " (disabled)"
+            formatted.append(f"{code}: {label}{status}")
+
+        display_text = "Channels:\n" + "\n".join(formatted)
+        self.channel_display_label.config(text=display_text)
+    
+
 
     def get_base_path(self):
         raw = self.base_path_var.get().strip()
@@ -349,22 +460,22 @@ class MaskingSettingsPage(tk.Frame):
             self.status_label.config(text=f"Loaded base path: {ordered[0]}")
 
 
-# Standalone run: will probably get rid of this later but so it can run by itself
+    # Standalone run: will probably get rid of this later but so it can run by itself
 
-def collect_settings():
-    """
-    Opens the settings window, waits for the user to click Run, and returns
-    a dict with keys: base_path, well_range, thresholds, particle_size.
-    """
-    result_holder = {}
+    def collect_settings():
+        """
+        Opens the settings window, waits for the user to click Run, and returns
+        a dict with keys: base_path, well_range, thresholds, particle_size.
+        """
+        result_holder = {}
 
-    root = tk.Tk()
-    root.title("Masking Settings")
-    root.geometry("520x700")
-    root.resizable(False, True)
+        root = tk.Tk()
+        root.title("Masking Settings")
+        root.geometry("520x700")
+        root.resizable(False, True)
 
-    page = MaskingSettingsPage(root, controller=None)
-    page.pack(fill="both", expand=True)
+        page = MaskingSettingsPage(root, controller=None)
+        page.pack(fill="both", expand=True)
 
     def save_settings_to_json(settings, path):
         serializable = {
@@ -407,15 +518,19 @@ def collect_settings():
 
         root.destroy()
 
-    btn_frame = tk.Frame(root)
-    btn_frame.pack(fill="x", padx=20, pady=(0, 12))
-    tk.Button(btn_frame, text="Run Masking", command=on_run,
-              bg="#2d7d46", fg="white", font=("TkDefaultFont", 10, "bold"),
-              relief="flat", padx=12, pady=6).pack(fill="x")
+        btn_frame = tk.Frame(root)
+        btn_frame.pack(fill="x", padx=20, pady=(0, 12))
+        tk.Button(btn_frame, text="Run Masking", command=on_run,
+                bg="#2d7d46", fg="white", font=("TkDefaultFont", 10, "bold"),
+                relief="flat", padx=12, pady=6).pack(fill="x")
 
-    root.mainloop()
-    return result_holder if result_holder else None
+        root.mainloop()
+        return result_holder if result_holder else None
+    def _on_next(self):
+        self.load_channels_from_upload()
 
+        if self.controller:
+            self.controller.show_page("SessionEnd")
 
 #so the thing can run by itself
 

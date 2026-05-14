@@ -11,7 +11,7 @@ except ImportError:
     import pandas as pd
 
 
-class CSVPreviewPage(tk.Frame):
+class ResultsPage(tk.Frame):
     def __init__(self, parent, controller=None):
         super().__init__(parent, bg="black")
         self.controller = controller

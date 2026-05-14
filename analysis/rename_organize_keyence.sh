@@ -12,7 +12,7 @@ else
     JQ="$SCRIPT_DIR/../services/jq-windows-amd64.exe"
 fi
 
-JSON="$SCRIPT_DIR/../data/folder_paths.json"
+JSON="$SCRIPT_DIR/../data/upload_settings.json"
 
 source "$SCRIPT_DIR/../controller/CleanDataController.sh"
 source "$SCRIPT_DIR/../controller/OrderDataController.sh"

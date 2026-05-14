@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
-from view.masking_front import collect_settings
+#rom view.masking_front import collect_settings
 
 
 ij = imagej.init("sc.fiji:fiji", mode="headless")
@@ -197,9 +197,21 @@ def nuclei_mask(imp, dir_temp, dir_masks, dir_data, thresh_nuclei):
     elif thresh_nuclei is not None:
         imp = threshold_and_mask(imp, thresh_nuclei)
     else:
-        imp = auto_threshold_mask(imp)   # fall back to auto if not configured
+        imp = auto_threshold_mask(imp)
     imp = show_run_hide(imp, "Watershed", "stack")
     save_imp(imp, dir_masks / "mask-nuclei.tif")
+
+    rt_nuclei = ResultsTable()
+    options = ParticleAnalyzer.SHOW_NONE | ParticleAnalyzer.INCLUDE_HOLES
+    measurements = Measurements.AREA
+    pa = ParticleAnalyzer(options, measurements, rt_nuclei, 10, float("inf"), 0.0, 1.0)
+    pa.analyze(imp)
+
+    count_rt = ResultsTable()
+    count_rt.incrementCounter()
+    count_rt.addValue("Count", rt_nuclei.size())
+    save_results(count_rt, dir_data / "nuclei.out")
+
     imp.close()
 
 

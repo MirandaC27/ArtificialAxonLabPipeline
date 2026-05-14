@@ -1,5 +1,5 @@
-Experiment Start Time: 2026-04-13 23:58:13
-Experiment End Time: 2026-04-13 23:58:26
+Experiment Start Time: 2026-04-21 05:29:12
+Experiment End Time: 2026-04-21 05:29:29
 
 Folder Path to Tracks (Raw)
 /Users/chloemiranda/capstone/EXP009_Keyence_Plate1_RAW
@@ -8,13 +8,13 @@ Folder Path to Tracks1 (Cleaned)
 /Users/chloemiranda/capstone/CLEANED
 
 Microscope Used: Keyence
-
 Image Type Used: 3D
+Number of Fields of View: 9
 
 Channels Used:
-CH1: axon
-CH2: myelin
-CH3: nuclei
-CH4: debris
+CH1: debris (Active)
+CH2: axon (Active)
+CH3: nuclei (Active)
+CH4: myelin (Active)
 
 Experiment Data:
