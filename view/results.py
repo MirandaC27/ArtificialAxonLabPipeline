@@ -394,7 +394,7 @@ if __name__ == "__main__":
     root.geometry("900x600")
     root.configure(bg="white")
 
-    page = CSVPreviewPage(root)
+    page = ResultsPage(root)
     page.pack(fill="both", expand=True)
 
     root.mainloop()
