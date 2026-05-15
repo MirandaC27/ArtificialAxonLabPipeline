@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
@@ -46,6 +48,11 @@ jobs:
             --name Pipeline ^
             --paths=view ^
             --paths=analysis ^
+            --paths=controller ^
+            --add-data=analysis;analysis ^
+            --add-data=controller;controller ^
+            --add-data=services;services ^
+            --add-data=data;data ^
             --hidden-import=HomePage ^
             --hidden-import=Config ^
             --hidden-import=UploadPageStep1 ^

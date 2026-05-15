@@ -3,7 +3,7 @@ from concurrent.futures import thread as futures_thread
 from datetime import datetime
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from pathlib import Path
 import subprocess
 import platform
@@ -12,6 +12,7 @@ import signal
 import json
 import sys
 import os
+import shutil
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from controller.SessionDataUtil import SessionDataUtil
@@ -265,31 +266,65 @@ class UploadPageStep1(tk.Frame):
             self.progress.stop()
             self.popup.destroy()
 
-    def run_step1(self):
-        if platform.system() == "Windows":
-            bash_path = r"C:\Program Files\Git\bin\bash.exe"
-            creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
-            preexec_fn = None
-        else:
-            bash_path = "/bin/bash"
-            creationflags = 0
-            preexec_fn = os.setsid
+    def project_root(self):
+        if getattr(sys, "frozen", False):
+            return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
+        return Path(__file__).resolve().parent.parent
 
-        script_path = Path(__file__).resolve().parent.parent / "analysis" / "rename_organize_keyence.sh"
+    def find_bash(self):
+        found = shutil.which("bash")
+        if found:
+            return found
+
+        if platform.system() == "Windows":
+            candidates = [
+                r"C:\Program Files\Git\bin\bash.exe",
+                r"C:\Program Files (x86)\Git\bin\bash.exe",
+            ]
+            for candidate in candidates:
+                if Path(candidate).exists():
+                    return candidate
+
+        raise FileNotFoundError(
+            "Could not find bash. Install Git for Windows, then try running the upload step again."
+        )
+
+    def run_step1(self):
+        bash_path = self.find_bash()
+        popen_kwargs = {
+            "cwd": str(self.project_root()),
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.STDOUT,
+            "text": True,
+            "encoding": "utf-8",
+            "errors": "replace",
+        }
+
+        if platform.system() == "Windows":
+            popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        elif hasattr(os, "setsid"):
+            popen_kwargs["preexec_fn"] = os.setsid
+
+        script_path = self.project_root() / "analysis" / "rename_organize_keyence.sh"
 
         if not script_path.exists():
-            print(f"Error: Script not found at {script_path}")
-            return
+            raise FileNotFoundError(f"Script not found at {script_path}")
 
         self.process = subprocess.Popen(
             [bash_path, str(script_path)],
-            creationflags=creationflags,
-            preexec_fn=preexec_fn
+            **popen_kwargs,
         )
 
-        while self.process.poll() is None:
-            if self.stop_flag:
-                break
+        output, _ = self.process.communicate()
+
+        if self.stop_flag:
+            return
+
+        if self.process.returncode != 0:
+            tail = "\n".join((output or "").splitlines()[-20:])
+            raise RuntimeError(
+                f"Upload script failed with exit code {self.process.returncode}.\n\n{tail}"
+            )
 
     def save_folders(self):
         sd.clear_session_files()
@@ -345,14 +380,20 @@ class UploadPageStep1(tk.Frame):
     def run_process(self):
         try:
             if not self.selected_folders:
-                print("No folders selected")
-                self.after(0, lambda: self.status_label.config(
-                    text="Please select at least one folder before running."
+                self.after(0, lambda: (
+                    self.status_label.config(text="Please select at least one folder before running."),
+                    messagebox.showwarning("Missing Folder", "Please select at least one folder before running.")
                 ))
                 return
 
             self.save_folders()
             sd.runtime(self.run_step1)
+
+        except Exception as exc:
+            self.after(0, lambda exc=exc: (
+                self.status_label.config(text="Upload script failed. See error details."),
+                messagebox.showerror("Upload Script Failed", str(exc))
+            ))
 
         finally:
             if self.selected_folders:
