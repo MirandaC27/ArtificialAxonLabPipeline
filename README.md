@@ -21,7 +21,7 @@ To Download For Mac verson:
 <h1> Manual Mode </h1>
 <h4> Run these command in the terminal if the desctop app does not work. </h4> 
 
-1. <h4>Fist Create a Conda Virtual Environment and install the dependencies.</h4>
+1. <h4>Create a Conda Virtual Environment and install the dependencies.</h4>
 
 ```
 conda create -n [Name of Virutal Evironment] -c conda-forge python=3.10 pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov

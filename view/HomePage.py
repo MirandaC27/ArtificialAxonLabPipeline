@@ -2,31 +2,31 @@ import tkinter as tk
 
 class HomePage(tk.Frame):
     def __init__(self, parent, controller):
-        super().__init__(parent, bg="black")
+        super().__init__(parent, bg="white")
         self.controller = controller
 
         #Left Side: Welcome Text 
-        self.left_frame = tk.Frame(self, bg="black")
+        self.left_frame = tk.Frame(self, bg="white")
         self.left_frame.place(relx=0.0, rely=0.0, relwidth=0.5, relheight=1.0)
 
         self.welcome_label = tk.Label(
             self.left_frame, 
             text="Welcome!", 
             font=("Arial", 48), 
-            bg="black", 
+            bg="white", 
             fg="#333333"
         )
         self.welcome_label.place(relx=0.5, rely=0.5, anchor="center")
 
         #Right Side: Question and Buttons
-        self.right_frame = tk.Frame(self, bg="black")
+        self.right_frame = tk.Frame(self, bg="white")
         self.right_frame.place(relx=0.5, rely=0.0, relwidth=0.5, relheight=1.0)
 
         self.question_label = tk.Label(
             self.right_frame, 
             text="What would you like to do?", 
             font=("Arial", 18), 
-            bg="black", 
+            bg="white", 
             fg="#333333"
         )
         self.question_label.pack(pady=(80, 20))
@@ -34,9 +34,9 @@ class HomePage(tk.Frame):
         button_options = {
             "font": ("Arial", 12),
             "bg": "black",
-            "fg": "black",
+            "fg": "white",
             "activebackground": "#333333",
-            "activeforeground": "black",
+            "activeforeground": "white",
             "width": 20,
             "height": 2,
             "bd": 0,

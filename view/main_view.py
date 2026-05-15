@@ -31,7 +31,6 @@ class App(tk.Tk):
             (ConfigPage, "Config"),
             (UploadPageStep1, "Upload"),
             (SettingsPage, "Settings"),
-            #(ImageProcessingSettings, "Image Processing Stuff"),
             (MaskingSettingsPage, "Masking Settings"),
             (SessionEnd, "SessionEnd"),
             (HistoryPage, "History"),
