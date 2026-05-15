@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -24,11 +27,12 @@ jobs:
           python-version: "3.10"
           channels: conda-forge
           channel-priority: strict
-          auto-activate-base: false
+          conda-remove-defaults: true
+          auto-activate: false
 
       - name: Install Conda dependencies
         run: |
-          conda install -y -c conda-forge python=3.10 pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov
+          conda install -y -c conda-forge python=3.10 pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov xarray tifffile pillow requests
           python -m pip install --upgrade pip
           pip install pyinstaller
           if exist requirements.txt pip install -r requirements.txt
@@ -40,10 +44,11 @@ jobs:
       - name: Build EXE with PyInstaller
         run: |
           pyinstaller ^
-            --onefile ^
+            --onedir ^
             --windowed ^
             --name Pipeline ^
             --paths=view ^
+            --paths=analysis ^
             --hidden-import=HomePage ^
             --hidden-import=Config ^
             --hidden-import=UploadPageStep1 ^
@@ -52,6 +57,7 @@ jobs:
             --hidden-import=SessionEnd ^
             --hidden-import=history ^
             --hidden-import=results ^
+            --hidden-import=analysis.masking ^
             --hidden-import=tkinter ^
             --hidden-import=tkinter.ttk ^
             --hidden-import=PIL ^
@@ -80,9 +86,9 @@ jobs:
             --copy-metadata=jpype1 ^
             view/main_view.py
 
-      - name: Upload EXE as artifact
+      - name: Upload EXE folder as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Pipeline-Windows-EXE
-          path: dist/Pipeline.exe
+          name: Pipeline-Windows-App
+          path: dist/Pipeline
           retention-days: 30
