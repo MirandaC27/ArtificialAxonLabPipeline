@@ -13,7 +13,7 @@ except ImportError:
 
 class ResultsPage(tk.Frame):
     def __init__(self, parent, controller=None):
-        super().__init__(parent, bg="black")
+        super().__init__(parent, bg="white")
         self.controller = controller
 
         self.CSV_DIR = Path("./csv_files")
@@ -33,7 +33,7 @@ class ResultsPage(tk.Frame):
         self.grid_rowconfigure(0, weight=1)
 
         # left
-        self.left_frame = tk.Frame(self, bg="black")
+        self.left_frame = tk.Frame(self, bg="white")
         self.left_frame.grid(row=0, column=0, sticky="ns", padx=10, pady=10)
 
         if controller:
@@ -46,7 +46,7 @@ class ResultsPage(tk.Frame):
             ).pack(anchor="w", pady=5)
 
         # Scrollable list
-        self.list_container = tk.Frame(self.left_frame, bg="black")
+        self.list_container = tk.Frame(self.left_frame, bg="white")
         self.list_container.pack(fill="both", expand=True, pady=10)
 
         self.scrollbar = tk.Scrollbar(self.list_container, orient="vertical")
@@ -54,7 +54,7 @@ class ResultsPage(tk.Frame):
             self.list_container,
             yscrollcommand=self.scrollbar.set,
             width=220,
-            bg="black",
+            bg="white",
             highlightthickness=0
         )
 
@@ -62,7 +62,7 @@ class ResultsPage(tk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.config(command=self.canvas.yview)
 
-        self.csv_list_frame = tk.Frame(self.canvas, bg="black")
+        self.csv_list_frame = tk.Frame(self.canvas, bg="white")
         self.canvas_window = self.canvas.create_window(
             (0, 0), window=self.csv_list_frame, anchor="nw"
         )
@@ -90,13 +90,13 @@ class ResultsPage(tk.Frame):
         ).pack(side="bottom", fill="x", pady=2)
 
         self.rows_var = tk.StringVar(value="5")
-        rows_frame = tk.Frame(self.left_frame, bg="black")
+        rows_frame = tk.Frame(self.left_frame, bg="white")
         rows_frame.pack(side="bottom", fill="x", pady=5)
-        tk.Label(rows_frame, text="Rows to preview:", bg="black", font=("Arial", 9)).pack(side="left")
+        tk.Label(rows_frame, text="Rows to preview:", bg="white", font=("Arial", 9)).pack(side="left")
         tk.Entry(rows_frame, textvariable=self.rows_var, width=5).pack(side="left", padx=4)
 
         # ── Right Side ─────────────────────────────────────────────────────────
-        self.right_frame = tk.Frame(self, bg="black")
+        self.right_frame = tk.Frame(self, bg="white")
         self.right_frame.grid(row=0, column=1, sticky="nsew", padx=20, pady=10)
 
         self.right_frame.grid_rowconfigure(1, weight=1)
@@ -106,12 +106,12 @@ class ResultsPage(tk.Frame):
             self.right_frame,
             text="Select a CSV",
             font=("Arial", 22, "bold"),
-            bg="black"
+            bg="white"
         )
         self.preview_title.grid(row=0, column=0, pady=(0, 5))
 
         # Scrollable table area (Text widget keeps parity with original)
-        text_frame = tk.Frame(self.right_frame, bg="black")
+        text_frame = tk.Frame(self.right_frame, bg="white")
         text_frame.grid(row=1, column=0, sticky="nsew", padx=20)
         text_frame.grid_rowconfigure(0, weight=1)
         text_frame.grid_columnconfigure(0, weight=1)
@@ -119,7 +119,7 @@ class ResultsPage(tk.Frame):
         self.preview_text = tk.Text(
             text_frame,
             wrap="none",
-            bg="#000000",
+            bg="white",
             font=("Courier", 10)
         )
         h_scroll = tk.Scrollbar(text_frame, orient="horizontal", command=self.preview_text.xview)
@@ -134,7 +134,7 @@ class ResultsPage(tk.Frame):
         h_scroll.grid(row=1, column=0, sticky="ew")
 
         # Bottom buttons
-        bottom_frame = tk.Frame(self.right_frame, bg="black")
+        bottom_frame = tk.Frame(self.right_frame, bg="white")
         bottom_frame.grid(row=2, column=0, pady=10)
 
         tk.Button(
@@ -148,8 +148,6 @@ class ResultsPage(tk.Frame):
             bottom_frame,
             text="Export head",
             width=12,
-            bg="black",
-            fg="black",
             command=self.export_head
         ).pack(side="left", padx=5)
 
@@ -198,7 +196,7 @@ class ResultsPage(tk.Frame):
                 anchor="w",
                 padx=10,
                 pady=8,
-                bg="black",
+                bg="white",
                 cursor="hand2"
             )
             item.pack(fill="x")
@@ -235,7 +233,7 @@ class ResultsPage(tk.Frame):
             self.selected_csv = csv_path
 
             if self.selected_label and self.selected_label.winfo_exists():
-                self.selected_label.config(bg="black")
+                self.selected_label.config(bg="white")
 
             self.selected_label = self.drag_data["widget"]
             self.selected_label.config(bg="#e0e0e0")
@@ -394,7 +392,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("CSV Preview")
     root.geometry("900x600")
-    root.configure(bg="black")
+    root.configure(bg="white")
 
     page = CSVPreviewPage(root)
     page.pack(fill="both", expand=True)

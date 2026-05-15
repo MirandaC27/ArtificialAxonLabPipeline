@@ -31,7 +31,6 @@ class App(tk.Tk):
             (ConfigPage, "Config"),
             (UploadPageStep1, "Upload"),
             (SettingsPage, "Settings"),
-            #(ImageProcessingSettings, "Image Processing Stuff"),
             (MaskingSettingsPage, "Masking Settings"),
             (SessionEnd, "SessionEnd"),
             (HistoryPage, "History"),
@@ -41,7 +40,7 @@ class App(tk.Tk):
             self.pages[name] = page
             page.grid(row=0, column=0, sticky="nsew")
 
-        self.show_page("Home")
+        self.show_page("Results")
 
     def get_page(self, name):
         return self.pages.get(name)
