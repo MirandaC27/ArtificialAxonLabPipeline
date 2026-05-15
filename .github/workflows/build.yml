@@ -64,9 +64,13 @@ jobs:
           --hidden-import=tifffile
           --hidden-import=requests
           --hidden-import=jpype
+          --hidden-import=jpype1
+          --hidden-import=jgo
           --hidden-import=scyjava
+          --hidden-import=scyjava._versions
           --hidden-import=pyimagej
           --hidden-import=imglyb
+          --collect-all=scyjava
           view/main_view.py
 
       - name: Upload EXE as artifact
