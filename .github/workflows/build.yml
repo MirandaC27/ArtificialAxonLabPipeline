@@ -3,75 +3,82 @@ name: Build Windows EXE
 on:
   push:
     branches: [main]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
 
+    defaults:
+      run:
+        shell: cmd /C call {0}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.11'
+          activate-environment: lexisenvironment
+          python-version: "3.10"
+          channels: conda-forge
+          channel-priority: strict
+          auto-activate-base: false
 
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~\AppData\Local\pip\Cache
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install Java (required for pyimagej / imglyb / scyjava)
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '11'
-
-      - name: Install Python dependencies
+      - name: Install Conda dependencies
         run: |
+          conda install -y -c conda-forge python=3.10 pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install pyinstaller
+          if exist requirements.txt pip install -r requirements.txt
+
+      - name: Test imports
+        run: |
+          python -c "import imagej, imglyb, scyjava, jpype, cv2, numpy, scipy, pandas; print('All imports OK')"
 
       - name: Build EXE with PyInstaller
-        run: >
-          pyinstaller
-          --onefile
-          --windowed
-          --name "Pipeline"
-          --paths=view
-          --hidden-import=HomePage
-          --hidden-import=Config
-          --hidden-import=UploadPageStep1
-          --hidden-import=SettingFront
-          --hidden-import=masking_front
-          --hidden-import=SessionEnd
-          --hidden-import=history
-          --hidden-import=results
-          --hidden-import=tkinter
-          --hidden-import=tkinter.ttk
-          --hidden-import=PIL
-          --hidden-import=PIL._tkinter_finder
-          --hidden-import=cv2
-          --hidden-import=numpy
-          --hidden-import=pandas
-          --hidden-import=scipy
-          --hidden-import=xarray
-          --hidden-import=tifffile
-          --hidden-import=requests
-          --hidden-import=jpype
-          --hidden-import=jpype1
-          --hidden-import=jgo
-          --hidden-import=scyjava
-          --hidden-import=scyjava._versions
-          --hidden-import=pyimagej
-          --hidden-import=imglyb
-          --collect-all=scyjava
-          view/main_view.py
+        run: |
+          pyinstaller ^
+            --onefile ^
+            --windowed ^
+            --name Pipeline ^
+            --paths=view ^
+            --hidden-import=HomePage ^
+            --hidden-import=Config ^
+            --hidden-import=UploadPageStep1 ^
+            --hidden-import=SettingFront ^
+            --hidden-import=masking_front ^
+            --hidden-import=SessionEnd ^
+            --hidden-import=history ^
+            --hidden-import=results ^
+            --hidden-import=tkinter ^
+            --hidden-import=tkinter.ttk ^
+            --hidden-import=PIL ^
+            --hidden-import=PIL._tkinter_finder ^
+            --hidden-import=cv2 ^
+            --hidden-import=numpy ^
+            --hidden-import=pandas ^
+            --hidden-import=scipy ^
+            --hidden-import=xarray ^
+            --hidden-import=tifffile ^
+            --hidden-import=requests ^
+            --hidden-import=jpype ^
+            --hidden-import=scyjava ^
+            --hidden-import=scyjava._versions ^
+            --hidden-import=pyimagej ^
+            --hidden-import=imagej ^
+            --hidden-import=imglyb ^
+            --collect-all=imglyb ^
+            --collect-all=scyjava ^
+            --collect-all=pyimagej ^
+            --collect-all=imagej ^
+            --copy-metadata=imglyb ^
+            --copy-metadata=scyjava ^
+            --copy-metadata=pyimagej ^
+            --copy-metadata=jgo ^
+            --copy-metadata=jpype1 ^
+            view/main_view.py
 
       - name: Upload EXE as artifact
         uses: actions/upload-artifact@v4
