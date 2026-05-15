@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     defaults:
       run:
@@ -29,10 +29,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          conda install -y -c conda-forge python=3.10 pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov xarray tifffile pillow requests
+          conda install -y -c conda-forge python=3.10 pyinstaller pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov xarray tifffile pillow requests
           python -m pip install --upgrade pip
-          python -m pip install pyinstaller
           if exist requirements.txt python -m pip install -r requirements.txt
+          python -m PyInstaller --version
 
       - name: Test imports
         run: |
