@@ -5,9 +5,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: windows-latest
@@ -30,12 +27,12 @@ jobs:
           conda-remove-defaults: true
           auto-activate: false
 
-      - name: Install Conda dependencies
+      - name: Install dependencies
         run: |
           conda install -y -c conda-forge python=3.10 pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov xarray tifffile pillow requests
           python -m pip install --upgrade pip
-          pip install pyinstaller
-          if exist requirements.txt pip install -r requirements.txt
+          python -m pip install pyinstaller
+          if exist requirements.txt python -m pip install -r requirements.txt
 
       - name: Test imports
         run: |
@@ -43,7 +40,7 @@ jobs:
 
       - name: Build EXE with PyInstaller
         run: |
-          pyinstaller ^
+          python -m PyInstaller ^
             --onedir ^
             --windowed ^
             --name Pipeline ^
