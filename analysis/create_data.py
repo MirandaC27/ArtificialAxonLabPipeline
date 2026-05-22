@@ -6,8 +6,13 @@ import json
 from pathlib import Path
 import sys
 
+SOURCE_ROOT = Path(__file__).resolve().parent.parent
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.append(str(SOURCE_ROOT))
+
+from controller.runtime_paths import data_dir
+
 # Import settings collector from the frontend
-sys.path.append(str(Path(__file__).resolve().parent))
 from view.masking_front import collect_settings
 
 SEGMENT_LOW  = 128
@@ -24,7 +29,7 @@ SEGMENT_LOW    = 128
 SEGMENT_HIGH   = 255
 
 WELL_RANGE = range(10, 11) 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
+CONFIG_PATH = data_dir() / "upload_settings.json"
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     data = json.load(f)
@@ -163,7 +168,7 @@ def process_field(field_dir, myelin_thresh, debris_thresh):
 
 def main():
    
-    DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+    DATA_DIR = data_dir()
 
     with open(DATA_DIR / "masking_settings.json", "r") as f:
         settings = json.load(f)

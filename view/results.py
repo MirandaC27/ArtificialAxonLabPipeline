@@ -2,13 +2,18 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 from pathlib import Path
 import json
+import sys
+
+SOURCE_ROOT = Path(__file__).resolve().parent.parent
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.append(str(SOURCE_ROOT))
+
+from controller.runtime_paths import csv_dir
 
 try:
     import pandas as pd
 except ImportError:
-    import subprocess, sys
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas"])
-    import pandas as pd
+    pd = None
 
 
 class ResultsPage(tk.Frame):
@@ -16,10 +21,10 @@ class ResultsPage(tk.Frame):
         super().__init__(parent, bg="white")
         self.controller = controller
 
-        self.CSV_DIR = Path("./csv_files")
+        self.CSV_DIR = csv_dir()
         self.CSV_DIR.mkdir(parents=True, exist_ok=True)
 
-        self.ORDER_FILE = Path("./csv_order.json")
+        self.ORDER_FILE = self.CSV_DIR / "csv_order.json"
 
         self.selected_csv = None
         self.selected_label = None
@@ -258,6 +263,10 @@ class ResultsPage(tk.Frame):
     #preview stuff
 
     def _show_preview(self, csv_path):
+        if pd is None:
+            messagebox.showerror("Error", "pandas is not packaged with this app.")
+            return
+
         try:
             n = int(self.rows_var.get())
         except ValueError:
@@ -356,6 +365,9 @@ class ResultsPage(tk.Frame):
 
     def export_head(self):
         """Save the currently previewed head() rows to a new CSV."""
+        if pd is None:
+            return messagebox.showerror("Error", "pandas is not packaged with this app.")
+
         if not self.selected_csv:
             return messagebox.showwarning("Warning", "Select a CSV first")
 

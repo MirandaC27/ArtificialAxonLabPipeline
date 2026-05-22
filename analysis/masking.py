@@ -5,7 +5,13 @@ import json
 from pathlib import Path
 import sys
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SOURCE_ROOT = Path(__file__).resolve().parent.parent
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.append(str(SOURCE_ROOT))
+
+from controller.runtime_paths import data_dir, resource_root
+
+PROJECT_ROOT = resource_root()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
@@ -24,7 +30,7 @@ ImageCalculator  = scyjava.jimport("ij.plugin.ImageCalculator")
 ImagePlus        = scyjava.jimport("ij.ImagePlus")
 WindowManager    = scyjava.jimport("ij.WindowManager")
 
-CONFIG_PATH = PROJECT_ROOT / "data" / "upload_settings.json"
+CONFIG_PATH = data_dir() / "upload_settings.json"
 MASKING_REQUIRED_CHANNELS = {"axon", "myelin", "nuclei", "debris"}
 
 
@@ -343,13 +349,16 @@ def process_field(field_dir, settings):
 
 def main():
     # Collect settings from the UI 
-    DATA_DIR = PROJECT_ROOT / "data"
+    DATA_DIR = data_dir()
 
     with open(DATA_DIR / "masking_settings.json", "r") as f:
         settings = json.load(f)
 
-    base_path  = settings["base_path"]
-    well_range = settings["well_range"]
+    base_path = Path(settings["base_path"])
+    if isinstance(settings.get("well_range"), list):
+        well_range = settings["well_range"]
+    else:
+        well_range = range(int(settings["well_start"]), int(settings["well_end"]) + 1)
     skip_config = load_skip_config()
     settings["skip_channels"] = skip_config["skip_channels"]
 

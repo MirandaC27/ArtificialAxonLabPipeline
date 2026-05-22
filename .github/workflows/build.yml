@@ -2,6 +2,10 @@ name: Build Windows EXE
 
 on:
   push:
+    branches:
+      - main
+      - Working
+      
   workflow_dispatch:
 
 jobs:
@@ -19,7 +23,7 @@ jobs:
           lfs: true
 
       - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: lexisenvironment
           python-version: "3.10"
@@ -32,7 +36,6 @@ jobs:
         run: |
           conda install -y -c conda-forge python=3.10 pyinstaller pyimagej openjdk=11 maven opencv numpy scipy pandas pytest pytest-cov xarray tifffile pillow requests
           python -m pip install --upgrade pip
-          if exist requirements.txt python -m pip install -r requirements.txt
           python -m PyInstaller --version
 
       - name: Test imports
@@ -52,6 +55,7 @@ jobs:
             --add-data=controller;controller ^
             --add-data=services;services ^
             --add-data=data;data ^
+            --add-data=results;results ^
             --hidden-import=HomePage ^
             --hidden-import=Config ^
             --hidden-import=UploadPageStep1 ^
@@ -61,6 +65,7 @@ jobs:
             --hidden-import=history ^
             --hidden-import=results ^
             --hidden-import=analysis.masking ^
+            --hidden-import=controller.runtime_paths ^
             --hidden-import=tkinter ^
             --hidden-import=tkinter.ttk ^
             --hidden-import=PIL ^
@@ -75,12 +80,10 @@ jobs:
             --hidden-import=jpype ^
             --hidden-import=scyjava ^
             --hidden-import=scyjava._versions ^
-            --hidden-import=pyimagej ^
             --hidden-import=imagej ^
             --hidden-import=imglyb ^
             --collect-all=imglyb ^
             --collect-all=scyjava ^
-            --collect-all=pyimagej ^
             --collect-all=imagej ^
             --copy-metadata=imglyb ^
             --copy-metadata=scyjava ^

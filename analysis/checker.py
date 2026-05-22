@@ -2,7 +2,7 @@
 import imagej
 import scyjava
 
-ij = imagej.init("/Users/chloemiranda/capstone/Fiji", mode="headless")
+ij = imagej.init("sc.fiji:fiji", mode="headless")
 print(f"ImageJ version: {ij.getVersion()}")
 
 

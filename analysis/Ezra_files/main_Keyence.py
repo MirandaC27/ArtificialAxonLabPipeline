@@ -4,6 +4,15 @@ from detectnuclei import detectnuclei
 from detectmyelinarea_Keyence import detectmyelinarea_Keyence
 import time
 import os
+import json
+from pathlib import Path
+import sys
+
+SOURCE_ROOT = Path(__file__).resolve().parents[2]
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.append(str(SOURCE_ROOT))
+
+from controller.runtime_paths import data_dir, results_dir
 
 start = time.time()
 
@@ -18,10 +27,19 @@ skip = [] # INDEX STARTS WITH 0. THIS IS FOR TESTING SKIPPING LAYER. LAYERS IN T
 
 for setnum in setnums:
 
-    path = f"E:/AJ02 hOLs w cAMP and TNFa 3D/2025-10-01_AJ02_Keyence_ORDERED"
-    debug_path = f"E:/EXP009/2025-08-13_2xSecAb/debug{setnum}.csv"
-    further_analysis_path = f"E:/EXP009/2025-08-13_2xSecAb/further_analysis{setnum}.csv"
-    out_path = f"E:/AJ02 hOLs w cAMP and TNFa 3D/Keyence-RESULTS/2D-Wrapping-Analysis_EM-algo.csv"
+    config_path = data_dir() / "upload_settings.json"
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    ordered_tracks = config.get("OrderedTrack", [])
+    if not ordered_tracks:
+        raise FileNotFoundError("No OrderedTrack path found in upload_settings.json")
+
+    path = ordered_tracks[0]
+    run_results_dir = results_dir()
+    debug_path = str(run_results_dir / f"debug{setnum}.csv")
+    further_analysis_path = str(run_results_dir / f"further_analysis{setnum}.csv")
+    out_path = str(run_results_dir / "2D-Wrapping-Analysis_EM-algo.csv")
 
     # Extract the directory part of the path
     out_dir = os.path.dirname(out_path)

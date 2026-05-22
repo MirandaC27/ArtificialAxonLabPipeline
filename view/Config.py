@@ -6,6 +6,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from controller.AutoFillUtil import AutoFillUtil
+from controller.runtime_paths import data_dir
 
 
 class ConfigPage(tk.Frame):
@@ -15,11 +16,11 @@ class ConfigPage(tk.Frame):
 
         self.af = AutoFillUtil()
 
-        BASE_DIR = Path(__file__).resolve().parent.parent
+        DATA_DIR = data_dir()
 
-        self.CONFIG_DIR = BASE_DIR / "data" / "configs"
-        self.currentConfig = BASE_DIR / "data" / "upload_settings.json"
-        self.ORDER_FILE = BASE_DIR / "data" / "config_order.json"
+        self.CONFIG_DIR = DATA_DIR / "configs"
+        self.currentConfig = DATA_DIR / "upload_settings.json"
+        self.ORDER_FILE = DATA_DIR / "config_order.json"
 
         self.selected_config = None
         self.selected_label = None

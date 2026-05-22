@@ -4,7 +4,15 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-TRACKS="/Users/chloemiranda/capstone/CLEANED/ORDERED"
+OS="$(uname -s)"
+if [[ "$OS" == "Darwin" ]]; then
+    JQ="$PROJECT_ROOT/services/jq-macos-arm64"
+else
+    JQ="$PROJECT_ROOT/services/jq-windows-amd64.exe"
+fi
+
+JSON="$PROJECT_ROOT/data/upload_settings.json"
+TRACKS=$("$JQ" -r '.OrderedTrack[0]' "$JSON")
 
 RESULTS_DIR="$PROJECT_ROOT/results"
 mkdir -p "$RESULTS_DIR"

@@ -1,6 +1,10 @@
 import tkinter as tk
 from pathlib import Path
 import json
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from controller.runtime_paths import data_dir
 
 
 class ImageProcessingSettings(tk.Frame):
@@ -100,7 +104,7 @@ class ImageProcessingSettings(tk.Frame):
             "frame_distance": frame_distance_val
         }
 
-        json_path = Path(__file__).resolve().parent / "image_processing_inputs.json"
+        json_path = data_dir() / "image_processing_inputs.json"
 
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=4)

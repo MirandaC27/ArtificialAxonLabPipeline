@@ -5,7 +5,13 @@ from pathlib import Path
 import sys
 import json
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SOURCE_ROOT = Path(__file__).resolve().parent.parent
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.append(str(SOURCE_ROOT))
+
+from controller.runtime_paths import data_dir, resource_root
+
+PROJECT_ROOT = resource_root()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
@@ -19,7 +25,7 @@ DEFAULT_THRESHOLDS = {
     "debris": 15000,
 }
 
-CONFIG_PATH = PROJECT_ROOT / "data" / "upload_settings.json"
+CONFIG_PATH = data_dir() / "upload_settings.json"
 
 if CONFIG_PATH.exists():
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -395,7 +401,7 @@ class MaskingSettingsPage(tk.Frame):
         self.base_path_var.set(str(path))
 
     def load_channels_from_upload(self):
-        config_path = PROJECT_ROOT / "data" / "upload_settings.json"
+        config_path = data_dir() / "upload_settings.json"
 
         if not config_path.exists():
             self.channel_display_label.config(text="Channels: (no upload data)")
@@ -478,7 +484,7 @@ class MaskingSettingsPage(tk.Frame):
             "particle_size": settings["particle_size"],
         }
 
-        save_path = PROJECT_ROOT / "data" / "masking_settings.json"
+        save_path = data_dir() / "masking_settings.json"
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(save_path, "w", encoding="utf-8") as f:
@@ -488,7 +494,7 @@ class MaskingSettingsPage(tk.Frame):
         return True
 
     def refresh_base_path(self):
-        config_path = PROJECT_ROOT / "data" / "upload_settings.json"
+        config_path = data_dir() / "upload_settings.json"
 
         if not config_path.exists():
             return
@@ -559,7 +565,7 @@ def collect_settings():
         result_holder["particle_size"] = particle
 
         settings = result_holder.copy()
-        save_path = PROJECT_ROOT / "data" / "masking_settings.json"
+        save_path = data_dir() / "masking_settings.json"
         save_settings_file(settings, save_path)
 
         root.destroy()

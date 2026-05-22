@@ -1,6 +1,13 @@
 import tkinter as tk
 from pathlib import Path
 import json
+import sys
+
+SOURCE_ROOT = Path(__file__).resolve().parent.parent
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.append(str(SOURCE_ROOT))
+
+from controller.runtime_paths import data_dir
 
 
 class HistoryPage(tk.Frame):
@@ -8,7 +15,7 @@ class HistoryPage(tk.Frame):
         super().__init__(parent, bg="white")
         self.controller = controller
 
-        self.CONFIG_DIR = Path(__file__).resolve().parent.parent / "data" / "history"
+        self.CONFIG_DIR = data_dir() / "history"
         self.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         self.HISTORY_FILE = self.CONFIG_DIR / "sessions.json"
 

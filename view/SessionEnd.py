@@ -5,6 +5,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from controller.AutoFillUtil import AutoFillUtil
+from controller.runtime_paths import data_dir
 
 class SessionEnd(tk.Frame):
     def __init__(self, parent, controller):
@@ -63,7 +64,7 @@ class SessionEnd(tk.Frame):
         self.btn_quit.pack(pady=10)
 
     def rerun_configuration(self):
-        config_path = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
+        config_path = data_dir() / "upload_settings.json"
         if not config_path.exists():
             messagebox.showerror("Error", "No saved configuration found to rerun")
             return

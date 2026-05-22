@@ -4,12 +4,14 @@ from datetime import datetime
 import json
 import time
 
+from controller.runtime_paths import data_dir
+
 
 class SessionDataUtil:
     HISTORY_LIMIT = 10
 
     def data_dir(self):
-        return Path(__file__).resolve().parent.parent / "data"
+        return data_dir()
 
     def history_path(self):
         history_dir = self.data_dir() / "history"

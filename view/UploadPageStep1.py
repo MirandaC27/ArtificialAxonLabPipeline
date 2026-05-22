@@ -16,6 +16,7 @@ import shutil
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from controller.SessionDataUtil import SessionDataUtil
+from controller.runtime_paths import resource_root
 
 sd = SessionDataUtil()
 CHANNELS = ['axon', 'myelin', 'nuclei', 'debris', 'GFAP']
@@ -267,9 +268,7 @@ class UploadPageStep1(tk.Frame):
             self.popup.destroy()
 
     def project_root(self):
-        if getattr(sys, "frozen", False):
-            return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
-        return Path(__file__).resolve().parent.parent
+        return resource_root()
 
     def find_bash(self):
         found = shutil.which("bash")

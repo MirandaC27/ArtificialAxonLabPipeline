@@ -3,11 +3,13 @@ from pathlib import Path
 from datetime import datetime
 import json
 
+from controller.runtime_paths import data_dir
+
 
 class SettingsData:
 
     def data_dir(self):
-        return Path(__file__).resolve().parent.parent / "data"
+        return data_dir()
 
     def clear_session_files(self):
         json_path = self.data_dir() / "settingsInputs.json"
