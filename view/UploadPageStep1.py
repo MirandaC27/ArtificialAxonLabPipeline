@@ -16,7 +16,7 @@ import shutil
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from controller.SessionDataUtil import SessionDataUtil
-from controller.runtime_paths import resource_root
+from controller.runtime_paths import data_dir, resource_root, script_path
 
 sd = SessionDataUtil()
 CHANNELS = ['axon', 'myelin', 'nuclei', 'debris', 'GFAP']
@@ -270,19 +270,37 @@ class UploadPageStep1(tk.Frame):
     def project_root(self):
         return resource_root()
 
-    def find_bash(self):
-        found = shutil.which("bash")
-        if found:
-            return found
+    def bash_path(self, path):
+        path = Path(path)
+        path_text = str(path)
 
+        if platform.system() != "Windows":
+            return path_text
+
+        if path_text.startswith("\\\\"):
+            return "//" + path_text.lstrip("\\").replace("\\", "/")
+
+        if path.is_absolute() and path.drive:
+            drive = path.drive.rstrip(":").lower()
+            rest = path_text[len(path.drive):].replace("\\", "/")
+            return f"/{drive}{rest}"
+
+        return path_text.replace("\\", "/")
+
+    def find_bash(self):
         if platform.system() == "Windows":
             candidates = [
                 r"C:\Program Files\Git\bin\bash.exe",
+                r"C:\Program Files\Git\usr\bin\bash.exe",
                 r"C:\Program Files (x86)\Git\bin\bash.exe",
             ]
             for candidate in candidates:
                 if Path(candidate).exists():
                     return candidate
+
+        found = shutil.which("bash")
+        if found:
+            return found
 
         raise FileNotFoundError(
             "Could not find bash. Install Git for Windows, then try running the upload step again."
@@ -290,8 +308,9 @@ class UploadPageStep1(tk.Frame):
 
     def run_step1(self):
         bash_path = self.find_bash()
+        project_root = self.project_root()
         popen_kwargs = {
-            "cwd": str(self.project_root()),
+            "cwd": str(project_root),
             "stdout": subprocess.PIPE,
             "stderr": subprocess.STDOUT,
             "text": True,
@@ -299,18 +318,23 @@ class UploadPageStep1(tk.Frame):
             "errors": "replace",
         }
 
+        env = os.environ.copy()
+        env["AALP_RESOURCE_ROOT_BASH"] = self.bash_path(project_root)
+        env["AALP_DATA_DIR_BASH"] = self.bash_path(data_dir())
+        popen_kwargs["env"] = env
+
         if platform.system() == "Windows":
             popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
         elif hasattr(os, "setsid"):
             popen_kwargs["preexec_fn"] = os.setsid
 
-        script_path = self.project_root() / "analysis" / "rename_organize_keyence.sh"
+        script = script_path("rename_organize_keyence.sh")
 
-        if not script_path.exists():
-            raise FileNotFoundError(f"Script not found at {script_path}")
+        if not script.exists():
+            raise FileNotFoundError(f"Script not found at {script}")
 
         self.process = subprocess.Popen(
-            [bash_path, str(script_path)],
+            [bash_path, self.bash_path(script)],
             **popen_kwargs,
         )
 
@@ -346,11 +370,17 @@ class UploadPageStep1(tk.Frame):
 
         start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        sorted_tracks = sorted(tracks)
+        sorted_data = sorted(data)
         json_data = {
-            "Tracks": sorted(tracks),
+            "Tracks": sorted_tracks,
+            "TracksBash": [self.bash_path(Path(path)) for path in sorted_tracks],
             "Tracks1": [str(clean_path)] if clean_path != "N/A" else [],
+            "Tracks1Bash": [self.bash_path(clean_path)] if clean_path != "N/A" else [],
             "OrderedTrack": [str(clean_path.parent / "ORDERED")] if clean_path != "N/A" else [],
-            "Data": sorted(data),
+            "OrderedTrackBash": [self.bash_path(clean_path.parent / "ORDERED")] if clean_path != "N/A" else [],
+            "Data": sorted_data,
+            "DataBash": [self.bash_path(Path(path)) for path in sorted_data],
             "ImageType": self.image_type_var.get(),
             "Microscope": self.micro_type_var.get(),
             "NumFOVs": self.get_num_fovs(),

@@ -93,6 +93,29 @@ def test_save_folders_sorts_tracks(app_instance):
     ]
 
 
+@patch("view.UploadPageStep1.platform.system")
+def test_save_folders_writes_bash_paths(mock_platform, app_instance):
+    mock_platform.return_value = "Windows"
+    app, fake_dir = app_instance
+
+    app.selected_folders.extend([
+        r"C:\data\exp_RAW",
+        r"C:\data\other_folder"
+    ])
+
+    app.save_folders()
+
+    json_path = fake_dir.parent / "data" / "upload_settings.json"
+
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    assert data["TracksBash"] == ["/c/data/exp_RAW"]
+    assert data["DataBash"] == ["/c/data/other_folder"]
+    assert data["Tracks1Bash"] == ["/c/data/CLEANED"]
+    assert data["OrderedTrackBash"] == ["/c/data/ORDERED"]
+
+
 def test_save_txt_output(app_instance):
     app, fake_dir = app_instance
 

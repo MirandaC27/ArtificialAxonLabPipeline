@@ -1,29 +1,32 @@
+#!/usr/bin/env bash
+
 # Step 1: Rename Keyence files for 2D or 3D data (multi-channel or single-channel, dynamic via JSON)
 
 # Get directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${AALP_RESOURCE_ROOT_BASH:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+DATA_DIR="${AALP_DATA_DIR_BASH:-$PROJECT_ROOT/data}"
 
 # Absolute path to jq
 OS="$(uname -s)"
 
 if [[ "$OS" == "Darwin" ]]; then
-    JQ="$SCRIPT_DIR/../services/jq-macos-arm64"    
+    JQ="$PROJECT_ROOT/services/jq-macos-arm64"
 else
-    JQ="$SCRIPT_DIR/../services/jq-windows-amd64.exe"
+    JQ="$PROJECT_ROOT/services/jq-windows-amd64.exe"
 fi
 
-JSON="$SCRIPT_DIR/../data/upload_settings.json"
+JSON="$DATA_DIR/upload_settings.json"
 
-source "$SCRIPT_DIR/../controller/CleanDataController.sh"
-source "$SCRIPT_DIR/../controller/OrderDataController.sh"
+source "$PROJECT_ROOT/controller/CleanDataController.sh"
+source "$PROJECT_ROOT/controller/OrderDataController.sh"
 
 DIR0="$PWD"
-DATA_DIR="$SCRIPT_DIR/../data"
 
 # Read paths from JSON
-DIR1=$("$JQ" -r '.Data[]' "$JSON")
-TRACKS=$("$JQ" -r '.Tracks[]' "$JSON")
-TRACKS1=$("$JQ" -r '.Tracks1[]' "$JSON")
+DIR1=$("$JQ" -r 'if has("DataBash") then .DataBash[] else .Data[] end' "$JSON")
+TRACKS=$("$JQ" -r 'if has("TracksBash") then .TracksBash[] else .Tracks[] end' "$JSON")
+TRACKS1=$("$JQ" -r 'if has("Tracks1Bash") then .Tracks1Bash[] else .Tracks1[] end' "$JSON")
 IMAGE_TYPE=$("$JQ" -r '.ImageType' "$JSON")
 
 echo "Image Type: $IMAGE_TYPE"
