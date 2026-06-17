@@ -1,7 +1,0 @@
-Name of Folder: EXP009_Keyence_Plate1_RAW
-
-Channels Used:
-CH1: axon
-CH2: myelin
-CH3: nuclei
-CH4: debris

@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$env:AXONLAB_API_URL = "http://127.0.0.1:8001"
+$env:AXONLAB_API_URL = "http://127.0.0.1:8000"
 
 docker compose up -d --build
 

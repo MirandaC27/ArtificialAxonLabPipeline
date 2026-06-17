@@ -1,20 +1,23 @@
 import os
 import requests
 
-BASE_URL = os.getenv("AXONLAB_API_URL", "http://localhost:8000").rstrip("/")
+BASE_URL = os.getenv("AXONLAB_API_URL", "http://localhost:8001").rstrip("/")
 
+#---------------------------------------------------
 def add_numbers(a, b):
     response = requests.post(
         f"{BASE_URL}/add",
-        json={"a": a,
-              "b": b
+        json={
+            "a": a, 
+            "b": b
         },
         timeout=5,
     )
     response.raise_for_status()
     return response.json()
 
-def add_name(first_name, last_name):
+#---------------------------------------------------
+def combine_name(first_name, last_name):
     response = requests.post(
         f"{BASE_URL}/name",
         json={
@@ -26,47 +29,64 @@ def add_name(first_name, last_name):
     response.raise_for_status()
     return response.json()
 
-
-def upload_settings(
-    selected_folders,
-    image_type,
-    microscope,
-    num_fovs,
-    channels,
-    disabled_fovs,
-    start_time,
-):
+#---------------------------------------------------
+def save_session(a, b, first_name, last_name):
     response = requests.post(
-        f"{BASE_URL}/upload_settings",
+        f"{BASE_URL}/sessions",
         json={
-            "selected_folders": selected_folders,
-            "image_type": image_type,
-            "microscope": microscope,
-            "num_fovs": num_fovs,
-            "channels": channels,
-            "disabled_fovs": disabled_fovs,
-            "start_time": start_time,
+            "a": a,
+            "b": b,
+            "first_name": first_name,
+            "last_name": last_name
         },
-        timeout=10,
+        timeout=5
     )
+
     response.raise_for_status()
     return response.json()
 
 
-def update_latest_end_time(end_time):
-    response = requests.patch(
-        f"{BASE_URL}/upload_settings/latest/end_time",
-        json={"end_time": end_time},
-        timeout=10,
-    )
-    response.raise_for_status()
-    return response.json()
-
-
-def export_latest_settings():
+def get_recent_sessions():
     response = requests.get(
-        f"{BASE_URL}/export_settings/latest",
-        timeout=10,
+        f"{BASE_URL}/sessions/recent",
+        timeout=5
     )
+
+    response.raise_for_status()
+    return response.json()
+
+#---------------------------------------------------
+def save_config(config_name, a, b, first_name, last_name):
+    response = requests.post(
+        f"{BASE_URL}/configs",
+        json={
+            "config_name": config_name,
+            "a": a,
+            "b": b,
+            "first_name": first_name,
+            "last_name": last_name
+        },
+        timeout=5
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def get_configs():
+    response = requests.get(
+        f"{BASE_URL}/configs",
+        timeout=5
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def reorder_configs(config_ids):
+    response = requests.post(
+        f"{BASE_URL}/configs/reorder",
+        json=config_ids,
+        timeout=5
+    )
+
     response.raise_for_status()
     return response.json()

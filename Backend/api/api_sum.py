@@ -13,7 +13,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/add", response_model=schemas.NumberResult)
+@router.post("/add", response_model=schemas.Result)
 def add_numbers(nums: schemas.Numbers, db: Session = Depends(get_db)):
     result = nums.a + nums.b
 

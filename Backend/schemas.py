@@ -1,58 +1,73 @@
-from typing import List, Optional
-from pydantic import BaseModel, Field
+from datetime import datetime
+from pydantic import BaseModel
 
-
+# Add two numbers and return the result
 class Numbers(BaseModel):
     a: int
     b: int
 
-
-class NumberResult(BaseModel):
+class Result(BaseModel):
     result: int
 
 
-class Name(BaseModel):
+# First name and Last name and return the full name from different pages 
+class NameInput(BaseModel):
     first_name: str
     last_name: str
 
-
 class NameResult(BaseModel):
-    result: str
+    full_name: str
 
 
-class ChannelItem(BaseModel):
-    num: int
-    label: str
-    disabled: bool = False
+# Combine all the inputs and results into a session
+class SessionCreate(BaseModel):
+    a: int
+    b: int
+    first_name: str
+    last_name: str
 
-
-class UploadedSettingsCreate(BaseModel):
-    selected_folders: List[str] = Field(default_factory=list)
-    image_type: str
-    microscope: str
-    num_fovs: int
-    channels: List[ChannelItem] = Field(default_factory=list)
-    disabled_fovs: List[str] = Field(default_factory=list)
-    start_time: str
-
-
-class EndTimeUpdate(BaseModel):
-    end_time: str
-
-
-class UploadedSettingsResult(BaseModel):
+#----------------------------------------------------------------
+class SessionOut(BaseModel):
     id: int
-    message: str
-    selected_folders: List[str]
-    image_type: str
-    microscope: str
-    num_fovs: int
-    channels: List[dict]
-    disabled_fovs: List[str]
-    start_time: str
-    end_time: Optional[str] = None
+
+    a: int
+    b: int
+    result: int
+
+    first_name: str
+    last_name: str
+    full_name: str
+
+    created_at: datetime
 
     class Config:
         from_attributes = True
 
+#----------------------------------------------------------------
+class SavedConfigCreate(BaseModel):
+    config_name: str
+    a: int
+    b: int
+    first_name: str
+    last_name: str
 
+
+class SavedConfigOut(BaseModel):
+    id: int
+    config_name: str
+
+    a: int
+    b: int
+    result: int
+
+    first_name: str
+    last_name: str
+    full_name: str
+
+    order_index: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+#----------------------------------------------------------------
