@@ -1,24 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
 
-# Add two numbers and return the result
-class Numbers(BaseModel):
-    a: int
-    b: int
-
-class Result(BaseModel):
-    result: int
-
-
-# First name and Last name and return the full name from different pages 
-class NameInput(BaseModel):
-    first_name: str
-    last_name: str
-
-class NameResult(BaseModel):
-    full_name: str
-
-
 # Combine all the inputs and results into a session
 class SessionCreate(BaseModel):
     a: int
@@ -71,3 +53,29 @@ class SavedConfigOut(BaseModel):
         from_attributes = True
 
 #----------------------------------------------------------------
+from pydantic import BaseModel
+from datetime import datetime
+from typing import Any
+
+
+class UploadStep1Create(BaseModel):
+    folders: list[str]
+    tracks: list[str]
+    tracks1: list[str]
+    ordered_track: list[str]
+    data: list[str]
+
+    image_type: str
+    microscope: str
+    num_fovs: int
+
+    disabled_fovs: list[str]
+    channels: list[dict[str, Any]]
+
+
+class UploadStep1Out(UploadStep1Create):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
