@@ -1,10 +1,11 @@
 import tkinter as tk
 
 from pages.HomePage import HomePage
-from pages.AddPage import AddPage
-from pages.FirstNamePage import FirstNamePage
-from pages.LastNamePage import LastNamePage
-from pages.ResultsPage import ResultsPage
+from pages.UploadPage import UploadPage
+#from pages.SettingsPage import SettingsPage
+#from pages.MaskingPage import MaskingPage
+#from pages.EndPage import EndPage
+
 from pages.HistoryPage import HistoryPage
 from pages.ConfigPage import ConfigPage
 
@@ -26,12 +27,14 @@ class App(tk.Tk):
 
         for PageClass, name in [
             (HomePage, "Home"),
-            (AddPage, "Add"),
-            (FirstNamePage, "FirstName"),
-            (LastNamePage, "LastName"),
-            (ResultsPage, "Results"),
+            (UploadPage, "Upload"),
+            #(SettingsPage, "Settings"),
+            #(MaskingPage, "Masking"),
+            #(EndPage, "End"),
+
             (HistoryPage, "History"),
             (ConfigPage, "Config")
+
         ]:
             page = PageClass(container, self)
             self.pages[name] = page

@@ -45,7 +45,7 @@ class HomePage(tk.Frame):
         self.btn_start = tk.Button(
             self.right_frame,
             text="Start",
-            command=lambda: controller.show_page("Add"),
+            command=lambda: controller.show_page("Upload"),
             **button_options
         )
         self.btn_start.pack(pady=10)
