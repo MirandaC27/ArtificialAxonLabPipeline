@@ -3,8 +3,7 @@ from tkinter import simpledialog, messagebox
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from state import number_data, name_data
-from api_client import get_recent_sessions, save_config
+from api_client import get_recent_upload_step1, save_config
 
 
 class HistoryPage(tk.Frame):
@@ -12,7 +11,8 @@ class HistoryPage(tk.Frame):
         super().__init__(parent, bg="white")
         self.controller = controller
 
-        self.sessions = []
+        self.uploads = []
+        self.selected_upload = None
         self.selected_label = None
 
         self.grid_columnconfigure(1, weight=1)
@@ -66,14 +66,22 @@ class HistoryPage(tk.Frame):
         self.preview_box.config(state="disabled")
 
     def refresh(self):
-        self.load_sessions()
+        self.load_uploads()
 
-    def load_sessions(self):
+    def load_uploads(self):
         for widget in self.list_frame.winfo_children():
             widget.destroy()
 
+        self.selected_upload = None
+        self.selected_label = None
+        self.preview_title.config(text="Select a session")
+        self.preview_box.config(state="normal")
+        self.preview_box.delete("1.0", tk.END)
+        self.preview_box.config(state="disabled")
+
         try:
-            self.sessions = get_recent_sessions()
+            self.uploads = get_recent_upload_step1()
+
         except Exception as e:
             tk.Label(
                 self.list_frame,
@@ -83,7 +91,7 @@ class HistoryPage(tk.Frame):
             ).pack()
             return
 
-        if not self.sessions:
+        if not self.uploads:
             tk.Label(
                 self.list_frame,
                 text="No sessions found.",
@@ -91,10 +99,10 @@ class HistoryPage(tk.Frame):
             ).pack()
             return
 
-        for session in self.sessions:
+        for upload in self.uploads:
             item = tk.Label(
                 self.list_frame,
-                text=f"→ Session {session.get('id', 'N/A')}",
+                text=f"-> Session {upload['id']}",
                 anchor="w",
                 padx=10,
                 pady=8,
@@ -102,37 +110,45 @@ class HistoryPage(tk.Frame):
                 cursor="hand2",
                 font=("Arial", 11)
             )
+
             item.pack(fill="x")
 
-            item.bind("<Button-1>", lambda e, s=session: self.select_session(e, s))
-
-            tk.Frame(self.list_frame, height=1, bg="#ccc").pack(
-                fill="x", padx=5, pady=2
+            item.bind(
+                "<Button-1>",
+                lambda e, u=upload: self.select_upload(e, u)
             )
 
-    def select_session(self, event, session):
+            tk.Frame(
+                self.list_frame,
+                height=1,
+                bg="#ccc"
+            ).pack(fill="x", padx=5, pady=2)
+
+    def select_upload(self, event, upload):
+        self.selected_upload = upload
+
         if self.selected_label and self.selected_label.winfo_exists():
             self.selected_label.config(bg="white")
 
         self.selected_label = event.widget
         self.selected_label.config(bg="#e0e0e0")
 
-        self.show_session_preview(session)
+        self.show_upload_preview(upload)
 
-    def show_session_preview(self, session):
+    def show_upload_preview(self, upload):
         self.preview_title.config(
-            text=f"Session {session.get('id', 'N/A')}"
+            text=f"Session {upload.get('id', 'N/A')}"
         )
 
-        text = self.format_session_text(session)
+        text = self.format_upload_text(upload)
 
         self.preview_box.config(state="normal")
         self.preview_box.delete("1.0", tk.END)
         self.preview_box.insert("1.0", text)
         self.preview_box.config(state="disabled")
 
-    def format_session_text(self, session):
-        created_at = session.get("created_at", "N/A")
+    def format_upload_text(self, upload):
+        created_at = upload.get("created_at", "N/A")
 
         if created_at != "N/A":
             try:
@@ -145,19 +161,65 @@ class HistoryPage(tk.Frame):
                 created_at = created_at[:16].replace("T", " ")
 
         return "\n".join([
-            f"Session ID: {session.get('id', 'N/A')}",
+            f"Session ID: {upload.get('id', 'N/A')}",
             f"Created At: {created_at}",
             "",
-            f"A: {session.get('a', 'N/A')}",
-            f"B: {session.get('b', 'N/A')}",
-            f"Sum Result: {session.get('result', 'N/A')}",
+            f"Image Type: {upload.get('image_type', 'N/A')}",
+            f"Microscope: {upload.get('microscope', 'N/A')}",
+            f"Number of FOVs: {upload.get('num_fovs', 'N/A')}",
+            f"Disabled FOVs: {self.format_list(upload.get('disabled_fovs'))}",
             "",
-            f"First Name: {session.get('first_name', 'N/A')}",
-            f"Last Name: {session.get('last_name', 'N/A')}",
-            f"Full Name: {session.get('full_name', 'N/A')}",
+            "Channels:",
+            self.format_channels(upload.get("channels")),
+            "",
+            f"Folders: {self.format_list(upload.get('folders'))}",
+            f"Raw Tracks: {self.format_list(upload.get('tracks'))}",
+            f"Cleaned Tracks: {self.format_list(upload.get('tracks1'))}",
+            f"Ordered Tracks: {self.format_list(upload.get('ordered_track'))}",
+            f"Data Folders: {self.format_list(upload.get('data'))}",
         ])
 
+    def format_list(self, values):
+        if not values:
+            return "None"
+
+        return "\n  - " + "\n  - ".join(str(value) for value in values)
+
+    def format_channels(self, channels):
+        if not channels:
+            return "  None"
+
+        lines = []
+
+        for channel in channels:
+            code = channel.get("code", "N/A")
+            label = channel.get("label", "N/A")
+            status = "active" if channel.get("active", True) else "disabled"
+            lines.append(f"  - {code}: {label} ({status})")
+
+        return "\n".join(lines)
+
+    def upload_config_payload(self, upload):
+        fields = [
+            "folders",
+            "tracks",
+            "tracks1",
+            "ordered_track",
+            "data",
+            "image_type",
+            "microscope",
+            "num_fovs",
+            "disabled_fovs",
+            "channels",
+        ]
+
+        return {field: upload.get(field) for field in fields}
+
     def save_current_config(self):
+        if not self.selected_upload:
+            messagebox.showerror("Selection Error", "Select a session first.")
+            return
+
         config_name = simpledialog.askstring(
             "Save Config",
             "Enter config name:"
@@ -169,10 +231,7 @@ class HistoryPage(tk.Frame):
         try:
             save_config(
                 config_name,
-                int(number_data["a"]),
-                int(number_data["b"]),
-                name_data["first_name"],
-                name_data["last_name"]
+                self.upload_config_payload(self.selected_upload)
             )
 
             messagebox.showinfo("Saved", "Config saved successfully.")

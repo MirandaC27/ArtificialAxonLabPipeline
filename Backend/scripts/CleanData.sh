@@ -2,19 +2,17 @@
 
 2Dvs3D(){
     if [ "$IMAGE_TYPE" = "3D" ]; then
+        # 3D has Plate level.
+        PLATE_DIR=$(find "$TRACKS" -mindepth 1 -maxdepth 1 -type d | head -n 1)
 
-    # 3D has Plate level
-    PLATE_DIR=$(find "$TRACKS" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+        if [ -z "$PLATE_DIR" ]; then
+            echo "No Plate directory found inside $TRACKS"
+            exit 1
+        fi
 
-    if [ -z "$PLATE_DIR" ]; then
-        echo "No Plate directory found inside $TRACKS"
-        exit 1
-    fi
-
-    BASE_DIR="$PLATE_DIR"
-
+        BASE_DIR="$PLATE_DIR"
     else
-        # 2D has no Plate level
+        # 2D has no Plate level.
         BASE_DIR="$TRACKS"
     fi
 }
@@ -38,7 +36,7 @@ process_wells(){
         tracknum=$(wc -l < "$DATA_DIR/tracklist")
         echo "Positions: $tracknum"
 
-        process_tracks   
+        process_tracks
     done
 }
 
@@ -67,12 +65,11 @@ process_tracks() {
     wait
 }
 
-
 process_channels(){
     for ((c=0; c<channel_count; c++))
     do
-        channel_code=$("$JQ" -r ".Channels[$c].code" "$JSON")
-        channel_label=$("$JQ" -r ".Channels[$c].label" "$JSON")
+        channel_code="${CHANNEL_CODES[$c]}"
+        channel_label="${CHANNEL_LABELS[$c]}"
 
         oldname=$(echo *"${channel_code}".tif 2>/dev/null)
 
@@ -88,7 +85,7 @@ process_channels(){
 
         newname="${wellname}_${position_id}_${channel_label}.tif"
 
-        echo "    Renaming → $newname"
+        echo "    Renaming -> $newname"
 
         cp "$BASE_DIR/$dirname/$trackname/$oldname" "$TRACKS1/$newname"
     done

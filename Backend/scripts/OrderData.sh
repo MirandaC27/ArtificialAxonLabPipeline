@@ -1,25 +1,21 @@
-setup_wells(){
-    numFOVs=$("$JQ" -r '.NumFOVs' "$JSON")
-    if [ -z "$numFOVs" ] || [ "$numFOVs" = "null" ]; then
-        numFOVs=9
-    fi
+#!/usr/bin/env bash
 
+setup_wells(){
     echo "Detecting wells from filenames..."
 
     find "$DIR2" -name "*.tif" | sed 's|.*/||' | awk -F '_' '/^[A-Z][0-9]{2}/ {print $1}' | sort -u > "$DATA_DIR/welllist"
-    
+
     wells=()
     while read -r line
     do
         wells+=("$line")
     done < "$DATA_DIR/welllist"
-
 }
 
 channel_tiffs_into_oir(){
     for ((c=0; c<channel_count; c++))
     do
-        label=$("$JQ" -r ".Channels[$c].label" "$JSON")
+        label="${CHANNEL_LABELS[$c]}"
         src="$DIR2/${file}_${label}.tif"
 
         if [ -f "$src" ]; then
@@ -35,6 +31,11 @@ process_fovs() {
 
     for ((fov=1; fov<=numFOVs; fov++))
     do
+        if is_disabled_fov "$fov"; then
+            echo "Skipping disabled FOV $fov for $well"
+            continue
+        fi
+
         printf -v fov_fmt "%04d" "$fov"
         file="${well}_${fov_fmt}"
         destdir="$DIR3/$well/$file"
@@ -64,4 +65,3 @@ ordered_wells(){
         echo "Finished well $well"
     done
 }
-

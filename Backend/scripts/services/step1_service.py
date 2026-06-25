@@ -1,1 +1,0 @@
-# Step 1 Service file to execute the command to run the bash script rename_organize_keyence.sh

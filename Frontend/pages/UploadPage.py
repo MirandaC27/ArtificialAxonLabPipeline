@@ -413,6 +413,33 @@ class UploadPage(tk.Frame):
             self.progress.stop()
             self.popup.destroy()
 
+    def build_step1_args(self):
+        active_channels = [
+            channel for channel in upload_data["channels"]
+            if channel.get("active", True)
+        ]
+
+        channel_codes = "|".join(
+            channel.get("code", "") for channel in active_channels
+        )
+        channel_labels = "|".join(
+            channel.get("label", "") for channel in active_channels
+        )
+        disabled_fovs = ",".join(str(fov) for fov in upload_data["disabled_fovs"])
+
+        return [
+            upload_data["tracks"][0] if upload_data["tracks"] else "",
+            upload_data["tracks1"][0] if upload_data["tracks1"] else "",
+            upload_data["ordered_track"][0] if upload_data["ordered_track"] else "",
+            upload_data["data"][0] if upload_data["data"] else "",
+            upload_data["image_type"],
+            upload_data["microscope"],
+            str(upload_data["num_fovs"]),
+            disabled_fovs,
+            channel_codes,
+            channel_labels,
+        ]
+
     def run_step1(self):
         if platform.system() == "Windows":
             bash_path = r"C:\Program Files\Git\bin\bash.exe"
@@ -424,8 +451,9 @@ class UploadPage(tk.Frame):
             preexec_fn = os.setsid
 
         script_path = (
-            Path(__file__).resolve().parent.parent
-            / "analysis"
+            Path(__file__).resolve().parents[2]
+            / "backend"
+            / "scripts"
             / "rename_organize_keyence.sh"
         )
 
@@ -434,7 +462,7 @@ class UploadPage(tk.Frame):
             return
 
         self.process = subprocess.Popen(
-            [bash_path, str(script_path)],
+            [bash_path, str(script_path), *self.build_step1_args()],
             creationflags=creationflags,
             preexec_fn=preexec_fn
         )
@@ -442,7 +470,6 @@ class UploadPage(tk.Frame):
         while self.process.poll() is None:
             if self.stop_flag:
                 break
-
     def run_process(self):
         try:
             self.save_upload_to_api()
