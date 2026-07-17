@@ -1,41 +1,91 @@
 from datetime import datetime
-from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-#------------------------------------------------
+
 class Step1Create(BaseModel):
-    folders: list[str]
-    tracks: list[str]
-    tracks1: list[str]
-    ordered_track: list[str]
-    data: list[str]
+    folders: list = []
+    tracks: list = []
+    tracks1: list = []
+    ordered_track: list = []
+    data: list = []
 
-    image_type: str
-    microscope: str
-    num_fovs: int
+    image_type: str = "3D"
+    microscope: str = "Keyence"
+    num_fovs: int = 0
 
-    disabled_fovs: list[str]
-    channels: list[dict[str, Any]]
+    disabled_fovs: list = []
+    channels: list = []
+
+    settings_data: dict = {}
 
 
-class Step1Out(Step1Create):
+class Step1Out(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
-    created_at: datetime
+    folders: list = []
+    tracks: list = []
+    tracks1: list = []
+    ordered_track: list = []
+    data: list = []
+    image_type: str = "3D"
+    microscope: str = "Keyence"
+    num_fovs: int = 0
+    disabled_fovs: list = []
+    channels: list = []
+    settings_data: dict = {}
+    created_at: datetime | None = None
 
-    class Config:
-        from_attributes = True
+
+class SettingsCreate(BaseModel):
+    experiment: str
+    frames: int = 0
+    distance: str = ""
+    run_ezra: bool = False
 
 
-class ConfigCreate(Step1Create):
+class SettingsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    experiment: str
+    frames: int = 0
+    distance: str = ""
+    run_ezra: bool = False
+    created_at: datetime | None = None
+
+
+class ConfigCreate(BaseModel):
     config_name: str
+    folders: list = []
+    tracks: list = []
+    tracks1: list = []
+    ordered_track: list = []
+    data: list = []
+    image_type: str = "3D"
+    microscope: str = "Keyence"
+    num_fovs: int = 0
+    disabled_fovs: list = []
+    channels: list = []
+    settings_data: dict = {}
 
 
-class ConfigOut(ConfigCreate):
+class ConfigOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
-    order_index: int
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-#------------------------------------------------
+    config_name: str
+    folders: list = []
+    tracks: list = []
+    tracks1: list = []
+    ordered_track: list = []
+    data: list = []
+    image_type: str = "3D"
+    microscope: str = "Keyence"
+    num_fovs: int = 0
+    disabled_fovs: list = []
+    channels: list = []
+    settings_data: dict = {}
+    order_index: int = 0
+    created_at: datetime | None = None

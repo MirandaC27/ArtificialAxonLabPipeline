@@ -3,6 +3,7 @@ from tkinter import simpledialog, messagebox
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from state import settings_data
 from api_client import get_recent_upload_step1, save_config
 
 
@@ -169,6 +170,9 @@ class HistoryPage(tk.Frame):
             f"Number of FOVs: {upload.get('num_fovs', 'N/A')}",
             f"Disabled FOVs: {self.format_list(upload.get('disabled_fovs'))}",
             "",
+            "Settings:",
+            self.format_settings(upload),
+            "",
             "Channels:",
             self.format_channels(upload.get("channels")),
             "",
@@ -199,6 +203,19 @@ class HistoryPage(tk.Frame):
 
         return "\n".join(lines)
 
+    def format_settings(self, upload):
+        settings = upload.get("settings_data") or settings_data
+
+        if not settings:
+            return "  None"
+
+        return "\n".join([
+            f"  - Experiment: {settings.get('experiment', 'N/A')}",
+            f"  - Frames: {settings.get('frames', 'N/A')}",
+            f"  - Distance: {settings.get('distance', 'N/A')}",
+            f"  - Run Ezra: {settings.get('run_ezra', 'N/A')}",
+        ])
+
     def upload_config_payload(self, upload):
         fields = [
             "folders",
@@ -214,6 +231,10 @@ class HistoryPage(tk.Frame):
         ]
 
         return {field: upload.get(field) for field in fields}
+
+    def config_settings_payload(self, upload):
+        saved_settings = upload.get("settings_data") or settings_data
+        return dict(saved_settings)
 
     def save_current_config(self):
         if not self.selected_upload:
@@ -231,7 +252,8 @@ class HistoryPage(tk.Frame):
         try:
             save_config(
                 config_name,
-                self.upload_config_payload(self.selected_upload)
+                self.upload_config_payload(self.selected_upload),
+                self.config_settings_payload(self.selected_upload)
             )
 
             messagebox.showinfo("Saved", "Config saved successfully.")

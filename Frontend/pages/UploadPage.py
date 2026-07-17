@@ -8,7 +8,6 @@ import signal
 import os
 
 from state import upload_data
-from api_client import save_upload_step1
 
 
 CHANNELS = ["axon", "myelin", "nuclei", "debris", "GFAP"]
@@ -226,13 +225,16 @@ class UploadPage(tk.Frame):
 
     def _on_next(self):
         try:
-            self.save_upload_to_api()
+            if not self.selected_folders:
+                raise ValueError("Please select at least one folder.")
+
+            self.save_current_state()
 
             if self.controller:
-                self.controller.show_page("Masking Settings")
+                self.controller.show_page("Settings")
 
         except Exception as e:
-            messagebox.showerror("Upload Save Error", str(e))
+            messagebox.showerror("Upload Error", str(e))
 
     def toggle_disable_ui(self):
         if self.disable_mode_var.get():
@@ -364,13 +366,6 @@ class UploadPage(tk.Frame):
             for ch in self.channels
         ]
 
-    def save_upload_to_api(self):
-        if not self.selected_folders:
-            raise ValueError("Please select at least one folder.")
-
-        self.save_current_state()
-        return save_upload_step1(upload_data)
-
     def show_loading_popup(self):
         self.popup = tk.Toplevel(self)
         self.popup.title("Running")
@@ -470,19 +465,26 @@ class UploadPage(tk.Frame):
         while self.process.poll() is None:
             if self.stop_flag:
                 break
+            
     def run_process(self):
-        try:
-            self.save_upload_to_api()
-            self.run_step1()
+       try:
+           if not self.selected_folders:
+               raise ValueError("Please select at least one folder.")
 
-        except Exception as e:
-            self.after(
-                0,
-                lambda: self.status_label.config(text=f"Error: {e}")
-            )
+           self.save_current_state()
+           self.run_step1()
 
-        finally:
-            self.after(0, self.close_popup)
+       except Exception as e:
+           error_message = str(e)
+
+           self.after(
+               0,
+               lambda message=error_message:
+               self.status_label.config(text=f"Error: {message}")
+           )
+
+       finally:
+           self.after(0, self.close_popup)
 
     def button_run(self):
         self.stop_flag = False

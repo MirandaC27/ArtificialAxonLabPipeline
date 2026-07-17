@@ -2,13 +2,14 @@ import tkinter as tk
 
 from pages.HomePage import HomePage
 from pages.UploadPage import UploadPage
-#from pages.SettingsPage import SettingsPage
+from pages.SettingsPage import SettingsPage
 #from pages.MaskingPage import MaskingPage
 #from pages.EndPage import EndPage
 
 from pages.HistoryPage import HistoryPage
 from pages.ConfigPage import ConfigPage
 
+from pages.TestSave import TestSave
 
 class App(tk.Tk):
     def __init__(self):
@@ -28,7 +29,8 @@ class App(tk.Tk):
         for PageClass, name in [
             (HomePage, "Home"),
             (UploadPage, "Upload"),
-            #(SettingsPage, "Settings"),
+            (SettingsPage, "Settings"),
+            (TestSave, "TestSave"),
             #(MaskingPage, "Masking"),
             #(EndPage, "End"),
 

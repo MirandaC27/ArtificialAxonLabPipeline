@@ -4,10 +4,15 @@ import requests
 BASE_URL = os.getenv("AXONLAB_API_URL", "http://localhost:8000").rstrip("/")
 
 #---------------------------------------------------
-def save_upload_step1(upload_data):
+def save_upload_step1(upload_data, settings_data):
+    payload = {
+        **upload_data,
+        "settings_data": settings_data
+    }
+
     response = requests.post(
         f"{BASE_URL}/upload-step1",
-        json=upload_data,
+        json=payload,
         timeout=10
     )
 
@@ -25,16 +30,20 @@ def get_recent_upload_step1():
     return response.json()
 
 
-def save_config(
-    config_name,
-    upload_data
-):
+# ---------------------------------------------------
+# Saved configurations
+# ---------------------------------------------------
+
+def save_config(config_name, upload_data, settings_data):
+    payload = {
+        "config_name": config_name,
+        **upload_data,
+        "settings_data": settings_data
+    }
+
     response = requests.post(
         f"{BASE_URL}/upload-configs",
-        json={
-            "config_name": config_name,
-            **upload_data
-        },
+        json=payload,
         timeout=10
     )
 
