@@ -12,8 +12,7 @@ from .database import Base
 
 
 # ------------------------------------------------
-# Combined workflow history
-# ------------------------------------------------
+# Combined history
 
 class UploadStep1(Base):
     __tablename__ = "upload_step1"
@@ -90,6 +89,8 @@ class UploadStep1(Base):
         default=dict
     )
 
+    masking_data = Column(JSON, nullable=False, default=dict)
+
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -98,9 +99,6 @@ class UploadStep1(Base):
 
 
 # ------------------------------------------------
-# Optional separate settings history
-# ------------------------------------------------
-
 class UploadSettings(Base):
     __tablename__ = "upload_settings"
 
@@ -140,9 +138,21 @@ class UploadSettings(Base):
     )
 
 
+
+class MaskingSettings(Base):
+    __tablename__ = "masking_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    base_path = Column(String, nullable=False, default="")
+    well_start = Column(Integer, nullable=False, default=2)
+    well_end = Column(Integer, nullable=False, default=11)
+    thresholds = Column(JSON, nullable=False, default=dict)
+    auto_thresholds = Column(JSON, nullable=False, default=dict)
+    particle_size = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
 # ------------------------------------------------
 # Saved configurations
-# ------------------------------------------------
 
 class UploadConfig(Base):
     __tablename__ = "upload_configs"
@@ -223,6 +233,8 @@ class UploadConfig(Base):
         nullable=False,
         default=dict
     )
+
+    masking_data = Column(JSON, nullable=False, default=dict)
 
     order_index = Column(
         Integer,

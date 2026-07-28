@@ -7,6 +7,7 @@ from copy import deepcopy
 from state import (
     upload_data,
     settings_data,
+    masking_data,
     reset_history_state
 )
 from api_client import get_configs, reorder_configs
@@ -455,6 +456,10 @@ class ConfigPage(tk.Frame):
 
             "",
 
+            "MASKING SETTINGS",
+            "----------------",
+            self.format_masking(config.get("masking_data")),
+            "",
             "CHANNELS",
             "--------",
             self.format_channels(config.get("channels")),
@@ -574,6 +579,17 @@ class ConfigPage(tk.Frame):
             )
         ])
 
+    def format_masking(self, data):
+        if not isinstance(data, dict) or not data:
+            return "  None"
+        particle = data.get("particle_size") or {}
+        return "\n".join([
+            f"  - Base path: {data.get('base_path', 'N/A')}",
+            f"  - Wells: {data.get('well_start', 'N/A')} - {data.get('well_end', 'N/A')}",
+            f"  - Thresholds: {data.get('thresholds', {})}",
+            f"  - Auto thresholds: {data.get('auto_thresholds', {})}",
+            f"  - Particle size: {particle.get('min', 'N/A')} - {particle.get('max', 'N/A')}",
+        ])
     def autofill_selected_config(self):
         if not self.selected_config:
             messagebox.showerror(
@@ -601,6 +617,10 @@ class ConfigPage(tk.Frame):
                     saved_settings[field]
                 )
 
+        saved_masking = self.selected_config.get("masking_data")
+        if isinstance(saved_masking, dict):
+            masking_data.clear()
+            masking_data.update(deepcopy(saved_masking))
         reset_history_state()
 
         messagebox.showinfo(

@@ -22,6 +22,15 @@ settings_data = {
 }
 
 
+masking_data = {
+    "base_path": "",
+    "well_start": 2,
+    "well_end": 11,
+    "thresholds": {"axon": None, "myelin": 8000, "nuclei": None, "debris": 15000, "GFAP": None},
+    "auto_thresholds": {"axon": False, "myelin": False, "nuclei": False, "debris": False, "GFAP": False},
+    "particle_size": {"min": 2, "max": 2000},
+}
+
 history_state = {
     "saved": False,
     "history_id": None

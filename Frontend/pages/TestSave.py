@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 from api_client import save_upload_step1
-from state import history_state, settings_data, upload_data
+from state import history_state, masking_data, settings_data, upload_data
 
 
 class TestSave(tk.Frame):
@@ -55,6 +55,13 @@ class TestSave(tk.Frame):
             f"  Distance: {settings_data.get('distance', '')}",
             f"  Run Ezra: {settings_data.get('run_ezra', False)}",
             "",
+            "Masking:",
+            f"  Base path: {masking_data.get('base_path', '')}",
+            f"  Wells: {masking_data.get('well_start')} - {masking_data.get('well_end')}",
+            f"  Thresholds: {masking_data.get('thresholds', {})}",
+            f"  Auto thresholds: {masking_data.get('auto_thresholds', {})}",
+            f"  Particle size: {masking_data.get('particle_size', {})}",
+            "",
             "History state:",
             f"  Saved: {history_state.get('saved', False)}",
             f"  History ID: {history_state.get('history_id')}",
@@ -69,13 +76,13 @@ class TestSave(tk.Frame):
         if history_state["saved"]:
             return history_state["history_id"]
 
-        saved_record = save_upload_step1(dict(upload_data), dict(settings_data))
+        saved_record = save_upload_step1(dict(upload_data), dict(settings_data), dict(masking_data))
         history_state["saved"] = True
         history_state["history_id"] = saved_record.get("id")
         return history_state["history_id"]
 
     def _on_back(self):
-        self.controller.show_page("Settings")
+        self.controller.show_page("Masking")
 
     def _on_next(self):
         self.next_button.configure(state="disabled")

@@ -16,13 +16,13 @@ class TestSavePageTests(unittest.TestCase):
         history_state["saved"] = False
         history_state["history_id"] = None
 
-    def test_back_goes_to_settings(self):
+    def test_back_goes_to_masking(self):
         page = object.__new__(TestSave)
         page.controller = Mock()
 
         TestSave._on_back(page)
 
-        page.controller.show_page.assert_called_once_with("Settings")
+        page.controller.show_page.assert_called_once_with("Masking")
 
     def test_next_saves_history_once_and_goes_to_history(self):
         page = object.__new__(TestSave)

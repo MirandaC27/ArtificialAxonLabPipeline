@@ -3,7 +3,7 @@ from tkinter import simpledialog, messagebox
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from state import settings_data
+from state import masking_data, settings_data
 from api_client import get_recent_upload_step1, save_config
 
 
@@ -173,6 +173,9 @@ class HistoryPage(tk.Frame):
             "Settings:",
             self.format_settings(upload),
             "",
+            "Masking:",
+            self.format_masking(upload.get("masking_data")),
+            "",
             "Channels:",
             self.format_channels(upload.get("channels")),
             "",
@@ -216,6 +219,22 @@ class HistoryPage(tk.Frame):
             f"  - Run Ezra: {settings.get('run_ezra', 'N/A')}",
         ])
 
+    def format_masking(self, data):
+        data = data if isinstance(data, dict) and data else masking_data
+        if not data:
+            return "  None"
+        particle = data.get("particle_size") or {}
+        return "\n".join([
+            f"  - Base path: {data.get('base_path', 'N/A')}",
+            f"  - Wells: {data.get('well_start', 'N/A')} - {data.get('well_end', 'N/A')}",
+            f"  - Thresholds: {data.get('thresholds', {})}",
+            f"  - Auto thresholds: {data.get('auto_thresholds', {})}",
+            f"  - Particle size: {particle.get('min', 'N/A')} - {particle.get('max', 'N/A')}",
+        ])
+
+    def config_masking_payload(self, upload):
+        saved = upload.get("masking_data") or masking_data
+        return dict(saved)
     def upload_config_payload(self, upload):
         fields = [
             "folders",
@@ -253,7 +272,8 @@ class HistoryPage(tk.Frame):
             save_config(
                 config_name,
                 self.upload_config_payload(self.selected_upload),
-                self.config_settings_payload(self.selected_upload)
+                self.config_settings_payload(self.selected_upload),
+                self.config_masking_payload(self.selected_upload)
             )
 
             messagebox.showinfo("Saved", "Config saved successfully.")

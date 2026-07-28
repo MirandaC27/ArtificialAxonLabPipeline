@@ -85,6 +85,7 @@ def serialize_upload(upload, settings_data=None):
         "disabled_fovs": upload.disabled_fovs,
         "channels": upload.channels,
         "settings_data": resolved_settings,
+        "masking_data": normalize_settings(upload.masking_data),
     }
 
 

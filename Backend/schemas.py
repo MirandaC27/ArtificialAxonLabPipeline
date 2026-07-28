@@ -18,6 +18,7 @@ class Step1Create(BaseModel):
     channels: list = []
 
     settings_data: dict = {}
+    masking_data: dict = {}
 
 
 class Step1Out(BaseModel):
@@ -35,6 +36,7 @@ class Step1Out(BaseModel):
     disabled_fovs: list = []
     channels: list = []
     settings_data: dict = {}
+    masking_data: dict = {}
     created_at: datetime | None = None
 
 
@@ -56,6 +58,20 @@ class SettingsOut(BaseModel):
     created_at: datetime | None = None
 
 
+class MaskingCreate(BaseModel):
+    base_path: str = ""
+    well_start: int = 2
+    well_end: int = 11
+    thresholds: dict = {}
+    auto_thresholds: dict = {}
+    particle_size: dict = {}
+
+
+class MaskingOut(MaskingCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    created_at: datetime | None = None
+
 class ConfigCreate(BaseModel):
     config_name: str
     folders: list = []
@@ -69,6 +85,7 @@ class ConfigCreate(BaseModel):
     disabled_fovs: list = []
     channels: list = []
     settings_data: dict = {}
+    masking_data: dict = {}
 
 
 class ConfigOut(BaseModel):
@@ -87,5 +104,6 @@ class ConfigOut(BaseModel):
     disabled_fovs: list = []
     channels: list = []
     settings_data: dict = {}
+    masking_data: dict = {}
     order_index: int = 0
     created_at: datetime | None = None

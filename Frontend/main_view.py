@@ -3,7 +3,7 @@ import tkinter as tk
 from pages.HomePage import HomePage
 from pages.UploadPage import UploadPage
 from pages.SettingsPage import SettingsPage
-#from pages.MaskingPage import MaskingPage
+from pages.MaskingPage import MaskingPage
 #from pages.EndPage import EndPage
 
 from pages.HistoryPage import HistoryPage
@@ -16,7 +16,7 @@ class App(tk.Tk):
         super().__init__()
 
         self.title("Adder App")
-        self.geometry("700x500")
+        self.geometry("760x720")
 
         container = tk.Frame(self)
         container.pack(fill="both", expand=True)
@@ -30,6 +30,7 @@ class App(tk.Tk):
             (HomePage, "Home"),
             (UploadPage, "Upload"),
             (SettingsPage, "Settings"),
+            (MaskingPage, "Masking"),
             (TestSave, "TestSave"),
             #(MaskingPage, "Masking"),
             #(EndPage, "End"),

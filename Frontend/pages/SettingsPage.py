@@ -253,7 +253,7 @@ class SettingsPage(tk.Frame):
                 )
             )
 
-            self.controller.show_page("TestSave")
+            self.controller.show_page("Masking")
 
         except Exception as e:
             messagebox.showerror("Settings Error", str(e))
