@@ -16,7 +16,16 @@ class App(tk.Tk):
         super().__init__()
 
         self.title("Adder App")
-        self.geometry("760x720")
+        self.page_sizes = {
+            "Home": (900, 600),
+            "Upload": (900, 650),
+            "Settings": (700, 430),
+            "Masking": (760, 680),
+            "TestSave": (780, 650),
+            "History": (1000, 700),
+            "Config": (1000, 700),
+        }
+        self.minsize(650, 400)
 
         container = tk.Frame(self)
         container.pack(fill="both", expand=True)
@@ -46,6 +55,13 @@ class App(tk.Tk):
         self.show_page("Home")
 
     def show_page(self, name):
+        width, height = self.page_sizes.get(name, (900, 650))
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = max(0, (screen_width - width) // 2)
+        y = max(0, (screen_height - height) // 2)
+        self.geometry(f"{width}x{height}+{x}+{y}")
+
         page = self.pages[name]
 
         if hasattr(page, "refresh"):

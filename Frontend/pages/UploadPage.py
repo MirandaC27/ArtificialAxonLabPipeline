@@ -195,6 +195,12 @@ class UploadPage(tk.Frame):
         ).grid(row=0, column=1, padx=5, sticky="ew")
 
     def refresh(self):
+        self.channel_num_entry.delete(0, tk.END)
+        self.fov_disable_entry.delete(0, tk.END)
+        self.channel_label_var.set(CHANNELS[0])
+        self.disable_mode_var.set(False)
+        self.toggle_disable_ui()
+
         self.image_type_var.set(upload_data["image_type"])
         self.micro_type_var.set(upload_data["microscope"])
         self.fov_var.set(str(upload_data["num_fovs"]) if upload_data["num_fovs"] else "")

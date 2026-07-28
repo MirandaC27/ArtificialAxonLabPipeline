@@ -1,5 +1,7 @@
 import tkinter as tk
 
+from state import reset_all_state
+
 
 class HomePage(tk.Frame):
     def __init__(self, parent, controller):
@@ -44,8 +46,8 @@ class HomePage(tk.Frame):
 
         self.btn_start = tk.Button(
             self.right_frame,
-            text="Start",
-            command=lambda: controller.show_page("Upload"),
+            text="Start New Session",
+            command=self._start_new_session,
             **button_options
         )
         self.btn_start.pack(pady=10)
@@ -81,3 +83,6 @@ class HomePage(tk.Frame):
             **button_options
         )
         self.btn_quit.pack(pady=10)
+    def _start_new_session(self):
+        reset_all_state()
+        self.controller.show_page("Upload")

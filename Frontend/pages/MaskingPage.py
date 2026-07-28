@@ -57,10 +57,8 @@ class MaskingPage(tk.Frame):
         tk.Label(particle_frame, text="Maximum").grid(row=0, column=2, padx=8, pady=5)
         tk.Entry(particle_frame, textvariable=self.particle_max_var, width=10).grid(row=0, column=3, padx=8, pady=5)
 
-        self.status_label = tk.Label(self, text="", fg="gray30")
-        self.status_label.grid(row=5, column=0, padx=20, pady=4)
         nav = tk.Frame(self)
-        nav.grid(row=6, column=0, padx=20, pady=10, sticky="ew")
+        nav.grid(row=5, column=0, padx=20, pady=10, sticky="ew")
         nav.grid_columnconfigure((0, 1), weight=1)
         tk.Button(nav, text="Back", command=lambda: self.controller.show_page("Settings")).grid(row=0, column=0, padx=5, sticky="ew")
         tk.Button(nav, text="Next", command=self._on_next).grid(row=0, column=1, padx=5, sticky="ew")
@@ -139,7 +137,6 @@ class MaskingPage(tk.Frame):
             masking_data.clear()
             masking_data.update(deepcopy(collected))
             save_masking(dict(masking_data))
-            self.status_label.config(text="Masking settings saved.", fg="green")
             self.controller.show_page("TestSave")
         except Exception as exc:
             messagebox.showerror("Masking Settings Error", str(exc))

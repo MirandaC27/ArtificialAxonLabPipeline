@@ -122,19 +122,6 @@ class SettingsPage(tk.Frame):
             sticky="w"
         )
 
-        self.output_label = tk.Label(
-            self,
-            text="",
-            justify="left",
-            font=("Arial", 12)
-        )
-        self.output_label.grid(
-            row=5,
-            column=0,
-            columnspan=2,
-            pady=15
-        )
-
         nav_frame = tk.Frame(self)
         nav_frame.grid(
             row=7,
@@ -239,19 +226,6 @@ class SettingsPage(tk.Frame):
     def _on_next(self):
         try:
             self.save_current_state()
-
-            self.output_label.config(
-                text=(
-                    f"Experiment: "
-                    f"{settings_data['experiment']}\n"
-                    f"Frames: "
-                    f"{settings_data['frames']}\n"
-                    f"Distance: "
-                    f"{settings_data['distance']}\n"
-                    f"Run Ezra: "
-                    f"{settings_data['run_ezra']}"
-                )
-            )
 
             self.controller.show_page("Masking")
 
