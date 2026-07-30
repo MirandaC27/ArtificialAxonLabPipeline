@@ -3,33 +3,24 @@
 import imagej
 import scyjava
 import json
+import os
 from pathlib import Path
 import sys
 
-# Import settings collector from the frontend
-sys.path.append(str(Path(__file__).resolve().parent))
-from view.masking_front import collect_settings
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 SEGMENT_LOW  = 128
 SEGMENT_HIGH = 255
-ij = imagej.init('sc.fiji:fiji', headless=False)  
-print(f"ImageJ version: {ij.getVersion()}")
-
-IJ            = scyjava.jimport("ij.IJ")
-WindowManager = scyjava.jimport("ij.WindowManager")
+IJ = None
+WindowManager = None
 
 MYELIN_THRESH  = 8000
 DEBRIS_THRESH  = 15000
 SEGMENT_LOW    = 128
 SEGMENT_HIGH   = 255
 
-WELL_RANGE = range(10, 11) 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "data" / "upload_settings.json"
+CONFIG_PATH = PROJECT_ROOT / "data" / "upload_settings.json"
 
-with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-    data = json.load(f)
-
-BASE_PATH = data.get("OrderedTrack", []) # Ordered Data folder path
 
 CREATE_DATA_REQUIRED_CHANNELS = {"axon", "myelin", "debris"}
 
@@ -162,80 +153,64 @@ def process_field(field_dir, myelin_thresh, debris_thresh):
     print(f"  [process_field] done: {field_dir.name}")
 
 def main():
-   
-    DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-
-    with open(DATA_DIR / "masking_settings.json", "r") as f:
-        settings = json.load(f)
-
-    base_path     = settings["base_path"]
-    well_range    = settings["well_range"]
-    thresholds    = settings["thresholds"]
-
+    data_dir = PROJECT_ROOT / "data"
+    settings = json.loads((data_dir / "masking_settings.json").read_text(encoding="utf-8"))
+    base_path = Path(settings["base_path"])
+    well_range = settings["well_range"]
+    thresholds = settings["thresholds"]
     myelin_thresh = thresholds.get("myelin")
     debris_thresh = thresholds.get("debris")
+    if myelin_thresh in (None, "auto") or debris_thresh in (None, "auto"):
+        raise ValueError("create_data requires numeric myelin and debris thresholds.")
 
-    if myelin_thresh is None or debris_thresh is None:
-        print("Error: myelin and debris thresholds are required.")
-        return
+    fiji_path = Path(settings.get("fiji_path") or os.getenv("FIJI_PATH", base_path.parent.parent / "Fiji"))
+    if not fiji_path.exists():
+        raise FileNotFoundError(
+            f"Fiji was not found at {fiji_path}. Set FIJI_PATH or add fiji_path to masking settings."
+        )
+    mcib3d_dir = fiji_path / "plugins" / "mcib3d-suite"
+    required_jars = [
+        "mcib3d-core-4.1.7b.jar",
+        "mcib3d_plugins-4.1.7b.jar",
+        "mcib3d_dev-0.0.2.jar",
+        "quickhull3d-1.0.0.jar",
+        "mcib3d-jipipe-0.0.3.jar",
+    ]
+    missing_jars = [name for name in required_jars if not (mcib3d_dir / name).exists()]
+    if missing_jars:
+        raise FileNotFoundError(f"Missing Fiji mcib3d jars: {', '.join(missing_jars)}")
+    scyjava.config.add_classpath(*(str(mcib3d_dir / name) for name in required_jars))
 
-    #FIX THIS. Remember that Fiji is now necessary because of the 3D object manager.
-    FIJI_PATH  = base_path.parent.parent / "Fiji"   # adjust this relative path to match your layout
-    mcib3d_dir = FIJI_PATH / "plugins" / "mcib3d-suite"
-    scyjava.config.add_classpath(
-        str(mcib3d_dir / "mcib3d-core-4.1.7b.jar"),
-        str(mcib3d_dir / "mcib3d_plugins-4.1.7b.jar"),
-        str(mcib3d_dir / "mcib3d_dev-0.0.2.jar"),
-        str(mcib3d_dir / "quickhull3d-1.0.0.jar"),
-        str(mcib3d_dir / "mcib3d-jipipe-0.0.3.jar"),
-    )
-
-    ij = imagej.init(str(FIJI_PATH), mode="headless")
+    ij = imagej.init(str(fiji_path), mode="headless")
     print(f"ImageJ version: {ij.getVersion()}")
-
     global IJ, WindowManager
-    IJ            = scyjava.jimport("ij.IJ")
+    IJ = scyjava.jimport("ij.IJ")
     WindowManager = scyjava.jimport("ij.WindowManager")
 
-    # --- Main processing loop ---
-    for k in well_range:
-        skip_config = load_skip_config()
-        if skip_config["skip_fovs"] or skip_config["skip_channels"] or skip_config["skip_fovs_per_well"]:
-            print(f"Skip FOVs: {sorted(skip_config['skip_fovs'])}")
-            print(f"Skip channels: {sorted(skip_config['skip_channels'])}")
-            print(f"Per-well skipped FOVs: {skip_config['skip_fovs_per_well']}")
-    
-        if CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"]:
-            missing_required = sorted(CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"])
-            print(f"Skipping create_data stage because required channels are excluded: {', '.join(missing_required)}")
-            return
-    
-        for k in WELL_RANGE:
-            well_name = f"B{k}"
+    skip_config = load_skip_config()
+    missing_required = sorted(CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"])
+    if missing_required:
+        ij.dispose()
+        raise ValueError(f"Required channels are disabled: {', '.join(missing_required)}")
+
+    try:
+        for well_number in well_range:
+            well_name = f"B{int(well_number):02d}"
             well_path = base_path / well_name
-            print(f"\nProcessing well: {well_name}  ({well_path})")
-    
-            try:
-                field_dirs = get_field_dirs(well_path)
-            except FileNotFoundError:
+            print(f"\nProcessing well: {well_name} ({well_path})")
+            if not well_path.exists():
                 print(f"  Well directory not found, skipping: {well_path}")
                 continue
-            
-            field_dirs = field_dirs[:9]
-            print(f"  Found {len(field_dirs)} field(s) (capped at 9)")
-    
+            field_dirs = get_field_dirs(well_path)
+            print(f"  Found {len(field_dirs)} field(s)")
             for field_dir in field_dirs:
                 if should_skip_field(well_name, field_dir.name, skip_config):
                     print(f"  - {field_dir.name}: skipped by config")
                     continue
-                print(field_dir.name)
-                try:
-                    process_field(field_dir, myelin_thresh, debris_thresh)
-                except Exception as exc:
-                    print(f"  {field_dir.name}: {exc}")
-    
-        print("Done.")
+                process_field(field_dir, myelin_thresh, debris_thresh)
+    finally:
         ij.dispose()
+
 
 if __name__ == "__main__":
     main()

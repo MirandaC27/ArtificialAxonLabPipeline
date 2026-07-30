@@ -1,17 +1,24 @@
 import base64
 import csv
 import io
+import json
+import subprocess
+import sys
+import tempfile
+import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox
 
 from api_client import (
+    BASE_URL,
     delete_result_csv,
     get_result_csv,
     get_result_csvs,
     reorder_result_csvs,
     save_result_csv,
 )
+from state import masking_data, settings_data, upload_data
 
 
 class ResultsPage(tk.Frame):
@@ -86,10 +93,12 @@ class ResultsPage(tk.Frame):
 
         bottom = tk.Frame(self.right_frame, bg="white")
         bottom.grid(row=2, column=0, pady=10, sticky="ew")
-        bottom.grid_columnconfigure((0, 1, 2), weight=1)
+        bottom.grid_columnconfigure((0, 1, 2, 3), weight=1)
         tk.Button(bottom, text="Refresh", command=self.refresh_preview).grid(row=0, column=0, padx=5, sticky="ew")
         tk.Button(bottom, text="Export Head", command=self.export_head).grid(row=0, column=1, padx=5, sticky="ew")
-        tk.Button(bottom, text="Next", command=lambda: self.controller.show_page("SessionEnd")).grid(row=0, column=2, padx=5, sticky="ew")
+        self.run_button = tk.Button(bottom, text="Run Analysis", command=self.run_analysis)
+        self.run_button.grid(row=0, column=2, padx=5, sticky="ew")
+        tk.Button(bottom, text="Next", command=lambda: self.controller.show_page("SessionEnd")).grid(row=0, column=3, padx=5, sticky="ew")
 
     def refresh(self):
         try:
@@ -288,3 +297,74 @@ class ResultsPage(tk.Frame):
             messagebox.showinfo("Exported", f"Saved to {destination}")
         except OSError as exc:
             messagebox.showerror("Export Error", str(exc))
+    def run_analysis(self):
+        payload = {
+            "upload_data": dict(upload_data),
+            "settings_data": dict(settings_data),
+            "masking_data": dict(masking_data),
+        }
+        self.run_button.config(state="disabled", text="Running...")
+        thread = threading.Thread(target=self._analysis_worker, args=(payload,), daemon=True)
+        thread.start()
+
+    def _analysis_worker(self, payload):
+        payload_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".json",
+                encoding="utf-8",
+                delete=False,
+            ) as handle:
+                json.dump(payload, handle)
+                payload_path = Path(handle.name)
+
+            script_path = (
+                Path(__file__).resolve().parents[2]
+                / "backend"
+                / "scripts"
+                / "analysis"
+                / "pipeline_runner.py"
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(script_path),
+                    "--payload",
+                    str(payload_path),
+                    "--api-url",
+                    BASE_URL,
+                ],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                details = result.stderr.strip() or result.stdout.strip()
+                raise RuntimeError(details or "Analysis pipeline failed.")
+            summary = json.loads(result.stdout.strip().splitlines()[-1])
+            self.after(0, lambda: self._analysis_complete(summary))
+        except Exception as exc:
+            message = str(exc)
+            self.after(0, lambda: self._analysis_failed(message))
+        finally:
+            if payload_path and payload_path.exists():
+                payload_path.unlink(missing_ok=True)
+
+    def _analysis_complete(self, summary):
+        self.run_button.config(state="normal", text="Run Analysis")
+        self.refresh()
+        record_id = (summary.get("record") or {}).get("id")
+        self.selected_csv = next(
+            (item for item in self.csv_order if item.get("id") == record_id),
+            None,
+        )
+        if self.selected_csv:
+            self.load_selected_content()
+        messagebox.showinfo(
+            "Analysis Complete",
+            f"Final CSV saved to PostgreSQL.\nRows: {summary.get('row_count', 0)}",
+        )
+
+    def _analysis_failed(self, message):
+        self.run_button.config(state="normal", text="Run Analysis")
+        messagebox.showerror("Analysis Error", message)

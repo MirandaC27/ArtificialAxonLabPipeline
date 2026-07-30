@@ -1,0 +1,3 @@
+# Local analysis dependencies (not installed in the FastAPI container)
+pyimagej
+scyjava

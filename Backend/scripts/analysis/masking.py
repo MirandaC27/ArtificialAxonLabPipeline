@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import sys
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
@@ -348,7 +348,7 @@ def main():
     with open(DATA_DIR / "masking_settings.json", "r") as f:
         settings = json.load(f)
 
-    base_path  = settings["base_path"]
+    base_path  = Path(settings["base_path"])
     well_range = settings["well_range"]
     skip_config = load_skip_config()
     settings["skip_channels"] = skip_config["skip_channels"]

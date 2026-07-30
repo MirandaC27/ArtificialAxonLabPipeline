@@ -26,3 +26,14 @@ pip install pytest-cov
 
 run the command from the root and it should show the coverage and tests for all available files.
 pytest --cov
+## Local analysis pipeline
+
+The FastAPI service stores final CSV results in PostgreSQL, while ImageJ/Fiji analysis runs on the frontend computer so it can access the selected microscope folders.
+
+Install the local analysis dependencies:
+
+```powershell
+pip install -r requirements-analysis.txt
+```
+
+Set `FIJI_PATH` to the local Fiji directory containing `plugins/mcib3d-suite`, then use **Run Analysis** on the Results page. The workflow runs masking, 3D object measurement, final CSV consolidation, uploads `final_results.csv` through FastAPI, and displays the stored result. The consolidated CSV is temporary; PostgreSQL is the persistent final-results store.
