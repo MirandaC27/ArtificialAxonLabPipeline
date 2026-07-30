@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..database import SessionLocal
 
-router = APIRouter()
+router = APIRouter(tags=["Masking"])
 
 
 def get_db():

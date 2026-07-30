@@ -5,7 +5,7 @@ from ..database import SessionLocal
 from .. import models, schemas
 
 
-router = APIRouter()
+router = APIRouter(tags=["Settings"])
 
 
 def get_db():

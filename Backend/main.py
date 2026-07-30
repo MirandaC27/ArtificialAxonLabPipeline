@@ -11,7 +11,17 @@ from .api import api_results
 from sqlalchemy import text
 
 
-app = FastAPI()
+app = FastAPI(
+    title="Artificial Axon Lab Pipeline API",
+    openapi_tags=[
+        {"name": "Upload", "description": "Upload workflow and session history."},
+        {"name": "Settings", "description": "Experiment settings."},
+        {"name": "Masking", "description": "Masking and threshold settings."},
+        {"name": "Configs", "description": "Saved workflow configurations."},
+        {"name": "Results", "description": "PostgreSQL-backed CSV results."},
+        {"name": "Health", "description": "API availability checks."},
+    ],
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -31,6 +41,6 @@ app.include_router(api_masking.router)
 app.include_router(api_results.router)
 
 
-@app.get("/")
+@app.get("/", tags=["Health"])
 def root():
     return {"status": "ok"}

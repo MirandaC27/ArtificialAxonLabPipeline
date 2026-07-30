@@ -8,7 +8,7 @@ from .. import models
 from .. import schemas
 
 
-router = APIRouter()
+router = APIRouter(tags=["Upload"])
 
 
 def get_db():

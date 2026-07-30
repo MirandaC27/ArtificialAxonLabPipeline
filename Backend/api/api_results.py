@@ -8,7 +8,7 @@ from .. import models, schemas
 from ..database import SessionLocal
 
 
-router = APIRouter(prefix="/results", tags=["results"])
+router = APIRouter(prefix="/results", tags=["Results"])
 
 
 def get_db():

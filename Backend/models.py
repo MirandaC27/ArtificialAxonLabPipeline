@@ -1,12 +1,4 @@
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Integer,
-    JSON,
-    LargeBinary,
-    String
-)
+from sqlalchemy import (Boolean, Column, DateTime, Integer, JSON, LargeBinary, String)
 from sqlalchemy.sql import func
 
 from .database import Base
