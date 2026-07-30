@@ -24,7 +24,7 @@ class TestSavePageTests(unittest.TestCase):
 
         page.controller.show_page.assert_called_once_with("Masking")
 
-    def test_next_saves_history_once_and_goes_to_history(self):
+    def test_next_saves_history_once_and_goes_to_session_end(self):
         page = object.__new__(TestSave)
         page.controller = Mock()
         page.next_button = Mock()
@@ -34,7 +34,7 @@ class TestSavePageTests(unittest.TestCase):
                 TestSave._on_next(page)
 
         save_mock.assert_called_once()
-        page.controller.show_page.assert_called_once_with("History")
+        page.controller.show_page.assert_called_once_with("SessionEnd")
         info_mock.assert_called_once()
         self.assertTrue(history_state["saved"])
         self.assertEqual(history_state["history_id"], 42)

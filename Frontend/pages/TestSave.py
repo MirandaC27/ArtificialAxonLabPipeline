@@ -89,7 +89,7 @@ class TestSave(tk.Frame):
         try:
             history_id = self.save_history_once()
             messagebox.showinfo("Complete", f"History saved successfully.\nHistory ID: {history_id}")
-            self.controller.show_page("History")
+            self.controller.show_page("SessionEnd")
         except Exception as exc:
             messagebox.showerror("History Save Error", str(exc))
         finally:

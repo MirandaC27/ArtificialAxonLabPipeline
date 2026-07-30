@@ -10,6 +10,7 @@ from pages.HistoryPage import HistoryPage
 from pages.ConfigPage import ConfigPage
 
 from pages.TestSave import TestSave
+from pages.SessionEnd import SessionEnd
 
 class App(tk.Tk):
     def __init__(self):
@@ -22,6 +23,7 @@ class App(tk.Tk):
             "Settings": (700, 430),
             "Masking": (760, 680),
             "TestSave": (780, 650),
+            "SessionEnd": (900, 600),
             "History": (1000, 700),
             "Config": (1000, 700),
         }
@@ -41,6 +43,7 @@ class App(tk.Tk):
             (SettingsPage, "Settings"),
             (MaskingPage, "Masking"),
             (TestSave, "TestSave"),
+            (SessionEnd, "SessionEnd"),
             #(MaskingPage, "Masking"),
             #(EndPage, "End"),
 
