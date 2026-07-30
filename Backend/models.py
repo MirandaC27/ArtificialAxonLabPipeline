@@ -4,6 +4,7 @@ from sqlalchemy import (
     DateTime,
     Integer,
     JSON,
+    LargeBinary,
     String
 )
 from sqlalchemy.sql import func
@@ -247,3 +248,12 @@ class UploadConfig(Base):
         nullable=False,
         server_default=func.now()
     )
+
+class ResultCsv(Base):
+    __tablename__ = "result_csvs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String(255), nullable=False, unique=True, index=True)
+    content = Column(LargeBinary, nullable=False)
+    order_index = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

@@ -7,6 +7,7 @@ from .api import api_uploadstep1
 from .api import api_settings
 from .api import api_configs
 from .api import api_masking
+from .api import api_results
 from sqlalchemy import text
 
 
@@ -27,6 +28,7 @@ app.include_router(api_uploadstep1.router)
 app.include_router(api_settings.router)
 app.include_router(api_configs.router)
 app.include_router(api_masking.router)
+app.include_router(api_results.router)
 
 
 @app.get("/")

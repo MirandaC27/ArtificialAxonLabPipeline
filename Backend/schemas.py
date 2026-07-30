@@ -107,3 +107,22 @@ class ConfigOut(BaseModel):
     masking_data: dict = {}
     order_index: int = 0
     created_at: datetime | None = None
+
+
+class ResultCsvCreate(BaseModel):
+    filename: str
+    content_base64: str
+    overwrite: bool = False
+
+
+class ResultCsvOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    filename: str
+    order_index: int = 0
+    created_at: datetime | None = None
+
+
+class ResultCsvContent(ResultCsvOut):
+    content_base64: str

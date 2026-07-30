@@ -77,3 +77,41 @@ def reorder_configs(ids):
 
     response.raise_for_status()
     return response.json()
+
+# ---------------------------------------------------
+# PostgreSQL-backed CSV results
+
+def save_result_csv(filename, content_base64, overwrite=False):
+    response = requests.post(
+        f"{BASE_URL}/results",
+        json={
+            "filename": filename,
+            "content_base64": content_base64,
+            "overwrite": overwrite,
+        },
+        timeout=30,
+    )
+    return response
+
+
+def get_result_csvs():
+    response = requests.get(f"{BASE_URL}/results", timeout=10)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_result_csv(result_id):
+    response = requests.get(f"{BASE_URL}/results/{result_id}", timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
+def delete_result_csv(result_id):
+    response = requests.delete(f"{BASE_URL}/results/{result_id}", timeout=10)
+    response.raise_for_status()
+
+
+def reorder_result_csvs(ids):
+    response = requests.post(f"{BASE_URL}/results/reorder/all", json=ids, timeout=10)
+    response.raise_for_status()
+    return response.json()

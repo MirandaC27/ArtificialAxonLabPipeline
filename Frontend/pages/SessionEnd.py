@@ -45,7 +45,7 @@ class SessionEnd(tk.Frame):
         tk.Button(
             self.right_frame,
             text="Create Graphs",
-            command=lambda: self.controller.show_page("Home"),
+            command=lambda: self.controller.show_page("Results"),
             **button_options,
         ).pack(pady=10)
 
