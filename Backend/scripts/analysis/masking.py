@@ -1,7 +1,13 @@
 #masking.py
 import imagej
 import scyjava
+import argparse
 import json
+import os
+
+scyjava.config.set_java_constraints(fetch="auto")
+if os.getenv("JGO_CACHE_DIR"):
+    scyjava.config.set_cache_dir(os.environ["JGO_CACHE_DIR"])
 from pathlib import Path
 import sys
 
@@ -12,7 +18,8 @@ if str(PROJECT_ROOT) not in sys.path:
 #rom view.masking_front import collect_settings
 
 
-ij = imagej.init("sc.fiji:fiji", mode="headless")
+FIJI_PATH = Path(os.getenv("FIJI_PATH", "/opt/fiji"))
+ij = imagej.init(str(FIJI_PATH), mode="headless")
 print(f"ImageJ version: {ij.getVersion()}")
 
 IJ               = scyjava.jimport("ij.IJ")
@@ -115,21 +122,40 @@ def find_file(directory, keyword):
 
 
 def load_channel(filepath, channel):
-    """
-    Opens a tif and extracts a single channel (1-based).
-    """
+    """Open a TIFF and return a non-empty channel, using ``channel`` as a hint."""
     ChannelSplitter = scyjava.jimport("ij.plugin.ChannelSplitter")
     imp = IJ.openImage(str(filepath))
     if imp is None:
         raise FileNotFoundError(f"IJ.openImage returned None for: {filepath}")
 
-    print(f"    [load_channel] {filepath.name}: {imp.getNChannels()} channels, extracting channel {channel}")
+    channel_count = imp.getNChannels()
+    print(f"    [load_channel] {filepath.name}: {channel_count} channels, preferred channel {channel}")
+    if channel_count <= 1:
+        return imp
 
-    if imp.getNChannels() > 1:
-        channels = ChannelSplitter.split(imp)
-        imp.close()
-        return channels[channel - 1]
-    return imp
+    channels = list(ChannelSplitter.split(imp))
+    imp.close()
+
+    def signal_mean(candidate):
+        try:
+            return float(candidate.getProcessor().getStatistics().mean)
+        except (AttributeError, TypeError, ValueError):
+            return None
+
+    preferred_index = channel - 1 if 1 <= channel <= len(channels) else 0
+    means = [signal_mean(candidate) for candidate in channels]
+    selected_index = preferred_index
+    preferred_mean = means[preferred_index]
+    measurable = [(mean, index) for index, mean in enumerate(means) if mean is not None]
+    if preferred_mean is not None and preferred_mean <= 0 and measurable:
+        selected_index = max(measurable)[1]
+
+    selected = channels[selected_index]
+    for index, candidate in enumerate(channels):
+        if index != selected_index:
+            candidate.close()
+    print(f"    [load_channel] selected channel {selected_index + 1}; means={means}")
+    return selected
 
 
 def show_run_hide(imp, command, args=""):
@@ -342,6 +368,9 @@ def process_field(field_dir, settings):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--wells", help="Comma-separated well numbers assigned to this worker")
+    args = parser.parse_args()
     # Collect settings from the UI 
     DATA_DIR = PROJECT_ROOT / "data"
 
@@ -350,6 +379,8 @@ def main():
 
     base_path  = Path(settings["base_path"])
     well_range = settings["well_range"]
+    if args.wells:
+        well_range = [int(value) for value in args.wells.split(",") if value.strip()]
     skip_config = load_skip_config()
     settings["skip_channels"] = skip_config["skip_channels"]
 
@@ -362,7 +393,8 @@ def main():
         print(f"Skip channels: {sorted(skip_config['skip_channels'])}")
         print(f"Per-well skipped FOVs: {skip_config['skip_fovs_per_well']}\n")
 
-    #  Process wells 
+    failures = []
+    #  Process wells
     for k in well_range:
         well_name = f"B{k:02d}"
         well_path = base_path / well_name
@@ -372,6 +404,7 @@ def main():
             field_dirs = sorted([p for p in well_path.iterdir() if p.is_dir()])
         except FileNotFoundError:
             print(f"Well directory not found, skipping: {well_path}")
+            print(f"AXONLAB_PROGRESS::{well_name}", flush=True)
             continue
 
         print(f"Found {len(field_dirs)} field(s)")
@@ -383,6 +416,10 @@ def main():
                 process_field(field_dir, settings)
             except Exception as exc:
                 print(f"  X {field_dir.name}: {exc}")
+                failures.append(f"{well_name}/{field_dir.name}: {exc}")
+        print(f"AXONLAB_PROGRESS::{well_name}", flush=True)
+    if failures:
+        raise RuntimeError("Masking failed for " + "; ".join(failures))
 
 
 if __name__ == "__main__":

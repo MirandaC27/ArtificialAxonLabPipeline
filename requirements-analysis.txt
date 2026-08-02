@@ -1,3 +1,2 @@
-# Local analysis dependencies (not installed in the FastAPI container)
-pyimagej
-scyjava
+# Deprecated: analysis dependencies were consolidated into requirements.txt.
+# Docker installs requirements.txt; this file is intentionally not used.

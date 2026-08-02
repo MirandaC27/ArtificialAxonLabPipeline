@@ -2,21 +2,19 @@ import base64
 import csv
 import io
 import json
-import subprocess
-import sys
-import tempfile
-import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 
 from api_client import (
     BASE_URL,
     delete_result_csv,
+    get_analysis_job,
     get_result_csv,
     get_result_csvs,
     reorder_result_csvs,
     save_result_csv,
+    start_analysis_job,
 )
 from state import masking_data, settings_data, upload_data
 
@@ -66,11 +64,14 @@ class ResultsPage(tk.Frame):
         tk.Button(self.left_frame, text="Load", command=self.load_csv).pack(side="bottom", fill="x", pady=2)
         tk.Button(self.left_frame, text="Remove", command=self.remove_csv).pack(side="bottom", fill="x", pady=2)
         tk.Button(self.left_frame, text="Browse...", command=self.browse_csv).pack(side="bottom", fill="x", pady=2)
-        self.rows_var = tk.StringVar(value="5")
+        self.rows_var = tk.StringVar(value="")
         rows_frame = tk.Frame(self.left_frame, bg="white")
         rows_frame.pack(side="bottom", fill="x", pady=5)
-        tk.Label(rows_frame, text="Rows to preview:", bg="white", font=("Arial", 9)).pack(side="left")
-        tk.Entry(rows_frame, textvariable=self.rows_var, width=5).pack(side="left", padx=4)
+        tk.Label(rows_frame, text="Rows (blank = all):", bg="white", font=("Arial", 9)).pack(side="left")
+        self.rows_entry = tk.Entry(rows_frame, textvariable=self.rows_var, width=5)
+        self.rows_entry.pack(side="left", padx=4)
+        self.rows_entry.bind("<Return>", lambda _event: self.refresh_preview())
+        self.rows_entry.bind("<FocusOut>", lambda _event: self.refresh_preview())
 
         self.right_frame = tk.Frame(self, bg="white")
         self.right_frame.grid(row=0, column=1, sticky="nsew", padx=20, pady=10)
@@ -99,6 +100,15 @@ class ResultsPage(tk.Frame):
         self.run_button = tk.Button(bottom, text="Run Analysis", command=self.run_analysis)
         self.run_button.grid(row=0, column=2, padx=5, sticky="ew")
         tk.Button(bottom, text="Next", command=lambda: self.controller.show_page("SessionEnd")).grid(row=0, column=3, padx=5, sticky="ew")
+        self.analysis_status = tk.StringVar(value="Ready")
+        tk.Label(
+            bottom,
+            textvariable=self.analysis_status,
+            bg="white",
+            anchor="w",
+        ).grid(row=1, column=0, columnspan=4, padx=5, pady=(8, 2), sticky="ew")
+        self.analysis_progress = ttk.Progressbar(bottom, mode="determinate", maximum=100)
+        self.analysis_progress.grid(row=2, column=0, columnspan=4, padx=5, sticky="ew")
 
     def refresh(self):
         try:
@@ -170,10 +180,14 @@ class ResultsPage(tk.Frame):
         self.drag_data["widget"] = None
 
     def preview_row_count(self):
+        value = self.rows_var.get().strip()
+        if not value:
+            return None
         try:
-            return max(1, int(self.rows_var.get()))
+            count = int(value)
         except ValueError:
-            return 5
+            return None
+        return count if count > 0 else None
 
     def load_selected_content(self):
         if not self.selected_csv:
@@ -199,7 +213,8 @@ class ResultsPage(tk.Frame):
         try:
             delimiter, rows = self.read_csv_bytes(self.selected_content)
             header = rows[0] if rows else []
-            body = rows[1:self.preview_row_count() + 1]
+            row_limit = self.preview_row_count()
+            body = rows[1:] if row_limit is None else rows[1:row_limit + 1]
             widths = [len(str(value)) for value in header]
             for row in body:
                 while len(widths) < len(row):
@@ -282,10 +297,12 @@ class ResultsPage(tk.Frame):
             except Exception as exc:
                 messagebox.showerror("Results API Error", str(exc))
                 return
+        row_limit = self.preview_row_count()
+        export_suffix = "all" if row_limit is None else f"head{row_limit}"
         destination = filedialog.asksaveasfilename(
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv")],
-            initialfile=f"{Path(self.selected_csv['filename']).stem}_head{self.preview_row_count()}.csv",
+            initialfile=f"{Path(self.selected_csv['filename']).stem}_{export_suffix}.csv",
         )
         if not destination:
             return
@@ -293,65 +310,52 @@ class ResultsPage(tk.Frame):
             delimiter, rows = self.read_csv_bytes(self.selected_content)
             with Path(destination).open("w", newline="", encoding="utf-8") as handle:
                 writer = csv.writer(handle, delimiter=delimiter)
-                writer.writerows(rows[:self.preview_row_count() + 1])
+                writer.writerows(rows if row_limit is None else rows[:row_limit + 1])
             messagebox.showinfo("Exported", f"Saved to {destination}")
         except OSError as exc:
             messagebox.showerror("Export Error", str(exc))
     def run_analysis(self):
-        payload = {
-            "upload_data": dict(upload_data),
-            "settings_data": dict(settings_data),
-            "masking_data": dict(masking_data),
-        }
-        self.run_button.config(state="disabled", text="Running...")
-        thread = threading.Thread(target=self._analysis_worker, args=(payload,), daemon=True)
-        thread.start()
-
-    def _analysis_worker(self, payload):
-        payload_path = None
         try:
-            with tempfile.NamedTemporaryFile(
-                mode="w",
-                suffix=".json",
-                encoding="utf-8",
-                delete=False,
-            ) as handle:
-                json.dump(payload, handle)
-                payload_path = Path(handle.name)
-
-            script_path = (
-                Path(__file__).resolve().parents[2]
-                / "backend"
-                / "scripts"
-                / "analysis"
-                / "pipeline_runner.py"
+            job = start_analysis_job(
+                dict(upload_data),
+                dict(settings_data),
+                dict(masking_data),
             )
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(script_path),
-                    "--payload",
-                    str(payload_path),
-                    "--api-url",
-                    BASE_URL,
-                ],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode != 0:
-                details = result.stderr.strip() or result.stdout.strip()
-                raise RuntimeError(details or "Analysis pipeline failed.")
-            summary = json.loads(result.stdout.strip().splitlines()[-1])
-            self.after(0, lambda: self._analysis_complete(summary))
+            self.analysis_job_id = job["id"]
+            self.run_button.config(state="disabled", text="Queued...")
+            self.analysis_progress["value"] = job.get("progress", 0)
+            self.analysis_status.set(job.get("progress_message") or "Queued for Docker analysis")
+            self.after(1000, self.poll_analysis_job)
         except Exception as exc:
-            message = str(exc)
-            self.after(0, lambda: self._analysis_failed(message))
-        finally:
-            if payload_path and payload_path.exists():
-                payload_path.unlink(missing_ok=True)
+            self._analysis_failed(str(exc))
+
+    def poll_analysis_job(self):
+        try:
+            job = get_analysis_job(self.analysis_job_id)
+        except Exception as exc:
+            self._analysis_failed(str(exc))
+            return
+        status = job.get("status")
+        progress = int(job.get("progress") or 0)
+        message = job.get("progress_message") or status.title()
+        self.analysis_progress["value"] = progress
+        self.analysis_status.set(f"{progress}% — {message}")
+        if status in {"queued", "running"}:
+            self.run_button.config(text=f"Running... {progress}%")
+            self.after(2000, self.poll_analysis_job)
+            return
+        if status == "completed":
+            self._analysis_complete({
+                "record": {"id": job.get("result_id")},
+                "row_count": job.get("row_count", 0),
+            })
+            return
+        self._analysis_failed(job.get("error") or "Docker analysis failed.")
 
     def _analysis_complete(self, summary):
         self.run_button.config(state="normal", text="Run Analysis")
+        self.analysis_progress["value"] = 100
+        self.analysis_status.set("100% — Analysis complete")
         self.refresh()
         record_id = (summary.get("record") or {}).get("id")
         self.selected_csv = next(
@@ -367,4 +371,5 @@ class ResultsPage(tk.Frame):
 
     def _analysis_failed(self, message):
         self.run_button.config(state="normal", text="Run Analysis")
+        self.analysis_status.set("Analysis failed")
         messagebox.showerror("Analysis Error", message)

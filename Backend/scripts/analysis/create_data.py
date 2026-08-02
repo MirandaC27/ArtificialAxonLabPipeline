@@ -2,8 +2,13 @@
 
 import imagej
 import scyjava
+import argparse
 import json
 import os
+
+scyjava.config.set_java_constraints(fetch="auto")
+if os.getenv("JGO_CACHE_DIR"):
+    scyjava.config.set_cache_dir(os.environ["JGO_CACHE_DIR"])
 from pathlib import Path
 import sys
 
@@ -153,20 +158,29 @@ def process_field(field_dir, myelin_thresh, debris_thresh):
     print(f"  [process_field] done: {field_dir.name}")
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--wells", help="Comma-separated well numbers assigned to this worker")
+    args = parser.parse_args()
     data_dir = PROJECT_ROOT / "data"
     settings = json.loads((data_dir / "masking_settings.json").read_text(encoding="utf-8"))
     base_path = Path(settings["base_path"])
     well_range = settings["well_range"]
+    if args.wells:
+        well_range = [int(value) for value in args.wells.split(",") if value.strip()]
     thresholds = settings["thresholds"]
     myelin_thresh = thresholds.get("myelin")
     debris_thresh = thresholds.get("debris")
-    if myelin_thresh in (None, "auto") or debris_thresh in (None, "auto"):
-        raise ValueError("create_data requires numeric myelin and debris thresholds.")
+    # The masking stage supports automatic thresholds, but the 3D measurement
+    # stage needs numeric values for segmentation and output names.
+    if myelin_thresh in (None, "auto"):
+        myelin_thresh = MYELIN_THRESH
+    if debris_thresh in (None, "auto"):
+        debris_thresh = DEBRIS_THRESH
 
-    fiji_path = Path(settings.get("fiji_path") or os.getenv("FIJI_PATH", base_path.parent.parent / "Fiji"))
+    fiji_path = Path(os.getenv("FIJI_PATH", "/opt/fiji"))
     if not fiji_path.exists():
         raise FileNotFoundError(
-            f"Fiji was not found at {fiji_path}. Set FIJI_PATH or add fiji_path to masking settings."
+            f"Fiji was not found at {fiji_path}. The Docker Fiji installation is missing."
         )
     mcib3d_dir = fiji_path / "plugins" / "mcib3d-suite"
     required_jars = [
@@ -200,6 +214,7 @@ def main():
             print(f"\nProcessing well: {well_name} ({well_path})")
             if not well_path.exists():
                 print(f"  Well directory not found, skipping: {well_path}")
+                print(f"AXONLAB_PROGRESS::{well_name}", flush=True)
                 continue
             field_dirs = get_field_dirs(well_path)
             print(f"  Found {len(field_dirs)} field(s)")
@@ -208,6 +223,7 @@ def main():
                     print(f"  - {field_dir.name}: skipped by config")
                     continue
                 process_field(field_dir, myelin_thresh, debris_thresh)
+            print(f"AXONLAB_PROGRESS::{well_name}", flush=True)
     finally:
         ij.dispose()
 

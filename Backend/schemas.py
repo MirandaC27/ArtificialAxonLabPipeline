@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class Step1Create(BaseModel):
@@ -17,8 +17,8 @@ class Step1Create(BaseModel):
     disabled_fovs: list = []
     channels: list = []
 
-    settings_data: dict = {}
-    masking_data: dict = {}
+    settings_data: dict = Field(default_factory=dict)
+    masking_data: dict = Field(default_factory=dict)
 
 
 class Step1Out(BaseModel):
@@ -35,8 +35,8 @@ class Step1Out(BaseModel):
     num_fovs: int = 0
     disabled_fovs: list = []
     channels: list = []
-    settings_data: dict = {}
-    masking_data: dict = {}
+    settings_data: dict = Field(default_factory=dict)
+    masking_data: dict = Field(default_factory=dict)
     created_at: datetime | None = None
 
 
@@ -84,8 +84,8 @@ class ConfigCreate(BaseModel):
     num_fovs: int = 0
     disabled_fovs: list = []
     channels: list = []
-    settings_data: dict = {}
-    masking_data: dict = {}
+    settings_data: dict = Field(default_factory=dict)
+    masking_data: dict = Field(default_factory=dict)
 
 
 class ConfigOut(BaseModel):
@@ -103,8 +103,8 @@ class ConfigOut(BaseModel):
     num_fovs: int = 0
     disabled_fovs: list = []
     channels: list = []
-    settings_data: dict = {}
-    masking_data: dict = {}
+    settings_data: dict = Field(default_factory=dict)
+    masking_data: dict = Field(default_factory=dict)
     order_index: int = 0
     created_at: datetime | None = None
 
@@ -126,3 +126,22 @@ class ResultCsvOut(BaseModel):
 
 class ResultCsvContent(ResultCsvOut):
     content_base64: str
+
+class AnalysisJobCreate(BaseModel):
+    upload_data: dict = Field(default_factory=dict)
+    settings_data: dict = Field(default_factory=dict)
+    masking_data: dict = Field(default_factory=dict)
+
+
+class AnalysisJobOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    status: str
+    result_id: int | None = None
+    row_count: int | None = None
+    error: str | None = None
+    progress: int = 0
+    progress_message: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None

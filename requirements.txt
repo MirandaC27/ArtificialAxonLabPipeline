@@ -1,7 +1,13 @@
 fastapi
 uvicorn
-sqlalchemy
+sqlalchemy==2.0.36
+# Prebuilt wheel for 64-bit Windows/Python 3.9; avoids Visual C++ compilation.
+greenlet==3.1.1
 psycopg2-binary
 requests
 pydantic
 python-dotenv
+
+# Analysis dependencies installed inside Docker
+pyimagej
+scyjava

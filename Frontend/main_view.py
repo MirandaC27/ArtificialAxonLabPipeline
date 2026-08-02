@@ -22,7 +22,7 @@ class App(tk.Tk):
             "Home": (900, 600),
             "Upload": (900, 650),
             "Settings": (700, 430),
-            "Masking": (760, 680),
+            "Masking": (780, 740),
             "TestSave": (780, 650),
             "Results": (1000, 700),
             "SessionEnd": (900, 600),

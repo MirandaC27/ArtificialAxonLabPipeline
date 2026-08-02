@@ -249,3 +249,17 @@ class ResultCsv(Base):
     content = Column(LargeBinary, nullable=False)
     order_index = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+class AnalysisJob(Base):
+    __tablename__ = "analysis_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    status = Column(String(20), nullable=False, default="queued", index=True)
+    payload = Column(JSON, nullable=False, default=dict)
+    result_id = Column(Integer, nullable=True)
+    row_count = Column(Integer, nullable=True)
+    error = Column(String, nullable=True)
+    progress = Column(Integer, nullable=False, default=0)
+    progress_message = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())

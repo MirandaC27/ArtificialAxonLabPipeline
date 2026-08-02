@@ -33,6 +33,11 @@ services:
       DB_USER: admin
       DB_PASSWORD: password
       DB_PORT: "5432"
+      AXONLAB_HOST_DATA_ROOT: "${AXONLAB_DATA_ROOT}"
+      AXONLAB_CONTAINER_DATA_ROOT: /data
+      ANALYSIS_WORKERS: "${ANALYSIS_WORKERS:-2}"
+    volumes:
+      - "${AXONLAB_DATA_ROOT}:/data"
     restart: unless-stopped
 
 volumes:

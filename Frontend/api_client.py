@@ -134,3 +134,36 @@ def reorder_result_csvs(ids):
     response = requests.post(f"{RESULTS_URL}/reorder/all", json=ids, timeout=10)
     response.raise_for_status()
     return response.json()
+
+# ---------------------------------------------------
+# Analysis API
+
+ANALYSIS_URL = f"{BASE_URL}/analysis"
+
+
+def start_analysis_job(upload_data, settings_data, masking_data):
+    response = requests.post(
+        f"{ANALYSIS_URL}/jobs",
+        json={
+            "upload_data": upload_data,
+            "settings_data": settings_data,
+            "masking_data": masking_data,
+        },
+        timeout=15,
+    )
+    if response.status_code == 409:
+        # Reconnect to the existing worker instead of showing a conflict.
+        try:
+            detail = response.json().get("detail", "")
+            job_id = int(detail.split("Analysis job ", 1)[1].split()[0])
+        except (AttributeError, IndexError, TypeError, ValueError):
+            response.raise_for_status()
+        return get_analysis_job(job_id)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_analysis_job(job_id):
+    response = requests.get(f"{ANALYSIS_URL}/jobs/{job_id}", timeout=10)
+    response.raise_for_status()
+    return response.json()

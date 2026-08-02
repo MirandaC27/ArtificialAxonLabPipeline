@@ -3,8 +3,34 @@
 # Resolve project root (script is inside /analysis/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+BACKEND_ROOT="$(dirname "$PROJECT_ROOT")"
 
-TRACKS="/Users/chloemiranda/capstone/CLEANED/ORDERED"
+# Use the ordered folder selected for the current session. The pipeline exports
+# ORDERED_TRACK; a direct/manual invocation can pass the path as argument 1.
+TRACKS="${1:-${ORDERED_TRACK:-}}"
+
+if [[ -z "$TRACKS" && -f "$BACKEND_ROOT/data/upload_settings.json" ]]; then
+  TRACKS="$(python - "$BACKEND_ROOT/data/upload_settings.json" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    ordered = json.load(handle).get("OrderedTrack") or []
+print(ordered[0] if ordered else "")
+PY
+)"
+fi
+
+if [[ -z "$TRACKS" ]]; then
+  echo "Usage: $0 <ordered-folder>" >&2
+  echo "Or set ORDERED_TRACK to the session's ordered folder." >&2
+  exit 2
+fi
+
+if [[ ! -d "$TRACKS" ]]; then
+  echo "Ordered folder does not exist: $TRACKS" >&2
+  exit 2
+fi
 
 RESULTS_DIR="$PROJECT_ROOT/results"
 mkdir -p "$RESULTS_DIR"
