@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import HTTPException
 
 from sqlalchemy.orm import Session
 
@@ -60,6 +61,32 @@ def get_configs(
         .order_by(models.UploadConfig.order_index)
         .all()
     )
+
+
+@router.delete("/upload-configs/{config_id}")
+def delete_config(
+    config_id: int,
+    db: Session = Depends(get_db)
+):
+    config = (
+        db.query(models.UploadConfig)
+        .filter(models.UploadConfig.id == config_id)
+        .first()
+    )
+    if not config:
+        raise HTTPException(status_code=404, detail="Configuration not found.")
+
+    db.delete(config)
+    db.flush()
+    remaining = (
+        db.query(models.UploadConfig)
+        .order_by(models.UploadConfig.order_index, models.UploadConfig.id)
+        .all()
+    )
+    for index, item in enumerate(remaining):
+        item.order_index = index
+    db.commit()
+    return {"status": "deleted", "id": config_id}
 
 
 @router.post(

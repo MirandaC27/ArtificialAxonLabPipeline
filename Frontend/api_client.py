@@ -89,6 +89,12 @@ def get_configs():
     return response.json()
 
 
+def delete_config(config_id):
+    response = requests.delete(f"{CONFIGS_URL}/{config_id}", timeout=10)
+    response.raise_for_status()
+    return response.json()
+
+
 def reorder_configs(ids):
     response = requests.post(f"{CONFIGS_URL}/reorder", json=ids, timeout=10)
     response.raise_for_status()

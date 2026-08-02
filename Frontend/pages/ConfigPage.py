@@ -1,8 +1,10 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import filedialog, messagebox
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from copy import deepcopy
+import json
+from pathlib import Path
 
 from state import (
     upload_data,
@@ -10,7 +12,23 @@ from state import (
     masking_data,
     reset_history_state
 )
-from api_client import get_configs, reorder_configs
+from api_client import delete_config, get_configs, reorder_configs, save_config
+
+
+CONFIG_FILE_FORMAT = "artificial-axon-lab-config"
+CONFIG_FILE_VERSION = 1
+UPLOAD_CONFIG_FIELDS = (
+    "folders",
+    "tracks",
+    "tracks1",
+    "ordered_track",
+    "data",
+    "image_type",
+    "microscope",
+    "num_fovs",
+    "disabled_fovs",
+    "channels",
+)
 
 
 class ConfigPage(tk.Frame):
@@ -108,16 +126,23 @@ class ConfigPage(tk.Frame):
             self._resize_list_frame
         )
 
+        actions = tk.Frame(self.left_frame, bg="white")
+        actions.pack(side="bottom", fill="x", pady=5)
         tk.Button(
-            self.left_frame,
+            actions,
             text="Autofill",
             command=self.autofill_selected_config,
             font=("Arial", 12),
-            width=12
-        ).pack(
-            side="bottom",
-            pady=5
-        )
+        ).pack(side="left", fill="x", expand=True)
+        tk.Button(
+            actions,
+            text="Upload",
+            command=self.upload_config_file,
+            font=("Arial", 12),
+            width=8,
+            cursor="hand2",
+            takefocus=True,
+        ).pack(side="right", padx=(5, 0))
 
     def build_preview_side(self):
         self.right_frame = tk.Frame(
@@ -268,8 +293,12 @@ class ConfigPage(tk.Frame):
                 or f"Config {config.get('id', 'N/A')}"
             )
 
+            row = tk.Frame(self.list_frame, bg="white")
+            row.pack(fill="x")
+            row.grid_columnconfigure(0, weight=1)
+
             item = tk.Label(
-                self.list_frame,
+                row,
                 text=f"→ {name}",
                 anchor="w",
                 padx=10,
@@ -278,7 +307,34 @@ class ConfigPage(tk.Frame):
                 cursor="hand2",
                 font=("Arial", 11)
             )
-            item.pack(fill="x")
+            item.grid(row=0, column=0, sticky="ew")
+
+            tk.Button(
+                row,
+                text="⇩",
+                command=lambda selected=config: self.download_selected_config(selected),
+                font=("Segoe UI Symbol", 14, "bold"),
+                width=3,
+                relief="flat",
+                bg="white",
+                activebackground="#e0e0e0",
+                cursor="hand2",
+                takefocus=True,
+            ).grid(row=0, column=1, padx=(2, 5), sticky="e")
+
+            tk.Button(
+                row,
+                text="🗑",
+                command=lambda selected=config: self.delete_saved_config(selected),
+                font=("Segoe UI Emoji", 11),
+                width=2,
+                relief="flat",
+                bg="white",
+                fg="black",
+                activebackground="#f7d7dc",
+                cursor="hand2",
+                takefocus=True,
+            ).grid(row=0, column=2, padx=(0, 5), sticky="e")
 
             self.config_labels.append(item)
 
@@ -590,6 +646,122 @@ class ConfigPage(tk.Frame):
             f"  - Auto thresholds: {data.get('auto_thresholds', {})}",
             f"  - Particle size: {particle.get('min', 'N/A')} - {particle.get('max', 'N/A')}",
         ])
+
+    def portable_config(self, config):
+        return {
+            "format": CONFIG_FILE_FORMAT,
+            "version": CONFIG_FILE_VERSION,
+            "config": {
+                "config_name": config.get("config_name", "Saved Configuration"),
+                **{
+                    field: deepcopy(config.get(field))
+                    for field in UPLOAD_CONFIG_FIELDS
+                },
+                "settings_data": deepcopy(config.get("settings_data") or {}),
+                "masking_data": deepcopy(config.get("masking_data") or {}),
+            },
+        }
+
+    def delete_saved_config(self, config):
+        config_id = config.get("id")
+        config_name = config.get("config_name") or f"Config {config_id}"
+        if not config_id:
+            messagebox.showerror("Delete Error", "This configuration has no database ID.")
+            return
+        if not messagebox.askyesno(
+            "Delete Configuration",
+            f"Delete {config_name}?\n\nThis cannot be undone.",
+        ):
+            return
+        try:
+            delete_config(config_id)
+        except Exception as exc:
+            messagebox.showerror("Config API Error", str(exc))
+            return
+        self.load_configs()
+        messagebox.showinfo("Deleted", f"{config_name} was deleted.")
+
+    def download_selected_config(self, config=None):
+        config = config or self.selected_config
+        if not config:
+            messagebox.showerror("Selection Error", "Select a config first.")
+            return
+
+        config_name = config.get("config_name") or "saved_configuration"
+        safe_name = "".join(
+            character if character.isalnum() or character in "-_ " else "_"
+            for character in config_name
+        ).strip() or "saved_configuration"
+        destination = filedialog.asksaveasfilename(
+            title="Download Configuration",
+            defaultextension=".json",
+            filetypes=[("JSON configuration", "*.json")],
+            initialfile=f"{safe_name}.json",
+        )
+        if not destination:
+            return
+
+        try:
+            Path(destination).write_text(
+                json.dumps(self.portable_config(config), indent=2),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            messagebox.showerror("Download Error", str(exc))
+            return
+        messagebox.showinfo("Downloaded", f"Configuration saved to:\n{destination}")
+
+    def upload_config_file(self):
+        selected = filedialog.askopenfilename(
+            title="Upload Configuration",
+            filetypes=[("JSON configuration", "*.json"), ("All files", "*.*")],
+        )
+        if not selected:
+            return
+
+        try:
+            document = json.loads(Path(selected).read_text(encoding="utf-8-sig"))
+            if not isinstance(document, dict):
+                raise ValueError("The configuration file must contain a JSON object.")
+            if "config" in document:
+                if document.get("format") != CONFIG_FILE_FORMAT:
+                    raise ValueError("This is not an Artificial Axon Lab configuration file.")
+                if document.get("version") != CONFIG_FILE_VERSION:
+                    raise ValueError(
+                        f"Unsupported configuration version: {document.get('version')}"
+                    )
+                config = document["config"]
+            else:
+                # Also accept config JSON exported by older versions.
+                config = document
+            if not isinstance(config, dict):
+                raise ValueError("The configuration payload must be a JSON object.")
+
+            config_name = str(config.get("config_name") or Path(selected).stem).strip()
+            upload_payload = {
+                field: deepcopy(config[field])
+                for field in UPLOAD_CONFIG_FIELDS
+                if field in config
+            }
+            saved = save_config(
+                config_name,
+                upload_payload,
+                deepcopy(config.get("settings_data") or {}),
+                deepcopy(config.get("masking_data") or {}),
+            )
+        except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+            messagebox.showerror("Upload Error", str(exc))
+            return
+        except Exception as exc:
+            messagebox.showerror("Config API Error", str(exc))
+            return
+
+        self.load_configs()
+        messagebox.showinfo(
+            "Uploaded",
+            f"{saved.get('config_name', config_name)} was saved to the configuration list.",
+        )
+
     def autofill_selected_config(self):
         if not self.selected_config:
             messagebox.showerror(
