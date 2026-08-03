@@ -8,27 +8,25 @@ class SessionEnd(tk.Frame):
         super().__init__(parent, bg="white")
         self.controller = controller
 
-        self.left_frame = tk.Frame(self, bg="white")
-        self.left_frame.place(relx=0.0, rely=0.0, relwidth=0.5, relheight=1.0)
-
+        left_frame = tk.Frame(self, bg="white")
+        left_frame.place(relx=0.0, rely=0.0, relwidth=0.5, relheight=1.0)
         tk.Label(
-            self.left_frame,
+            left_frame,
             text="Session Ended",
             font=("Arial", 35),
             bg="white",
             fg="#333333",
         ).place(relx=0.5, rely=0.5, anchor="center")
 
-        self.right_frame = tk.Frame(self, bg="white")
-        self.right_frame.place(relx=0.5, rely=0.0, relwidth=0.5, relheight=1.0)
-
+        right_frame = tk.Frame(self, bg="white")
+        right_frame.place(relx=0.5, rely=0.0, relwidth=0.5, relheight=1.0)
         tk.Label(
-            self.right_frame,
+            right_frame,
             text="What would you like to do?",
             font=("Arial", 18),
             bg="white",
             fg="#333333",
-        ).pack(pady=(80, 20))
+        ).pack(pady=(110, 25))
 
         button_options = {
             "font": ("Arial", 12),
@@ -41,29 +39,20 @@ class SessionEnd(tk.Frame):
             "bd": 0,
             "cursor": "hand2",
         }
-
         tk.Button(
-            self.right_frame,
-            text="Create Graphs",
-            command=lambda: self.controller.show_page("Results"),
-            **button_options,
-        ).pack(pady=10)
-
-        tk.Button(
-            self.right_frame,
+            right_frame,
             text="Rerun Configuration",
             command=self.rerun_configuration,
             **button_options,
         ).pack(pady=10)
         tk.Button(
-            self.right_frame,
+            right_frame,
             text="Return to Home Page",
             command=lambda: self.controller.show_page("Home"),
             **button_options,
         ).pack(pady=10)
-
         tk.Button(
-            self.right_frame,
+            right_frame,
             text="Quit",
             command=self.controller.quit,
             **button_options,

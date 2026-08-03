@@ -247,6 +247,9 @@ class ResultCsv(Base):
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String(255), nullable=False, unique=True, index=True)
     content = Column(LargeBinary, nullable=False)
+    mime_type = Column(String(150), nullable=False, default="text/csv")
+    artifact_type = Column(String(50), nullable=False, default="csv")
+    job_id = Column(Integer, nullable=True, index=True)
     order_index = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
@@ -257,6 +260,7 @@ class AnalysisJob(Base):
     status = Column(String(20), nullable=False, default="queued", index=True)
     payload = Column(JSON, nullable=False, default=dict)
     result_id = Column(Integer, nullable=True)
+    artifact_ids = Column(JSON, nullable=False, default=list)
     row_count = Column(Integer, nullable=True)
     error = Column(String, nullable=True)
     progress = Column(Integer, nullable=False, default=0)

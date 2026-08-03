@@ -20,14 +20,14 @@ class App(tk.Tk):
         self.title("Adder App")
         self.page_sizes = {
             "Home": (900, 600),
-            "Upload": (900, 650),
+            "Upload": (900, 700),
             "Settings": (700, 430),
             "Masking": (780, 740),
             "TestSave": (780, 650),
             "Results": (1000, 700),
             "SessionEnd": (900, 600),
             "History": (1000, 700),
-            "Config": (1000, 700),
+            "Config": (1150, 700),
         }
         self.minsize(650, 400)
 

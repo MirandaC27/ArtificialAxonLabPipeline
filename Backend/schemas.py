@@ -113,6 +113,9 @@ class ResultCsvCreate(BaseModel):
     filename: str
     content_base64: str
     overwrite: bool = False
+    mime_type: str = "text/csv"
+    artifact_type: str = "csv"
+    job_id: int | None = None
 
 
 class ResultCsvOut(BaseModel):
@@ -120,6 +123,10 @@ class ResultCsvOut(BaseModel):
 
     id: int
     filename: str
+    mime_type: str = "text/csv"
+    artifact_type: str = "csv"
+    job_id: int | None = None
+    experiment: str | None = None
     order_index: int = 0
     created_at: datetime | None = None
 
@@ -139,6 +146,7 @@ class AnalysisJobOut(BaseModel):
     id: int
     status: str
     result_id: int | None = None
+    artifact_ids: list[int] = Field(default_factory=list)
     row_count: int | None = None
     error: str | None = None
     progress: int = 0

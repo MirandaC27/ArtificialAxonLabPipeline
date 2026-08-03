@@ -1,78 +1,36 @@
-#create_data.py
+"""3D pillar segmentation and per-object, per-Z myelin wrapping measurements."""
 
-import imagej
-import scyjava
 import argparse
+import csv
 import json
-import os
-
-scyjava.config.set_java_constraints(fetch="auto")
-if os.getenv("JGO_CACHE_DIR"):
-    scyjava.config.set_cache_dir(os.environ["JGO_CACHE_DIR"])
 from pathlib import Path
-import sys
+
+import numpy as np
+from scipy import ndimage
+import tifffile
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-SEGMENT_LOW  = 128
-SEGMENT_HIGH = 255
-IJ = None
-WindowManager = None
-
-MYELIN_THRESH  = 8000
-DEBRIS_THRESH  = 15000
-SEGMENT_LOW    = 128
-SEGMENT_HIGH   = 255
-
 CONFIG_PATH = PROJECT_ROOT / "data" / "upload_settings.json"
-
-
-CREATE_DATA_REQUIRED_CHANNELS = {"axon", "myelin", "debris"}
-
-def ensure_dirs(dirs):
-    for d in dirs:
-        d.mkdir(parents=True, exist_ok=True)
+MASKING_SETTINGS_PATH = PROJECT_ROOT / "data" / "masking_settings.json"
 
 
 def load_skip_config():
     if not CONFIG_PATH.exists():
-        return {
-            "skip_fovs": set(),
-            "skip_channels": set(),
-            "skip_fovs_per_well": {},
+        return {"skip_fovs": set(), "skip_fovs_per_well": {}}
+    data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    raw_global = list(data.get("DisabledFOVs", [])) + list(data.get("SkipFOVs", []))
+    per_well = {
+        str(well): {
+            int(value) for value in values if str(value).strip().isdigit()
         }
-
-    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    raw_skip_fovs = list(data.get("DisabledFOVs", [])) + list(data.get("SkipFOVs", []))
-    skip_fovs = {
-        int(fov)
-        for fov in raw_skip_fovs
-        if str(fov).strip().isdigit()
+        for well, values in (data.get("SkipFOVsPerWell") or {}).items()
     }
-    skip_channels = {
-        str(label).strip().lower()
-        for label in data.get("SkipChannels", [])
-        if str(label).strip()
-    }
-    skip_channels.update(
-        ch["label"].strip().lower()
-        for ch in data.get("Channels", [])
-        if ch.get("label") and not ch.get("active", True)
-    )
-
-    raw_per_well = data.get("SkipFOVsPerWell", {})
-    skip_fovs_per_well = {}
-    for well, fovs in raw_per_well.items():
-        skip_fovs_per_well[well] = {
-            int(fov) for fov in fovs if str(fov).strip().isdigit()
-        }
-
     return {
-        "skip_fovs": skip_fovs,
-        "skip_channels": skip_channels,
-        "skip_fovs_per_well": skip_fovs_per_well,
+        "skip_fovs": {
+            int(value) for value in raw_global if str(value).strip().isdigit()
+        },
+        "skip_fovs_per_well": per_well,
     }
 
 
@@ -84,148 +42,209 @@ def parse_fov_num(field_name):
 
 
 def should_skip_field(well_name, field_name, skip_config):
-    fov_num = parse_fov_num(field_name)
-    if fov_num is None:
+    number = parse_fov_num(field_name)
+    if number is None:
         return False
+    return (
+        number in skip_config["skip_fovs"]
+        or number in skip_config["skip_fovs_per_well"].get(well_name, set())
+    )
 
-    if fov_num in skip_config["skip_fovs"]:
-        return True
 
-    return fov_num in skip_config["skip_fovs_per_well"].get(well_name, set())
+def read_mask_stack(path):
+    data = np.asarray(tifffile.imread(path))
+    data = np.squeeze(data)
+    if data.ndim < 2:
+        raise ValueError(f"Mask has no image plane: {path}")
+    if data.ndim == 2:
+        data = data[np.newaxis, ...]
+    elif data.ndim > 3:
+        data = data.reshape((-1, data.shape[-2], data.shape[-1]))
+    return data > 0
 
 
-def get_field_dirs(well_path):
-    return sorted([p for p in well_path.iterdir() if p.is_dir()])
+def aligned_stacks(pillar_path, myelin_path, fallback_depth=9):
+    pillars = read_mask_stack(pillar_path)
+    myelin = read_mask_stack(myelin_path)
+    shape = tuple(min(left, right) for left, right in zip(pillars.shape, myelin.shape))
+    slices = tuple(slice(0, length) for length in shape)
+    pillars = pillars[slices]
+    myelin = myelin[slices]
+    synthetic_z = pillars.shape[0] == 1
+    if synthetic_z:
+        depth = max(2, int(fallback_depth or 9))
+        pillars = np.repeat(pillars, depth, axis=0)
+        myelin = np.repeat(myelin, depth, axis=0)
+    return pillars, myelin, synthetic_z
 
-def open_image(path):
-    imp = IJ.openImage(str(path))
-    if imp is None:
-        raise FileNotFoundError(f"IJ.openImage returned None for: {path}")
-    return imp
 
-def segment_and_save_objects(imp_pillar, path_objects):
-    ImageHandler           = scyjava.jimport("mcib3d.image3d.ImageHandler")
-    Objects3DIntPopulation = scyjava.jimport("mcib3d.geom2.Objects3DIntPopulation")
-    ImageLabeller          = scyjava.jimport("mcib3d.image3d.ImageLabeller")
+def wrapping_category(fraction):
+    if fraction > 0.8:
+        return 100
+    if fraction > 0.5:
+        return 80
+    if fraction > 0.2:
+        return 50
+    return 20
 
-    img_binary  = ImageHandler.wrap(imp_pillar)
-    labeller    = ImageLabeller()
-    img_labeled = labeller.getLabels(img_binary)
 
-    pop = Objects3DIntPopulation(img_labeled)
-    n   = pop.getNbObjects()
-    print(f"    [segment_and_save_objects] segmented {n} objects")
-    pop.saveObjects(str(path_objects))
-    print(f"    [segment_and_save_objects] saved to {path_objects.name}")
-    return pop
+def measure_objects(pillars, myelin, minimum_voxels=1, synthetic_z=False):
+    labels, object_count = ndimage.label(
+        pillars,
+        structure=np.ones((3, 3, 3), dtype=np.uint8),
+    )
+    details = []
+    objects = []
+    kept_label = 0
+    for source_label in range(1, object_count + 1):
+        object_mask = labels == source_label
+        voxel_count = int(object_mask.sum())
+        if voxel_count < minimum_voxels:
+            labels[object_mask] = 0
+            continue
+        kept_label += 1
+        labels[object_mask] = kept_label
+        z_indices = np.flatnonzero(object_mask.any(axis=(1, 2)))
+        wrapped_voxels = 0
+        fractions = []
+        categories = []
+        for z_index in z_indices:
+            plane = object_mask[z_index]
+            axon_pixels = int(plane.sum())
+            myelin_pixels = int(np.count_nonzero(myelin[z_index] & plane))
+            fraction = myelin_pixels / axon_pixels if axon_pixels else 0.0
+            category = wrapping_category(fraction)
+            details.append({
+                "Label": kept_label,
+                "Z": int(z_index),
+                "axon_pixels": axon_pixels,
+                "myelin_pixels": myelin_pixels,
+                "fraction_wrapped": fraction,
+                "category": category,
+                "synthetic_z": synthetic_z,
+            })
+            wrapped_voxels += myelin_pixels
+            fractions.append(fraction)
+            categories.append(category)
+        objects.append({
+            "Object": kept_label,
+            "Volume": voxel_count,
+            "wrapped_voxels": wrapped_voxels,
+            "z_start": int(z_indices.min()) if len(z_indices) else 0,
+            "z_end": int(z_indices.max()) if len(z_indices) else 0,
+            "z_slices": int(len(z_indices)),
+            "mean_fraction_wrapped": float(np.mean(fractions)) if fractions else 0.0,
+            "max_fraction_wrapped": float(max(fractions)) if fractions else 0.0,
+            "max_category": int(max(categories)) if categories else 20,
+            "synthetic_z": synthetic_z,
+        })
+    return labels, details, objects
 
-def measure_and_save_volumes(population, path_converted):
-    lines   = ["Object\tVolume"]
-    objects = population.getObjects3DInt()
-    n       = population.getNbObjects()
 
-    for i in range(n):
-        obj    = objects.get(i)
-        volume = obj.size()
-        lines.append(f"{i + 1}\t{volume}")
+def write_csv(path, rows, columns):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer.writeheader()
+        writer.writerows(rows)
 
-    path_converted.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"    [measure_and_save_volumes] {n} objects to {path_converted.name}")
 
-def process_field(field_dir, myelin_thresh, debris_thresh):
-    print(f"  [process_field] {field_dir.name}")
+def process_field(field_dir, settings):
+    masks_dir = field_dir / "MASKS"
+    data_dir = field_dir / "DATA"
+    objects_dir = field_dir / "OBJECTS"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    objects_dir.mkdir(parents=True, exist_ok=True)
 
-    dir_masks   = field_dir / "MASKS"
-    dir_objects = field_dir / "OBJECTS"
-    dir_data    = field_dir / "DATA"
-    ensure_dirs([dir_objects, dir_data])
+    pillar_path = masks_dir / "mask-pillars-rim.tif"
+    overlap_matches = sorted(masks_dir.glob("mask-myelin-overlap-*.tif"))
+    if not pillar_path.exists():
+        raise FileNotFoundError(f"Missing 3D pillar-rim mask: {pillar_path}")
+    if not overlap_matches:
+        raise FileNotFoundError(f"Missing 3D myelin-overlap mask in {masks_dir}")
 
-    path_pillar    = dir_masks   / "mask-pillars-rim.tif"
-    path_myelin    = dir_masks   / f"mask-myelin-overlap-{myelin_thresh}-{debris_thresh}.tif"
-    path_objects   = dir_objects / f"Objects{myelin_thresh}.zip"
-    path_converted = dir_data    / f"V_Data-{myelin_thresh}_converted.txt"
+    pillars, myelin, synthetic_z = aligned_stacks(
+        pillar_path,
+        overlap_matches[0],
+        fallback_depth=settings.get("z_slice_count", 9),
+    )
+    minimum_voxels = max(
+        1, int((settings.get("particle_size") or {}).get("min") or 1)
+    )
+    labels, details, objects = measure_objects(
+        pillars,
+        myelin,
+        minimum_voxels=minimum_voxels,
+        synthetic_z=synthetic_z,
+    )
+    if not objects:
+        raise RuntimeError(f"No 3D pillar objects were detected in {field_dir}")
 
-    imp_pillar = open_image(path_pillar)
-    population = segment_and_save_objects(imp_pillar, path_objects)
-    imp_pillar.close()
+    threshold = (settings.get("thresholds") or {}).get("myelin") or 8000
+    write_csv(
+        data_dir / f"Wrapping_Data-{threshold}.csv",
+        details,
+        [
+            "Label", "Z", "axon_pixels", "myelin_pixels",
+            "fraction_wrapped", "category", "synthetic_z",
+        ],
+    )
+    write_csv(
+        data_dir / f"Object_Summary-{threshold}.csv",
+        objects,
+        [
+            "Object",
+            "Volume",
+            "wrapped_voxels",
+            "z_start",
+            "z_end",
+            "z_slices",
+            "mean_fraction_wrapped",
+            "max_fraction_wrapped",
+            "max_category",
+            "synthetic_z",
+        ],
+    )
+    with (data_dir / f"V_Data-{threshold}_converted.txt").open(
+        "w", encoding="utf-8"
+    ) as handle:
+        handle.write("Object\tVolume\n")
+        for row in objects:
+            handle.write(f"{row['Object']}\t{row['Volume']}\n")
+    np.savez_compressed(
+        objects_dir / f"Objects{threshold}.npz",
+        labels=labels.astype(np.int32),
+    )
 
-    imp_myelin = open_image(path_myelin)
-    measure_and_save_volumes(population, path_converted)
-    imp_myelin.close()
-
-    IJ.run("Close All")
-    IJ.run("Collect Garbage")
-    print(f"  [process_field] done: {field_dir.name}")
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--wells", help="Comma-separated well numbers assigned to this worker")
     args = parser.parse_args()
-    data_dir = PROJECT_ROOT / "data"
-    settings = json.loads((data_dir / "masking_settings.json").read_text(encoding="utf-8"))
+    settings = json.loads(MASKING_SETTINGS_PATH.read_text(encoding="utf-8"))
     base_path = Path(settings["base_path"])
-    well_range = settings["well_range"]
+    wells = settings["well_range"]
     if args.wells:
-        well_range = [int(value) for value in args.wells.split(",") if value.strip()]
-    thresholds = settings["thresholds"]
-    myelin_thresh = thresholds.get("myelin")
-    debris_thresh = thresholds.get("debris")
-    # The masking stage supports automatic thresholds, but the 3D measurement
-    # stage needs numeric values for segmentation and output names.
-    if myelin_thresh in (None, "auto"):
-        myelin_thresh = MYELIN_THRESH
-    if debris_thresh in (None, "auto"):
-        debris_thresh = DEBRIS_THRESH
-
-    fiji_path = Path(os.getenv("FIJI_PATH", "/opt/fiji"))
-    if not fiji_path.exists():
-        raise FileNotFoundError(
-            f"Fiji was not found at {fiji_path}. The Docker Fiji installation is missing."
-        )
-    mcib3d_dir = fiji_path / "plugins" / "mcib3d-suite"
-    required_jars = [
-        "mcib3d-core-4.1.7b.jar",
-        "mcib3d_plugins-4.1.7b.jar",
-        "mcib3d_dev-0.0.2.jar",
-        "quickhull3d-1.0.0.jar",
-        "mcib3d-jipipe-0.0.3.jar",
-    ]
-    missing_jars = [name for name in required_jars if not (mcib3d_dir / name).exists()]
-    if missing_jars:
-        raise FileNotFoundError(f"Missing Fiji mcib3d jars: {', '.join(missing_jars)}")
-    scyjava.config.add_classpath(*(str(mcib3d_dir / name) for name in required_jars))
-
-    ij = imagej.init(str(fiji_path), mode="headless")
-    print(f"ImageJ version: {ij.getVersion()}")
-    global IJ, WindowManager
-    IJ = scyjava.jimport("ij.IJ")
-    WindowManager = scyjava.jimport("ij.WindowManager")
-
+        wells = [int(value) for value in args.wells.split(",") if value.strip()]
     skip_config = load_skip_config()
-    missing_required = sorted(CREATE_DATA_REQUIRED_CHANNELS & skip_config["skip_channels"])
-    if missing_required:
-        ij.dispose()
-        raise ValueError(f"Required channels are disabled: {', '.join(missing_required)}")
-
-    try:
-        for well_number in well_range:
-            well_name = f"B{int(well_number):02d}"
-            well_path = base_path / well_name
-            print(f"\nProcessing well: {well_name} ({well_path})")
-            if not well_path.exists():
-                print(f"  Well directory not found, skipping: {well_path}")
-                print(f"AXONLAB_PROGRESS::{well_name}", flush=True)
-                continue
-            field_dirs = get_field_dirs(well_path)
-            print(f"  Found {len(field_dirs)} field(s)")
-            for field_dir in field_dirs:
-                if should_skip_field(well_name, field_dir.name, skip_config):
-                    print(f"  - {field_dir.name}: skipped by config")
-                    continue
-                process_field(field_dir, myelin_thresh, debris_thresh)
+    failures = []
+    for well_number in wells:
+        well_name = f"B{int(well_number):02d}"
+        well_path = base_path / well_name
+        if not well_path.exists():
+            print(f"Well directory not found, skipping: {well_path}")
             print(f"AXONLAB_PROGRESS::{well_name}", flush=True)
-    finally:
-        ij.dispose()
+            continue
+        for field_dir in sorted(path for path in well_path.iterdir() if path.is_dir()):
+            if should_skip_field(well_name, field_dir.name, skip_config):
+                continue
+            try:
+                process_field(field_dir, settings)
+            except Exception as exc:
+                failures.append(f"{well_name}/{field_dir.name}: {exc}")
+        print(f"AXONLAB_PROGRESS::{well_name}", flush=True)
+    if failures:
+        raise RuntimeError("3D measurement failed for " + "; ".join(failures))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Clean/Order implementation used by the Tkinter workflow.
 
 setup_wells(){
     echo "Detecting wells from filenames..."
@@ -65,3 +66,5 @@ ordered_wells(){
         echo "Finished well $well"
     done
 }
+
+# End OrderData functions.

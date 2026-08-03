@@ -11,3 +11,8 @@ python-dotenv
 # Analysis dependencies installed inside Docker
 pyimagej
 scyjava
+numpy<2
+scipy
+tifffile
+pandas
+openpyxl

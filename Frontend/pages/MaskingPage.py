@@ -21,6 +21,7 @@ class MaskingPage(tk.Frame):
         self.particle_max_var = tk.StringVar()
         self.threshold_vars = {channel: tk.StringVar() for channel in THRESHOLD_CHANNELS}
         self.auto_vars = {channel: tk.BooleanVar() for channel in THRESHOLD_CHANNELS}
+        self.export_excel_var = tk.BooleanVar(value=True)
         self._build_ui()
 
     def _build_ui(self):
@@ -57,8 +58,12 @@ class MaskingPage(tk.Frame):
         tk.Label(particle_frame, text="Maximum").grid(row=0, column=2, padx=8, pady=5)
         tk.Entry(particle_frame, textvariable=self.particle_max_var, width=10).grid(row=0, column=3, padx=8, pady=5)
 
+        tk.Checkbutton(
+            self, text="Create an Excel (.xlsx) export", variable=self.export_excel_var
+        ).grid(row=5, column=0, padx=20, pady=3, sticky="w")
+
         nav = tk.Frame(self)
-        nav.grid(row=5, column=0, padx=20, pady=10, sticky="ew")
+        nav.grid(row=6, column=0, padx=20, pady=10, sticky="ew")
         nav.grid_columnconfigure((0, 1), weight=1)
         tk.Button(nav, text="Back", command=lambda: self.controller.show_page("Settings")).grid(row=0, column=0, padx=5, sticky="ew")
         tk.Button(nav, text="Next", command=self._on_next).grid(row=0, column=1, padx=5, sticky="ew")
@@ -80,6 +85,7 @@ class MaskingPage(tk.Frame):
         particle = masking_data.get("particle_size", {})
         self.particle_min_var.set(str(particle.get("min", 2)))
         self.particle_max_var.set(str(particle.get("max", 2000)))
+        self.export_excel_var.set(bool(masking_data.get("export_excel", True)))
         channels = upload_data.get("channels") or []
         labels = [f"{item.get('code', 'CH?')}: {item.get('label', '')}" for item in channels if isinstance(item, dict)]
         self.channel_label.config(text="Channels: " + (", ".join(labels) if labels else "None"))
@@ -129,6 +135,7 @@ class MaskingPage(tk.Frame):
             "thresholds": thresholds,
             "auto_thresholds": autos,
             "particle_size": {"min": particle_min, "max": particle_max},
+            "export_excel": self.export_excel_var.get(),
         }
 
     def _on_next(self):

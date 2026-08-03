@@ -55,8 +55,10 @@ class ConfigPage(tk.Frame):
     def build_left_side(self):
         self.left_frame = tk.Frame(
             self,
-            bg="white"
+            bg="white",
+            width=260,
         )
+        self.left_frame.pack_propagate(False)
         self.left_frame.grid(
             row=0,
             column=0,
@@ -77,11 +79,29 @@ class ConfigPage(tk.Frame):
             pady=5
         )
 
+        actions = tk.Frame(self.left_frame, bg="white")
+        actions.pack(side="bottom", fill="x", pady=(5, 0))
+        tk.Button(
+            actions,
+            text="Autofill",
+            command=self.autofill_selected_config,
+            font=("Arial", 12),
+        ).pack(side="left", fill="x", expand=True)
+        tk.Button(
+            actions,
+            text="Upload",
+            command=self.upload_config_file,
+            font=("Arial", 12),
+            width=8,
+            cursor="hand2",
+            takefocus=True,
+        ).pack(side="left", padx=(5, 0))
+
         self.list_canvas = tk.Canvas(
             self.left_frame,
             bg="white",
             highlightthickness=0,
-            width=240
+            width=230
         )
         self.list_canvas.pack(
             side="left",
@@ -126,24 +146,6 @@ class ConfigPage(tk.Frame):
             self._resize_list_frame
         )
 
-        actions = tk.Frame(self.left_frame, bg="white")
-        actions.pack(side="bottom", fill="x", pady=5)
-        tk.Button(
-            actions,
-            text="Autofill",
-            command=self.autofill_selected_config,
-            font=("Arial", 12),
-        ).pack(side="left", fill="x", expand=True)
-        tk.Button(
-            actions,
-            text="Upload",
-            command=self.upload_config_file,
-            font=("Arial", 12),
-            width=8,
-            cursor="hand2",
-            takefocus=True,
-        ).pack(side="right", padx=(5, 0))
-
     def build_preview_side(self):
         self.right_frame = tk.Frame(
             self,
@@ -153,7 +155,7 @@ class ConfigPage(tk.Frame):
             row=0,
             column=1,
             sticky="nsew",
-            padx=20,
+            padx=(10, 20),
             pady=10
         )
 
@@ -188,7 +190,7 @@ class ConfigPage(tk.Frame):
             row=1,
             column=0,
             sticky="nsew",
-            padx=(20, 0),
+            padx=(5, 0),
             pady=10
         )
 
@@ -201,7 +203,7 @@ class ConfigPage(tk.Frame):
             row=1,
             column=1,
             sticky="ns",
-            padx=(0, 20),
+            padx=(0, 5),
             pady=10
         )
 

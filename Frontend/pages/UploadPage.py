@@ -4,8 +4,6 @@ from pathlib import Path
 import subprocess
 import platform
 import threading
-import signal
-import os
 
 from state import upload_data
 
@@ -36,6 +34,7 @@ class UploadPage(tk.Frame):
         self.micro_type_var = tk.StringVar(value="Keyence")
         self.fov_var = tk.StringVar()
         self.disable_mode_var = tk.BooleanVar(value=False)
+        self.clean_status_var = tk.StringVar(value="0% — Ready to clean and order data")
 
         tk.Button(
             self,
@@ -170,14 +169,24 @@ class UploadPage(tk.Frame):
 
         self.fov_disable_frame.grid_remove()
 
-        tk.Button(
+        self.clean_order_button = tk.Button(
             self,
-            text="Run",
+            text="Clean/Order",
             command=self.button_run
-        ).grid(row=13, column=0, columnspan=2, pady=10, sticky="ew", padx=20)
+        )
+        self.clean_order_button.grid(
+            row=13, column=0, columnspan=2, pady=(10, 3), sticky="ew", padx=20
+        )
+        tk.Label(self, textvariable=self.clean_status_var, anchor="w").grid(
+            row=14, column=0, columnspan=2, padx=20, pady=(3, 2), sticky="ew"
+        )
+        self.clean_progress = ttk.Progressbar(self, mode="determinate", maximum=100)
+        self.clean_progress.grid(
+            row=15, column=0, columnspan=2, padx=20, pady=(0, 8), sticky="ew"
+        )
 
         nav_frame = tk.Frame(self)
-        nav_frame.grid(row=14, column=0, columnspan=2, pady=(0, 10), padx=20, sticky="ew")
+        nav_frame.grid(row=16, column=0, columnspan=2, pady=(0, 10), padx=20, sticky="ew")
 
         nav_frame.grid_columnconfigure(0, weight=1)
         nav_frame.grid_columnconfigure(1, weight=1)
@@ -372,48 +381,6 @@ class UploadPage(tk.Frame):
             for ch in self.channels
         ]
 
-    def show_loading_popup(self):
-        self.popup = tk.Toplevel(self)
-        self.popup.title("Running")
-        self.popup.geometry("300x200")
-        self.popup.transient(self)
-        self.popup.grab_set()
-
-        self.progress = ttk.Progressbar(self.popup, mode="indeterminate")
-        self.progress.pack(pady=20, padx=20, fill="x")
-        self.progress.start(10)
-
-        tk.Label(self.popup, text="Running script...").pack(pady=10)
-
-        tk.Button(
-            self.popup,
-            text="Stop",
-            command=self.stop_script
-        ).pack(pady=10)
-
-    def stop_script(self):
-        self.stop_flag = True
-
-        if self.process:
-            try:
-                if platform.system() == "Windows":
-                    subprocess.call([
-                        "taskkill",
-                        "/F",
-                        "/T",
-                        "/PID",
-                        str(self.process.pid)
-                    ])
-                else:
-                    os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
-            except Exception as e:
-                print("Error stopping process:", e)
-
-    def close_popup(self):
-        if hasattr(self, "popup") and self.popup.winfo_exists():
-            self.progress.stop()
-            self.popup.destroy()
-
     def build_step1_args(self):
         active_channels = [
             channel for channel in upload_data["channels"]
@@ -449,7 +416,7 @@ class UploadPage(tk.Frame):
         else:
             bash_path = "/bin/bash"
             creationflags = 0
-            preexec_fn = os.setsid
+            preexec_fn = None
 
         script_path = (
             Path(__file__).resolve().parents[2]
@@ -459,18 +426,50 @@ class UploadPage(tk.Frame):
         )
 
         if not script_path.exists():
-            print(f"Error: Script not found at {script_path}")
-            return
+            raise FileNotFoundError(f"Clean/order script not found at {script_path}")
 
         self.process = subprocess.Popen(
             [bash_path, str(script_path), *self.build_step1_args()],
             creationflags=creationflags,
-            preexec_fn=preexec_fn
+            preexec_fn=preexec_fn,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
         )
-
-        while self.process.poll() is None:
+        total_wells = 0
+        cleaned_wells = 0
+        ordered_wells = 0
+        for raw_line in self.process.stdout:
+            line = raw_line.strip()
+            if line.startswith("Number of wells:"):
+                try:
+                    total_wells = int(line.rsplit(":", 1)[1].strip())
+                except ValueError:
+                    total_wells = 0
+                self._set_clean_progress(10, line)
+            elif line.startswith("Well folder:"):
+                cleaned_wells += 1
+                percent = 10 + round(40 * cleaned_wells / max(1, total_wells))
+                self._set_clean_progress(percent, f"Cleaning: {line.split(':', 1)[1].strip()}")
+            elif line.startswith("Step 2:"):
+                self._set_clean_progress(55, "Organizing cleaned images")
+            elif line.startswith("Finished well"):
+                ordered_wells += 1
+                percent = 55 + round(40 * ordered_wells / max(1, total_wells))
+                self._set_clean_progress(percent, f"Ordering: {line.removeprefix('Finished well').strip()}")
+            elif line == "Pipeline Complete":
+                self._set_clean_progress(100, "Clean/order complete")
             if self.stop_flag:
                 break
+        return_code = self.process.wait()
+        if return_code != 0 and not self.stop_flag:
+            raise RuntimeError(f"Clean/order process exited with code {return_code}.")
+
+    def _set_clean_progress(self, percent, message):
+        percent = max(0, min(100, int(percent)))
+        self.after(0, lambda: self.clean_progress.configure(value=percent))
+        self.after(0, lambda: self.clean_status_var.set(f"{percent}% — {message}"))
             
     def run_process(self):
        try:
@@ -486,17 +485,19 @@ class UploadPage(tk.Frame):
            self.after(
                0,
                lambda message=error_message:
-               self.status_label.config(text=f"Error: {message}")
+               self.clean_status_var.set(f"Error: {message}")
            )
 
        finally:
-           self.after(0, self.close_popup)
+           self.after(0, lambda: self.clean_order_button.config(state="normal", text="Clean/Order"))
 
     def button_run(self):
         self.stop_flag = False
         self.process = None
 
-        self.show_loading_popup()
+        self.clean_progress["value"] = 0
+        self.clean_status_var.set("0% — Preparing clean/order workflow")
+        self.clean_order_button.config(state="disabled", text="Cleaning/Ordering...")
 
-        thread = threading.Thread(target=self.run_process)
+        thread = threading.Thread(target=self.run_process, daemon=True)
         thread.start()

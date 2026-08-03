@@ -107,13 +107,32 @@ def reorder_configs(ids):
 RESULTS_URL = f"{BASE_URL}/results"
 
 
-def save_result_csv(filename, content_base64, overwrite=False):
+def result_artifact_type(record):
+    """Return a useful type for new metadata and older filename-only records."""
+    stored = str(record.get("artifact_type") or "").strip().lower()
+    if stored not in {"", "csv", "uploaded"}:
+        return stored
+    filename = str(record.get("filename") or "").lower()
+    filename_types = (
+        ("wrapping_per_object_per_z", "wrapping_details"),
+        ("wrapping_data", "wrapping_details"),
+        ("well_summary", "well_summary"),
+        ("fov_summary", "fov_summary"),
+        ("final_results", "fov_summary"),
+        ("summaries.xlsx", "excel"),
+    )
+    return next((kind for marker, kind in filename_types if marker in filename), stored)
+
+
+def save_result_csv(filename, content_base64, overwrite=False, mime_type="text/csv", artifact_type="uploaded"):
     return requests.post(
         RESULTS_URL,
         json={
             "filename": filename,
             "content_base64": content_base64,
             "overwrite": overwrite,
+            "mime_type": mime_type,
+            "artifact_type": artifact_type,
         },
         timeout=30,
     )

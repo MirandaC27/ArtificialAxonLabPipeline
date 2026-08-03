@@ -19,7 +19,7 @@ app = FastAPI(
         {"name": "Settings", "description": "Experiment settings."},
         {"name": "Masking", "description": "Masking and threshold settings."},
         {"name": "Configs", "description": "Saved workflow configurations."},
-        {"name": "Results", "description": "PostgreSQL-backed CSV results."},
+        {"name": "Results", "description": "PostgreSQL-backed analysis artifacts."},
         {"name": "Analysis", "description": "Docker-based ImageJ analysis jobs."},
         {"name": "Health", "description": "API availability checks."},
     ],
@@ -38,6 +38,11 @@ def add_analysis_progress_columns():
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE analysis_jobs ADD COLUMN IF NOT EXISTS progress INTEGER NOT NULL DEFAULT 0"))
         connection.execute(text("ALTER TABLE analysis_jobs ADD COLUMN IF NOT EXISTS progress_message VARCHAR(255)"))
+        connection.execute(text("ALTER TABLE analysis_jobs ADD COLUMN IF NOT EXISTS artifact_ids JSON NOT NULL DEFAULT '[]'"))
+        connection.execute(text("ALTER TABLE result_csvs ADD COLUMN IF NOT EXISTS mime_type VARCHAR(150) NOT NULL DEFAULT 'text/csv'"))
+        connection.execute(text("ALTER TABLE result_csvs ADD COLUMN IF NOT EXISTS artifact_type VARCHAR(50) NOT NULL DEFAULT 'csv'"))
+        connection.execute(text("ALTER TABLE result_csvs ADD COLUMN IF NOT EXISTS job_id INTEGER"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS ix_result_csvs_job_id ON result_csvs (job_id)"))
 
 
 add_workflow_json_columns()

@@ -33,6 +33,13 @@ WindowManager    = scyjava.jimport("ij.WindowManager")
 
 CONFIG_PATH = PROJECT_ROOT / "data" / "upload_settings.json"
 MASKING_REQUIRED_CHANNELS = {"axon", "myelin", "nuclei", "debris"}
+CHANNEL_FILE_ALIASES = {
+    "axon": ("axon", "axons", "pillar", "pillars"),
+    "myelin": ("myelin", "mbp"),
+    "nuclei": ("nuclei", "nucleus", "dapi"),
+    "debris": ("debris",),
+    "gfap": ("gfap",),
+}
 
 
 def ensure_dirs(dirs):
@@ -119,6 +126,19 @@ def find_file(directory, keyword):
         )
     print(f"    [find_file] matched: {matches[0].name}")
     return matches[0]
+
+
+def find_channel_file(directory, channel):
+    for keyword in CHANNEL_FILE_ALIASES.get(channel, (channel,)):
+        try:
+            return find_file(directory, keyword)
+        except FileNotFoundError:
+            pass
+    aliases = ", ".join(CHANNEL_FILE_ALIASES.get(channel, (channel,)))
+    raise FileNotFoundError(
+        f"No TIFF for channel '{channel}' was found in {directory}. "
+        f"Accepted filename terms: {aliases}."
+    )
 
 
 def load_channel(filepath, channel):
@@ -268,102 +288,158 @@ def debris_mask(imp, dir_temp, dir_data, dir_masks, debris_thresh):
     return imp
 
 
-def process_field(field_dir, settings):
-    """
-    Process a single field directory using the provided settings dict.
+def save_particle_results(imp, output_path, size_min, size_max):
+    rt = analyze_particles(imp, size_min, size_max, 0.20, 1.00)
+    save_results(rt, output_path)
 
-    settings keys expected:
-        thresholds    – dict from get_thresholds()  e.g. {"myelin": 8000, "debris": 15000, ...}
-        particle_size – dict from get_particle_size() e.g. {"min": 2, "max": 2000}
-    """
-    thresholds    = settings["thresholds"]
+
+def threshold_channel_mask(imp, channel_name, threshold, dir_temp, dir_masks):
+    save_imp(imp, dir_temp / f"{channel_name}.tif")
+    if threshold in (None, "auto"):
+        imp = auto_threshold_mask(imp)
+    else:
+        imp = threshold_and_mask(imp, threshold)
+    save_imp(
+        imp,
+        dir_temp / f"mask-{channel_name}-{threshold}.tif",
+        dir_masks / f"mask-{channel_name}-{threshold}.tif",
+    )
+    return imp
+
+
+def process_field(field_dir, settings):
+    """Create masks and measurements only for channels enabled by the session."""
+    thresholds = settings["thresholds"]
     particle_size = settings["particle_size"]
     skip_channels = settings.get("skip_channels", set())
-
+    configured_channels = {
+        str(label).strip().lower()
+        for label in settings.get("active_channels", [])
+        if str(label).strip()
+    }
+    if "active_channels" in settings:
+        active_channels = configured_channels
+    else:
+        active_channels = MASKING_REQUIRED_CHANNELS - skip_channels
+    if not active_channels:
+        raise ValueError("At least one analysis channel must be active.")
+    channel_numbers = settings.get("channel_numbers") or {}
     myelin_thresh = thresholds.get("myelin") or 8000
     debris_thresh = thresholds.get("debris") or 15000
-    nuclei_thresh = thresholds.get("nuclei")          
-
+    nuclei_thresh = thresholds.get("nuclei")
+    gfap_thresh = thresholds.get("gfap", thresholds.get("GFAP"))
     size_min = particle_size.get("min") or 2
     size_max = particle_size.get("max") or 2000
 
-    missing_required = sorted(MASKING_REQUIRED_CHANNELS & skip_channels)
-    if missing_required:
-        print(f"  [process_field] skipping {field_dir.name}; excluded channels: {', '.join(missing_required)}")
-        return
-
-    print(f"  [process_field] starting {field_dir.name}")
-    dir_oir   = field_dir / "OIR"
-    dir_temp  = field_dir / "TEMP"
-    dir_data  = field_dir / "DATA"
+    print(f"  [process_field] starting {field_dir.name}; channels={sorted(active_channels)}")
+    dir_oir = field_dir / "OIR"
+    dir_temp = field_dir / "TEMP"
+    dir_data = field_dir / "DATA"
     dir_masks = field_dir / "MASKS"
     ensure_dirs([dir_temp, dir_data, dir_masks])
 
-    path_nuclei  = find_file(dir_oir, "nuclei")
-    path_myelin  = find_file(dir_oir, "myelin")
-    path_debris  = find_file(dir_oir, "debris")
-    path_pillars = find_file(dir_oir, "axon")
+    def channel_number(label, fallback):
+        try:
+            return int(channel_numbers.get(label, fallback))
+        except (TypeError, ValueError):
+            return fallback
 
-    imp_pillars = load_channel(path_pillars, channel=1)
-    imp_pillars = pillar_mask(imp_pillars, dir_temp, dir_masks)
+    if "nuclei" in active_channels:
+        imp = load_channel(find_channel_file(dir_oir, "nuclei"), channel_number("nuclei", 3))
+        nuclei_mask(imp, dir_temp, dir_masks, dir_data, nuclei_thresh)
 
-    imp_nuclei = load_channel(path_nuclei, channel=3)
-    nuclei_mask(imp_nuclei, dir_temp, dir_masks, dir_data, nuclei_thresh)
-
-    imp_myelin = load_channel(path_myelin, channel=3)
-    imp_myelin = myelin_raw_mask(imp_myelin, dir_temp, dir_masks, myelin_thresh)
-
-    imp_debris = load_channel(path_debris, channel=2)
-    imp_debris = debris_mask(imp_debris, dir_temp, dir_data, dir_masks, debris_thresh)
-
-    imp_myelin.show()
-    imp_debris.show()
-    ic = ImageCalculator()
-    imp_myelin_clean = ic.run("Subtract create", imp_myelin, imp_debris)
-    imp_myelin.hide()
-    imp_debris.hide()
-
-    myelin_clean_name = f"mask-myelin-{myelin_thresh}.tif"
-    save_imp(imp_myelin_clean, dir_masks / myelin_clean_name)
-
-    IJ.run("Set Scale...", "distance=0 known=0 unit=pixel")
-    IJ.run("Set Measurements...",
-           "area mean min shape integrated limit redirect=None decimal=2")
-    rt_myelin = analyze_particles(
-        imp_myelin_clean,
-        size_min=size_min, size_max=size_max,
-        circ_min=0.20, circ_max=1.00,
-    )
-    save_results(rt_myelin,
-                 dir_data / f"Total-MBP-2D-{myelin_thresh}-{debris_thresh}.out")
-
-    imp_myelin.close()
-    imp_debris.close()
-
-    imp_pillars_reload = IJ.openImage(str(dir_temp / "mask-pillars.tif"))
-    show_run_hide(imp_pillars_reload, "Dilate",    "stack")
-    show_run_hide(imp_pillars_reload, "Watershed", "stack")
-    show_run_hide(imp_pillars_reload, "Outline",   "stack")
-
-    save_imp(imp_pillars_reload,
-             dir_temp  / "mask-pillars-rim.tif",
-             dir_masks / "mask-pillars-rim.tif")
-
-    imp_pillars_reload.show()
-    imp_myelin_clean.show()
-    ic2 = ImageCalculator()
-    imp_overlap = ic2.run("Multiply create", imp_pillars_reload, imp_myelin_clean)
-    imp_pillars_reload.hide()
-    imp_myelin_clean.hide()
-
-    overlap_name = f"mask-myelin-overlap-{myelin_thresh}-{debris_thresh}.tif"
-    save_imp(imp_overlap,
-             dir_masks / overlap_name,
-             dir_temp  / overlap_name)
-
-    for imp in (imp_pillars_reload, imp_myelin_clean, imp_overlap):
+    if "axon" in active_channels:
+        imp = load_channel(find_channel_file(dir_oir, "axon"), channel_number("axon", 1))
+        imp = pillar_mask(imp, dir_temp, dir_masks)
+        save_particle_results(imp, dir_data / "Total-2D-axons.out", size_min, size_max)
         imp.close()
 
+    imp_debris = None
+    if "debris" in active_channels:
+        imp_debris = load_channel(
+            find_channel_file(dir_oir, "debris"), channel_number("debris", 2)
+        )
+        imp_debris = debris_mask(
+            imp_debris, dir_temp, dir_data, dir_masks, debris_thresh
+        )
+        save_particle_results(
+            imp_debris,
+            dir_data / f"Total-2D-debris-{debris_thresh}.out",
+            size_min,
+            size_max,
+        )
+
+    imp_myelin_clean = None
+    if "myelin" in active_channels:
+        imp_myelin = load_channel(
+            find_channel_file(dir_oir, "myelin"), channel_number("myelin", 3)
+        )
+        imp_myelin = myelin_raw_mask(
+            imp_myelin, dir_temp, dir_masks, myelin_thresh
+        )
+        if imp_debris is not None:
+            imp_myelin.show()
+            imp_debris.show()
+            imp_myelin_clean = ImageCalculator().run(
+                "Subtract create", imp_myelin, imp_debris
+            )
+            imp_myelin.hide()
+            imp_debris.hide()
+            suffix = f"{myelin_thresh}-{debris_thresh}"
+        else:
+            imp_myelin_clean = imp_myelin.duplicate()
+            suffix = str(myelin_thresh)
+        save_imp(imp_myelin_clean, dir_masks / f"mask-myelin-{myelin_thresh}.tif")
+        save_particle_results(
+            imp_myelin_clean,
+            dir_data / f"Total-MBP-2D-{suffix}.out",
+            size_min,
+            size_max,
+        )
+        imp_myelin.close()
+
+    if "gfap" in active_channels:
+        imp_gfap = load_channel(
+            find_channel_file(dir_oir, "gfap"), channel_number("gfap", 1)
+        )
+        imp_gfap = threshold_channel_mask(
+            imp_gfap, "GFAP", gfap_thresh, dir_temp, dir_masks
+        )
+        save_particle_results(
+            imp_gfap,
+            dir_data / f"Total-2D-GFAP-{gfap_thresh}.out",
+            size_min,
+            size_max,
+        )
+        imp_gfap.close()
+
+    if imp_debris is not None:
+        imp_debris.close()
+
+    if "axon" in active_channels and imp_myelin_clean is not None:
+        pillar_rim = IJ.openImage(str(dir_temp / "mask-pillars.tif"))
+        show_run_hide(pillar_rim, "Dilate", "stack")
+        show_run_hide(pillar_rim, "Watershed", "stack")
+        show_run_hide(pillar_rim, "Outline", "stack")
+        save_imp(
+            pillar_rim,
+            dir_temp / "mask-pillars-rim.tif",
+            dir_masks / "mask-pillars-rim.tif",
+        )
+        pillar_rim.show()
+        imp_myelin_clean.show()
+        overlap = ImageCalculator().run(
+            "Multiply create", pillar_rim, imp_myelin_clean
+        )
+        pillar_rim.hide()
+        imp_myelin_clean.hide()
+        overlap_name = f"mask-myelin-overlap-{myelin_thresh}-{debris_thresh}.tif"
+        save_imp(overlap, dir_masks / overlap_name, dir_temp / overlap_name)
+        pillar_rim.close()
+        overlap.close()
+
+    if imp_myelin_clean is not None:
+        imp_myelin_clean.close()
     print(f" {field_dir.name}")
 
 

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import SessionLocal
-from ..scripts.analysis.pipeline_runner import build_final_csv
+from ..scripts.analysis.pipeline_runner import build_analysis_artifacts
 
 
 router = APIRouter(prefix="/analysis", tags=["Analysis"])
@@ -39,17 +39,31 @@ def run_analysis_job(job_id):
             finally:
                 progress_db.close()
 
-        csv_content, row_count = build_final_csv(job.payload, report_progress)
-        filename = f"final_results_job_{job.id}.csv"
-        result = models.ResultCsv(
-            filename=filename,
-            content=csv_content,
-            order_index=db.query(models.ResultCsv).count(),
+        artifacts, row_count = build_analysis_artifacts(
+            job.payload, job.id, report_progress
         )
-        db.add(result)
-        db.flush()
+        artifact_ids = []
+        result = None
+        next_order = db.query(models.ResultCsv).count()
+        for offset, artifact in enumerate(artifacts):
+            record = models.ResultCsv(
+                filename=artifact["filename"],
+                content=artifact["content"],
+                mime_type=artifact["mime_type"],
+                artifact_type=artifact["artifact_type"],
+                job_id=job.id,
+                order_index=next_order + offset,
+            )
+            db.add(record)
+            db.flush()
+            artifact_ids.append(record.id)
+            if artifact["artifact_type"] == "fov_summary":
+                result = record
+        if result is None:
+            raise RuntimeError("Analysis did not produce a primary FOV summary.")
         job.status = "completed"
         job.result_id = result.id
+        job.artifact_ids = artifact_ids
         job.row_count = row_count
         job.error = None
         job.progress = 100

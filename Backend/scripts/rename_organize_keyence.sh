@@ -1,4 +1,4 @@
-# Step 1: Rename Keyence files for 2D or 3D data using Tkinter upload inputs.
+# Clean and order Keyence files for 2D or 3D data using Tkinter inputs.
 
 set -euo pipefail
 

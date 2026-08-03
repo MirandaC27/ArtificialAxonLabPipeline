@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Clean/Order implementation used by the Tkinter workflow.
 
 2Dvs3D(){
     if [ "$IMAGE_TYPE" = "3D" ]; then
@@ -90,3 +91,5 @@ process_channels(){
         cp "$BASE_DIR/$dirname/$trackname/$oldname" "$TRACKS1/$newname"
     done
 }
+
+# End CleanData functions.

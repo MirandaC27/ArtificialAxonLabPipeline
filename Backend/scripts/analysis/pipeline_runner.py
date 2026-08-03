@@ -6,21 +6,48 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 import threading
 from pathlib import Path, PureWindowsPath
 
 import requests
 
 try:
-    from .consolidate_results import consolidate_results
+    from .reporting import build_report_artifacts
 except ImportError:
-    from consolidate_results import consolidate_results
+    from reporting import build_report_artifacts
 
 
 ANALYSIS_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = ANALYSIS_DIR.parents[1]
 DATA_DIR = BACKEND_DIR / "data"
+
+CHANNEL_ALIASES = {
+    "axon": "axon", "axons": "axon", "pillar": "axon", "pillars": "axon",
+    "myelin": "myelin", "mbp": "myelin",
+    "nuclei": "nuclei", "nucleus": "nuclei", "dapi": "nuclei",
+    "debris": "debris", "gfap": "gfap",
+}
+
+
+def normalize_channel_label(value):
+    label = str(value or "").strip().lower()
+    return CHANNEL_ALIASES.get(label, label)
+
+
+def positive_float(value, default=1.0):
+    try:
+        number = float(str(value).strip().split()[0])
+    except (TypeError, ValueError, IndexError):
+        return default
+    return number if number > 0 else default
+
+
+def positive_int(value, default=9):
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return default
+    return number if number > 1 else default
 
 
 def to_container_data_path(value):
@@ -44,6 +71,7 @@ def to_container_data_path(value):
 
 def normalized_payload(payload):
     upload = payload.get("upload_data") or {}
+    analysis_settings = payload.get("settings_data") or {}
     masking = payload.get("masking_data") or {}
     raw_base_path = masking.get("base_path")
     if not raw_base_path:
@@ -56,20 +84,46 @@ def normalized_payload(payload):
     for channel, enabled in (masking.get("auto_thresholds") or {}).items():
         if enabled:
             thresholds[channel] = "auto"
+    channels = upload.get("channels") or []
+    active_channels = [
+        normalize_channel_label(channel.get("label"))
+        for channel in channels
+        if isinstance(channel, dict)
+        and channel.get("label")
+        and not channel.get("disabled", False)
+        and channel.get("active", True)
+    ]
+    if not channels:
+        active_channels = ["axon", "myelin", "nuclei", "debris"]
+    channel_numbers = {
+        normalize_channel_label(channel.get("label")): int(channel.get("num", 1))
+        for channel in channels
+        if isinstance(channel, dict)
+        and channel.get("label")
+        and str(channel.get("num", "")).isdigit()
+    }
+    image_type = str(upload.get("image_type") or "3D").strip().upper()
     masking_settings = {
         **masking,
         "thresholds": thresholds,
         "base_path": str(base_path),
         "well_range": list(range(well_start, well_end + 1)),
+        "image_type": image_type,
+        "active_channels": active_channels,
+        "channel_numbers": channel_numbers,
+        "z_step_um": positive_float(analysis_settings.get("distance")),
+        "z_slice_count": positive_int(analysis_settings.get("frames")),
     }
     upload_settings = {
         "OrderedTrack": [str(base_path)],
         "DisabledFOVs": upload.get("disabled_fovs") or [],
-        "Channels": upload.get("channels") or [],
+        "Channels": channels,
+        "ImageType": image_type,
         "SkipChannels": [
             channel.get("label", "")
-            for channel in upload.get("channels") or []
-            if isinstance(channel, dict) and not channel.get("active", True)
+            for channel in channels
+            if isinstance(channel, dict)
+            and (channel.get("disabled", False) or not channel.get("active", True))
         ],
     }
     return base_path, masking_settings, upload_settings
@@ -142,7 +196,7 @@ def run_parallel_stage(script_name, wells, env, progress_callback, start_percent
             future.result()
 
 
-def build_final_csv(payload, progress_callback=None):
+def build_analysis_artifacts(payload, job_id, progress_callback=None):
     progress_callback = progress_callback or (lambda percent, message: None)
     base_path, masking_settings, upload_settings = normalized_payload(payload)
     if not base_path.exists():
@@ -162,16 +216,37 @@ def build_final_csv(payload, progress_callback=None):
     wells = [int(well) for well in masking_settings["well_range"]]
     if not wells:
         raise ValueError("No wells were selected for analysis.")
-    run_parallel_stage("masking.py", wells, env, progress_callback, 5, 55, "Creating masks")
-    run_parallel_stage("create_data.py", wells, env, progress_callback, 55, 92, "Measuring objects")
-    progress_callback(95, "Consolidating CSV results")
-    with tempfile.TemporaryDirectory(prefix="axonlab-results-") as temp_dir:
-        final_path, row_count = consolidate_results(base_path, Path(temp_dir) / "final_results.csv")
-        if row_count == 0:
-            raise RuntimeError("Analysis produced no particle rows. Check channel selection and masking thresholds.")
-        content = final_path.read_bytes()
-    progress_callback(99, f"Saving {row_count} rows to PostgreSQL")
-    return content, row_count
+    image_type = masking_settings["image_type"]
+    active_channels = set(masking_settings["active_channels"])
+    run_parallel_stage("masking.py", wells, env, progress_callback, 5, 60, f"Creating {image_type} masks")
+    if image_type == "3D":
+        missing = {"axon", "myelin"} - active_channels
+        if missing:
+            raise ValueError(
+                "3D wrapping analysis requires active axon and myelin channels. "
+                f"Missing: {', '.join(sorted(missing))}."
+            )
+        run_parallel_stage("create_data.py", wells, env, progress_callback, 60, 92, "Measuring 3D wrapping")
+    else:
+        progress_callback(92, "2D analysis selected; skipping 3D object measurements")
+    progress_callback(94, "Building FOV and well summaries")
+    artifacts, row_count = build_report_artifacts(
+        base_path, masking_settings, job_id
+    )
+    progress_callback(99, f"Saving {len(artifacts)} artifacts to PostgreSQL")
+    return artifacts, row_count
+
+
+def build_final_csv(payload, progress_callback=None):
+    """Backward-compatible helper returning the primary FOV CSV."""
+    artifacts, row_count = build_analysis_artifacts(
+        payload, "manual", progress_callback
+    )
+    primary = next(
+        artifact for artifact in artifacts
+        if artifact["artifact_type"] == "fov_summary"
+    )
+    return primary["content"], row_count
 
 
 def upload_final_csv(api_url, content):
@@ -187,9 +262,24 @@ def upload_final_csv(api_url, content):
 
 
 def run_pipeline(payload, api_url):
-    content, row_count = build_final_csv(payload)
-    record = upload_final_csv(api_url, content)
-    return {"record": record, "row_count": row_count}
+    artifacts, row_count = build_analysis_artifacts(payload, "manual")
+    records = []
+    for artifact in artifacts:
+        endpoint = f"{api_url.rstrip('/')}/results"
+        response = requests.post(
+            endpoint,
+            json={
+                "filename": artifact["filename"],
+                "content_base64": base64.b64encode(artifact["content"]).decode("ascii"),
+                "mime_type": artifact["mime_type"],
+                "artifact_type": artifact["artifact_type"],
+                "overwrite": True,
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        records.append(response.json())
+    return {"records": records, "row_count": row_count}
 
 
 def main():
