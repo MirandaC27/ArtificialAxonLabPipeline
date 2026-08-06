@@ -43,7 +43,7 @@ class ResultsPage(tk.Frame):
         tk.Button(
             self.left_frame,
             text="Back",
-            command=lambda: self.controller.show_page("TestSave"),
+            command=self.controller.return_from_results,
             font=("Arial", 12),
             width=12,
         ).pack(anchor="w", pady=5)

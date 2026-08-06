@@ -3,11 +3,18 @@ $ErrorActionPreference = "Stop"
 Set-Location -LiteralPath $PSScriptRoot
 $env:AXONLAB_API_URL = "http://127.0.0.1:8000"
 
+if (-not (Test-Path -LiteralPath ".\.venv\Scripts\python.exe")) {
+    Write-Host "Creating project virtual environment in .venv..."
+    python -m venv .venv
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+$venvPython = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+
 Write-Host "Checking local Tkinter frontend dependencies..."
-python -c "import requests"
+& $venvPython -c "import requests"
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Installing the requests package..."
-    python -m pip install requests
+    Write-Host "Installing the requests package in .venv..."
+    & $venvPython -m pip install requests
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 } else {
     Write-Host "Frontend dependencies are already installed."
@@ -33,4 +40,4 @@ if (-not $apiReady) {
     throw "FastAPI did not become ready within 60 seconds. Run: docker compose logs api"
 }
 
-python .\frontend\main_view.py
+& $venvPython .\frontend\main_view.py

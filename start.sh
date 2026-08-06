@@ -6,17 +6,27 @@ cd "$SCRIPT_DIR"
 
 export AXONLAB_API_URL="http://127.0.0.1:8000"
 
+if [ ! -x ".venv/bin/python" ]; then
+    echo "Creating project virtual environment in .venv..."
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -m venv .venv
+    else
+        python -m venv .venv
+    fi
+fi
+VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python"
+
 echo "Checking local Tkinter frontend dependencies..."
-if python -c "import requests"; then
+if "$VENV_PYTHON" -c "import requests"; then
     echo "Frontend dependencies are already installed."
 else
-    echo "Installing the requests package..."
-    python -m pip install requests
+    echo "Installing the requests package in .venv..."
+    "$VENV_PYTHON" -m pip install requests
 fi
 
 docker compose up -d --build
 
-python -c "import time, requests
+"$VENV_PYTHON" -c "import time, requests
 url = '$AXONLAB_API_URL/'
 for attempt in range(30):
     try:
@@ -28,4 +38,4 @@ for attempt in range(30):
             raise SystemExit('FastAPI did not become ready within 60 seconds.')
         time.sleep(2)"
 
-python ./frontend/main_view.py
+"$VENV_PYTHON" ./frontend/main_view.py

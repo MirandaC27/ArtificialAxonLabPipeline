@@ -38,6 +38,8 @@ class App(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.pages = {}
+        self.current_page = None
+        self.results_return_page = "Home"
 
         for PageClass, name in [
             (HomePage, "Home"),
@@ -61,6 +63,9 @@ class App(tk.Tk):
         self.show_page("Home")
 
     def show_page(self, name):
+        if name == "Results" and self.current_page != "Results":
+            self.results_return_page = self.current_page or "Home"
+
         width, height = self.page_sizes.get(name, (900, 650))
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
@@ -74,6 +79,13 @@ class App(tk.Tk):
             page.refresh()
 
         page.tkraise()
+        self.current_page = name
+
+    def return_from_results(self):
+        return_page = self.results_return_page
+        if return_page not in self.pages or return_page == "Results":
+            return_page = "Home"
+        self.show_page(return_page)
 
 
 if __name__ == "__main__":
