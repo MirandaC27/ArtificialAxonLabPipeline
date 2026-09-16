@@ -1,3 +1,7 @@
+param(
+    [switch]$Rebuild
+)
+
 $ErrorActionPreference = "Stop"
 
 Set-Location -LiteralPath $PSScriptRoot
@@ -20,7 +24,12 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "Frontend dependencies are already installed."
 }
 
-docker compose up -d --build
+if ($Rebuild) {
+    Write-Host "Rebuilding the Docker API image..."
+    docker compose up -d --build
+} else {
+    docker compose up -d
+}
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "Waiting for FastAPI..."

@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+REBUILD=false
+if [ "${1:-}" = "--rebuild" ]; then
+    REBUILD=true
+elif [ "$#" -gt 0 ]; then
+    echo "Usage: $0 [--rebuild]" >&2
+    exit 2
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -24,7 +32,12 @@ else
     "$VENV_PYTHON" -m pip install requests
 fi
 
-docker compose up -d --build
+if [ "$REBUILD" = true ]; then
+    echo "Rebuilding the Docker API image..."
+    docker compose up -d --build
+else
+    docker compose up -d
+fi
 
 "$VENV_PYTHON" -c "import time, requests
 url = '$AXONLAB_API_URL/'

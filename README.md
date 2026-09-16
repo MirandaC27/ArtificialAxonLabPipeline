@@ -18,10 +18,18 @@ for windows:
 ```
 .\start.ps1
 ```
+
 for macOS/Git Bash:
 ```
 ./start.sh
 ```
+<br>
+Note: The first time you run the application, it will take a few minutes to download the Docker image and virtual environment packages such as imageJ. After that, it will start quickly.
+
+<br>
+
+* After changing the Dockerfile, `requirements.txt`, or backend code that must be
+copied into the Docker image, rebuild the Docker image by adding the `--build` option to the start command:
 
 * If you are in a virtual environment CLI, you may need to run the command with `deactivate` first to exit the virtual environment.
 
